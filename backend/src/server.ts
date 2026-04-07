@@ -4,6 +4,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import connectDB from './config/db';
 import { notFound, errorHandler } from './middleware/errorMiddleware';
+import authRoutes from './routes/authRoutes';
 
 // Load env vars
 dotenv.config();
@@ -29,7 +30,8 @@ app.use(cors({
 app.get('/api', (req: Request, res: Response) => {
     res.json({ message: 'Welcome to the CTC Club API' });
 });
-
+// Routes
+app.use('/api/auth', authRoutes);
 // Error handling middleware
 app.use(notFound);
 app.use(errorHandler);
