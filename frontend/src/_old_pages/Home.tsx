@@ -12,7 +12,7 @@ import {
   LifeBuoy, Shield, Award, TrendingUp, Code2, Terminal,
   Database, Play, Search, ChevronRight,
   Zap, Rocket, MessageSquare, Calendar,
-  Heart, Github, ExternalLink, Mail, Monitor,
+  Heart, ExternalLink, Mail, Monitor,
   Clock, FileText, Headphones, Sparkles
 } from "lucide-react";
 
@@ -548,7 +548,7 @@ export function Home() {
                     <p className="text-[13px] text-slate-500 mb-4">{p.tech}</p>
                     <div className="flex gap-2.5">
                       <Button size="sm" variant="outline" className="text-[11px] flex-1 h-8 rounded-lg border-slate-200/60 dark:border-white/10">
-                        <Github className="h-3.5 w-3.5 mr-1.5" /> GitHub
+                        GitHub
                       </Button>
                       <Button size="sm" className="text-[11px] flex-1 h-8 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-sm shadow-indigo-500/20">
                         <ExternalLink className="h-3.5 w-3.5 mr-1.5" /> Demo
