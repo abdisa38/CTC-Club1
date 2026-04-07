@@ -13,7 +13,7 @@ export default function ModeSelectionPage() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-black mb-2">Exam Not Found</h2>
-          <Linkhref= className="text-primary hover:underline">
+          <Link href= className="text-primary hover:underline">
             Back to Exams
           </Link>
         </div>
@@ -98,7 +98,7 @@ export default function ModeSelectionPage() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Back Link */}
-        <Linkhref=
+        <Link href=
           className="inline-flex items-center gap-2 text-gray-600 hover:text-primary mb-6 transition"
         >
           <ArrowLeft className="w-4 h-4" />

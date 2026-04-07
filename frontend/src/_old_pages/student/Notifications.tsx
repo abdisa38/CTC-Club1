@@ -6,7 +6,7 @@ import {
   Bell, BookOpen, Award, MessageSquare, CheckCircle, Megaphone,
   FileText, Star, Check, Trash2, Filter
 } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence } from "framer-motion";
 
 type Notification = {
   id: number;

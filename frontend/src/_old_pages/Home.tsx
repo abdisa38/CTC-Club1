@@ -1,6 +1,7 @@
-import { Link, useLocation } from "react-router";
+import { usePathname as useLocation } from "next/navigation";
+import Link from "next/link";;
 import { useEffect, useState, useRef } from "react";
-import { motion, useInView } from "motion/react";
+import { motion, useInView } from "framer-motion";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Input } from "../components/ui/input";

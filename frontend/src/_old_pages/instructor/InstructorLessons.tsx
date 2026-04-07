@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "next/navigation";
 import { ArrowLeft, Save, Plus, GripVertical, Video, FileText, Lock, Unlock, Edit, Trash2, Clock, Upload, X } from "lucide-react";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
 import { Badge } from "../../components/ui/Badge";
 import { Switch } from "../../components/ui/switch";
-import { motion, Reorder } from "motion/react";
+import { motion, Reorder } from "framer-motion";
 
 export function InstructorLessons() {
   const { id } = useParams();

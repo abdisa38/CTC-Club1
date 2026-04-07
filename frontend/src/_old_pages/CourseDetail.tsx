@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, Link, useNavigate } from "react-router";
+import { useParams, Link, useNavigate } from "next/navigation";
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
 import { Progress } from "../components/ui/Progress";

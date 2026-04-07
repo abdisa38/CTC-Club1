@@ -38,7 +38,7 @@ export default function GamingMode() {
                 ? 'Gaming mode not available for this exam'
                 : 'No questions available'}
             </p>
-            <Linkhref=
+            <Link href=
               className="inline-block px-6 py-3 bg-primary hover:bg-red-700 text-white rounded-lg transition"
             >
               Browse Exams
@@ -166,7 +166,7 @@ export default function GamingMode() {
                 >
                   Play Again
                 </button>
-                <Linkhref=
+                <Link href=
                   className="flex-1 px-6 py-3 bg-primary hover:bg-red-700 text-white rounded-lg font-semibold transition"
                 >
                   View Leaderboard
@@ -190,7 +190,7 @@ export default function GamingMode() {
             <div className="lg:col-span-3 space-y-6">
               {/* Header */}
               <div>
-                <Linkhref=
+                <Link href=
                   className="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-4"
                 >
                   <ArrowLeft className="w-4 h-4" />

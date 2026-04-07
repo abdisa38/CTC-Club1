@@ -20,7 +20,7 @@ export default function StudyMode() {
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <p className="text-xl text-gray-600 mb-4">No questions available for this exam</p>
-            <Linkhref=
+            <Link href=
               className="inline-block px-6 py-3 bg-primary hover:bg-red-700 text-white rounded-lg transition"
             >
               Browse Exams
@@ -61,7 +61,7 @@ export default function StudyMode() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="mb-6">
-            <Linkhref=
+            <Link href=
               className="inline-flex items-center gap-2 text-gray-600 hover:text-primary mb-4"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -234,7 +234,7 @@ export default function StudyMode() {
 
           {currentQuestionIndex === questions.length - 1 && showFeedback && (
             <div className="mt-6 text-center">
-              <Linkhref=
+              <Link href=
                 className="inline-block px-6 py-3 bg-black hover:bg-gray-800 text-white rounded-lg font-semibold transition"
               >
                 Back to Exams

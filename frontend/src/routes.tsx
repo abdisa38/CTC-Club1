@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from "react-router";
+import { createBrowserRouter, Navigate } from "next/navigation";
 import { AppLayout } from "./components/layouts/AppLayout";
 import { PublicLayout } from "./components/layouts/PublicLayout";
 

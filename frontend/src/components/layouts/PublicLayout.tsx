@@ -1,6 +1,6 @@
-import { Outlet, Link, useLocation } from "react-router";
+import { Outlet, Link, useLocation } from "next/navigation";
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "../ui/button";
 import { Menu, X, Github, Twitter, Linkedin, Youtube, Instagram, Mail, ArrowRight, ArrowUpRight } from "lucide-react";
 import { Input } from "../ui/input";
@@ -40,7 +40,7 @@ export function PublicLayout() {
           }`}
         >
           <div className="mx-auto flex h-16 items-center px-6 lg:px-8 gap-10 max-w-[1400px] w-full">
-            <Linkhref= className="flex items-center gap-2.5 shrink-0 mr-auto group">
+            <Link href= className="flex items-center gap-2.5 shrink-0 mr-auto group">
               <div className="relative">
                 <img src={ctcLogo} alt="CTC Club" className="h-9 w-9 rounded-xl ring-1 ring-slate-200/50 dark:ring-slate-700/50 transition-transform duration-300 group-hover:scale-105" />
               </div>
@@ -72,14 +72,14 @@ export function PublicLayout() {
                 asChild
                 className="hidden md:inline-flex font-semibold text-[13px] text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white h-9 px-4 rounded-lg"
               >
-                <Linkhref=>Log in</Link>
+                <Link href=>Log in</Link>
               </Button>
               <Button
                 size="sm"
                 asChild
                 className="hidden md:inline-flex font-semibold text-[13px] bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white shadow-sm shadow-indigo-500/25 h-9 px-5 rounded-lg transition-all duration-200 hover:shadow-md hover:shadow-indigo-500/30"
               >
-                <Linkhref=>Get Started Free</Link>
+                <Link href=>Get Started Free</Link>
               </Button>
               <button
                 onClick={() => setMobileOpen(!mobileOpen)}
@@ -115,10 +115,10 @@ export function PublicLayout() {
                   ))}
                   <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-2.5">
                     <Button variant="outline" className="w-full h-11 rounded-xl font-semibold" asChild>
-                      <Linkhref=>Log in</Link>
+                      <Link href=>Log in</Link>
                     </Button>
                     <Button className="w-full h-11 rounded-xl font-semibold bg-gradient-to-r from-indigo-600 to-violet-600" asChild>
-                      <Linkhref=>Get Started Free</Link>
+                      <Link href=>Get Started Free</Link>
                     </Button>
                   </div>
                 </div>
@@ -138,7 +138,7 @@ export function PublicLayout() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-16 mb-16">
               {/* Brand */}
               <div className="lg:col-span-1">
-                <Linkhref= className="flex items-center gap-2.5 mb-5 group">
+                <Link href= className="flex items-center gap-2.5 mb-5 group">
                   <img src={ctcLogo} alt="CTC Club" className="h-9 w-9 rounded-xl transition-transform group-hover:scale-105" />
                   <span className="text-lg font-bold text-white">
                     CTC <span className="bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent">Club</span>

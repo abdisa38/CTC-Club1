@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useParams } from "next/navigation";
 import { Button } from "../../components/ui/Button";
 import { Badge } from "../../components/ui/Badge";
 import { Progress } from "../../components/ui/Progress";
@@ -11,7 +11,7 @@ import {
   MessageSquare, FileText, Download, StickyNote, BookOpen, Send, ThumbsUp, Clock,
   Maximize2, Volume2, Settings, SkipForward, Pause, Play
 } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const lessonData = {
   courseTitle: "Full-Stack Web Development Bootcamp",

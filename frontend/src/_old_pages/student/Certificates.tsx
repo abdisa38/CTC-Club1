@@ -4,7 +4,7 @@ import { Button } from "../../components/ui/Button";
 import { Badge } from "../../components/ui/Badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../../components/ui/Dialog";
 import { Award, Download, Eye, Calendar, BookOpen, Share2, ExternalLink } from "lucide-react";
-import { motion } from "motion/react";
+import { motion } from "framer-motion";
 
 const certificates = [
   {

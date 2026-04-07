@@ -1,4 +1,4 @@
-import { Outlet, Link, useLocation } from "react-router";
+import { Outlet, Link, useLocation } from "next/navigation";
 import {
   LayoutDashboard, BookOpen, FileText, CheckSquare,
   MessageSquare, Trophy, Settings, Bell, Search, Menu, Focus,
@@ -6,7 +6,7 @@ import {
   Megaphone, CalendarDays, Activity, Flag, Database, Heart, Award, GraduationCap, X, LogOut, ChevronRight
 } from "lucide-react";
 import { useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/Avatar";
@@ -76,7 +76,7 @@ export function AppLayout() {
   const SidebarContent = () => (
     <>
       <div className="flex h-16 items-center border-b border-slate-100 dark:border-slate-800/50 px-5 shrink-0">
-        <Linkhref= className="flex items-center gap-2.5 group">
+        <Link href= className="flex items-center gap-2.5 group">
           <div className="relative">
             <img src={ctcLogo} alt="CTC" className="h-8 w-8 rounded-lg transition-transform group-hover:scale-105" />
           </div>
@@ -122,7 +122,7 @@ export function AppLayout() {
       </div>
 
       <div className="border-t border-slate-100 dark:border-slate-800/50 p-3 shrink-0 space-y-0.5">
-        <Linkhref=
+        <Link href=
           className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-50 dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/5 transition-all duration-200"
         >
           <Settings className="h-[18px] w-[18px] text-slate-400" />
@@ -253,11 +253,11 @@ export function AppLayout() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild className="rounded-lg"><Linkhref=>Profile</Link></DropdownMenuItem>
-                <DropdownMenuItem asChild className="rounded-lg"><Linkhref=>Settings</Link></DropdownMenuItem>
+                <DropdownMenuItem asChild className="rounded-lg"><Link href=>Profile</Link></DropdownMenuItem>
+                <DropdownMenuItem asChild className="rounded-lg"><Link href=>Settings</Link></DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild className="rounded-lg text-red-600 focus:text-red-600">
-                  <Linkhref= className="flex items-center gap-2"><LogOut className="h-4 w-4" />Log out</Link>
+                  <Link href= className="flex items-center gap-2"><LogOut className="h-4 w-4" />Log out</Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -287,7 +287,7 @@ export function AppLayout() {
             </Link>
           );
         })}
-        <Linkhref=
+        <Link href=
           className="flex flex-col items-center gap-1 p-2 rounded-xl text-[10px] font-medium text-slate-400 transition-all"
         >
           <Settings className="h-5 w-5" />

@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate } from "next/navigation";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Card, CardContent, CardFooter } from "../components/ui/Card";
 import ctcLogo from "figma:asset/f6c46c16a776a1f63a42e49b36947669f8dcc942.png";
-import { motion } from "motion/react";
+import { motion } from "framer-motion";
 import { ArrowRight, Github, Mail } from "lucide-react";
 
 export function Auth() {

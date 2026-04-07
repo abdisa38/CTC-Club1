@@ -83,7 +83,7 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-2xl">
         {/* Logo */}
-        <Linkhref= className="flex items-center justify-center gap-2 mb-8">
+        <Link href= className="flex items-center justify-center gap-2 mb-8">
           <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
             <Trophy className="w-6 h-6 text-white" />
           </div>
@@ -397,7 +397,7 @@ export default function RegisterPage() {
           {/* Login Link */}
           <p className="text-center text-sm text-gray-600 mt-6">
             Already have an account?{' '}
-            <Linkhref= className="text-primary hover:text-red-700 font-semibold">
+            <Link href= className="text-primary hover:text-red-700 font-semibold">
               Sign in
             </Link>
           </p>

@@ -24,7 +24,7 @@ export default function PublicExamBrowser() {
       <nav className="bg-white border-b border-gray-200 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Linkhref= className="flex items-center gap-3">
+            <Link href= className="flex items-center gap-3">
               <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
                 <BookOpen className="w-6 h-6 text-white" />
               </div>
@@ -32,13 +32,13 @@ export default function PublicExamBrowser() {
             </Link>
             
             <div className="flex items-center gap-3">
-              <Linkhref=
+              <Link href=
                 className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-primary transition"
               >
                 <LogIn className="w-5 h-5" />
                 <span className="hidden sm:inline">Login</span>
               </Link>
-              <Linkhref=
+              <Link href=
                 className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-lg font-semibold transition"
               >
                 <UserPlus className="w-5 h-5" />
@@ -57,7 +57,7 @@ export default function PublicExamBrowser() {
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-black mb-3">Browse Exams</h1>
           <p className="text-lg text-gray-600">
-            Explore our comprehensive exam library. <Linkhref= className="text-primary hover:underline">Sign up</Link> to start taking exams!
+            Explore our comprehensive exam library. <Link href= className="text-primary hover:underline">Sign up</Link> to start taking exams!
           </p>
         </div>
 
@@ -139,7 +139,7 @@ export default function PublicExamBrowser() {
 
                       {/* Action Buttons */}
                       <div className="flex gap-2">
-                        <Linkhref=
+                        <Link href=
                           className="flex-1 py-2 px-4 bg-primary hover:bg-blue-700 text-white rounded-lg font-semibold text-center transition"
                         >
                           Start Exam
@@ -157,8 +157,8 @@ export default function PublicExamBrowser() {
                     <div className="px-6 pb-4">
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                         <p className="text-xs text-blue-900">
-                          <Linkhref= className="font-semibold hover:underline">Login</Link> or{' '}
-                          <Linkhref= className="font-semibold hover:underline">Sign up</Link> to take this exam
+                          <Link href= className="font-semibold hover:underline">Login</Link> or{' '}
+                          <Link href= className="font-semibold hover:underline">Sign up</Link> to take this exam
                         </p>
                       </div>
                     </div>
@@ -184,7 +184,7 @@ export default function PublicExamBrowser() {
               <p className="text-blue-100 mb-6">
                 Join thousands of students preparing for exams with Ofijan
               </p>
-              <Linkhref=
+              <Link href=
                 className="inline-block px-8 py-3 bg-white text-primary rounded-lg font-bold hover:bg-blue-50 transition"
               >
                 Create Free Account

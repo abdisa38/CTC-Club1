@@ -137,7 +137,7 @@ export default function ScholarshipPage() {
                   </span>
                 )}
               </button>
-              <Linkhref=
+              <Link href=
                 className="flex items-center gap-2 px-4 py-3 bg-gradient-to-br from-primary to-blue-700 hover:from-blue-700 hover:to-primary text-white rounded-xl font-semibold transition shadow-lg"
               >
                 <Settings className="w-5 h-5" />

@@ -5,7 +5,7 @@ import { Card, CardContent } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/Tabs";
 import { Star, Clock, Users, PlayCircle, Heart, FileText, Bookmark, Trash2 } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const savedCourses = [
   {
@@ -80,7 +80,7 @@ export function Favorites() {
               <Heart className="mx-auto h-12 w-12 text-slate-400 mb-4" />
               <h3 className="text-lg font-medium text-slate-900 dark:text-white">No saved courses</h3>
               <p className="text-sm text-slate-500 mt-1 mb-4">Browse courses and bookmark the ones you like.</p>
-              <Button asChild><Linkhref=>Browse Courses</Link></Button>
+              <Button asChild><Link href=>Browse Courses</Link></Button>
             </div>
           ) : (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -143,7 +143,7 @@ export function Favorites() {
               <FileText className="mx-auto h-12 w-12 text-slate-400 mb-4" />
               <h3 className="text-lg font-medium text-slate-900 dark:text-white">No saved resources</h3>
               <p className="text-sm text-slate-500 mt-1 mb-4">Bookmark resources from your courses to access them quickly.</p>
-              <Button asChild><Linkhref=>Browse Resources</Link></Button>
+              <Button asChild><Link href=>Browse Resources</Link></Button>
             </div>
           ) : (
             <div className="space-y-3">

@@ -11,7 +11,7 @@ import {
   FileText, MessageSquare, Bell, Flame, Zap, Target, Trophy, Heart,
   ChevronRight, Sparkles, GraduationCap, ArrowUpRight
 } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Data
 const enrolledCourses = [
@@ -137,10 +137,10 @@ export function StudentDashboard() {
         </div>
         <div className="flex gap-3">
           <Button variant="outline" asChild>
-            <Linkhref=><Bell className="h-4 w-4 mr-2" /> Notifications</Link>
+            <Link href=><Bell className="h-4 w-4 mr-2" /> Notifications</Link>
           </Button>
           <Button asChild>
-            <Linkhref=>Find Courses</Link>
+            <Link href=>Find Courses</Link>
           </Button>
         </div>
       </div>
@@ -226,7 +226,7 @@ export function StudentDashboard() {
                   <PlayCircle className="h-5 w-5 text-indigo-600" /> Continue Learning
                 </CardTitle>
                 <Button variant="ghost" size="sm" asChild>
-                  <Linkhref=>View all</Link>
+                  <Link href=>View all</Link>
                 </Button>
               </div>
             </CardHeader>
@@ -349,7 +349,7 @@ export function StudentDashboard() {
                   <Bell className="h-4 w-4 text-red-500" /> Notifications
                 </CardTitle>
                 <Button variant="ghost" size="sm" asChild>
-                  <Linkhref=>View all</Link>
+                  <Link href=>View all</Link>
                 </Button>
               </div>
             </CardHeader>
@@ -432,7 +432,7 @@ export function StudentDashboard() {
                   <Trophy className="h-4 w-4 text-amber-500" /> Top Students
                 </CardTitle>
                 <Button variant="ghost" size="sm" asChild>
-                  <Linkhref=>View all</Link>
+                  <Link href=>View all</Link>
                 </Button>
               </div>
             </CardHeader>
@@ -469,7 +469,7 @@ export function StudentDashboard() {
               <Sparkles className="h-5 w-5 text-amber-500" /> Recommended For You
             </CardTitle>
             <Button variant="ghost" size="sm" asChild>
-              <Linkhref=>Browse all <ChevronRight className="h-4 w-4 ml-1" /></Link>
+              <Link href=>Browse all <ChevronRight className="h-4 w-4 ml-1" /></Link>
             </Button>
           </div>
         </CardHeader>
