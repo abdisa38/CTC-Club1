@@ -1,4 +1,4 @@
-import { Link } from 'react-router';
+import Link from "next/link";
 import { ExternalLink, X } from 'lucide-react';
 import { useState } from 'react';
 import { getActiveAds } from '../data/mockData';

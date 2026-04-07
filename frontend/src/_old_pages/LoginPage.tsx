@@ -18,7 +18,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         {/* Logo */}
-        <Link to="/" className="flex items-center justify-center gap-2 mb-8">
+        <Linkhref= className="flex items-center justify-center gap-2 mb-8">
           <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
             <Trophy className="w-6 h-6 text-white" />
           </div>
@@ -125,7 +125,7 @@ export default function LoginPage() {
           {/* Register Link */}
           <p className="mt-6 text-center text-sm text-gray-600">
             Don't have an account?{' '}
-            <Link to="/register" className="text-primary hover:underline font-semibold">
+            <Linkhref= className="text-primary hover:underline font-semibold">
               Register here
             </Link>
           </p>
@@ -133,7 +133,7 @@ export default function LoginPage() {
 
         {/* Back to Home */}
         <div className="text-center mt-6">
-          <Link to="/" className="text-gray-400 hover:text-white transition text-sm">
+          <Linkhref= className="text-gray-400 hover:text-white transition text-sm">
             ← Back to Home
           </Link>
         </div>

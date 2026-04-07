@@ -1,3 +1,5 @@
+"use client";
+
 import { Link, useLocation } from 'react-router';
 import { LayoutDashboard, FileText, HelpCircle, Users, CreditCard, Trophy, MessageCircle, Settings } from 'lucide-react';
 
@@ -24,7 +26,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       <div className="w-64 bg-black text-white flex flex-col fixed h-full">
         {/* Logo */}
         <div className="p-6 border-b border-white/10">
-          <Link to="/admin/dashboard" className="flex items-center gap-2">
+          <Link href="/admin/dashboard" className="flex items-center gap-2">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <Trophy className="w-5 h-5 text-white" />
             </div>

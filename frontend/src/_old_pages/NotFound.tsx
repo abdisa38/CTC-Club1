@@ -1,4 +1,4 @@
-import { Link } from 'react-router';
+import Link from "next/link";
 import { Home, Search } from 'lucide-react';
 
 export default function NotFound() {
@@ -15,15 +15,13 @@ export default function NotFound() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link
-            to="/"
+          <Linkhref=
             className="inline-flex items-center gap-2 px-8 py-4 bg-primary hover:bg-blue-700 text-white rounded-lg font-semibold transition"
           >
             <Home className="w-5 h-5" />
             Go Home
           </Link>
-          <Link
-            to="/exams"
+          <Linkhref=
             className="inline-flex items-center gap-2 px-8 py-4 bg-white hover:bg-gray-50 text-primary border-2 border-primary rounded-lg font-semibold transition"
           >
             <Search className="w-5 h-5" />

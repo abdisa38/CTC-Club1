@@ -32,8 +32,7 @@ export default function TestMode() {
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <p className="text-xl text-gray-600 mb-4">No questions available for this exam</p>
-            <Link
-              to="/student/exams"
+            <Linkhref=
               className="inline-block px-6 py-3 bg-primary hover:bg-red-700 text-white rounded-lg transition"
             >
               Browse Exams
@@ -113,8 +112,7 @@ export default function TestMode() {
                 >
                   Download Results
                 </button>
-                <Link
-                  to="/student/exams"
+                <Linkhref=
                   className="px-6 py-3 bg-primary hover:bg-red-700 text-white rounded-lg font-semibold transition"
                 >
                   Back to Exams
@@ -138,8 +136,7 @@ export default function TestMode() {
             <div className="lg:col-span-3 space-y-6">
               {/* Header */}
               <div>
-                <Link
-                  to="/student/exams"
+                <Linkhref=
                   className="inline-flex items-center gap-2 text-gray-600 hover:text-primary mb-4"
                 >
                   <ArrowLeft className="w-4 h-4" />

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "motion/react";
-import { Link } from "react-router";
+import Link from "next/link";
 import { Button } from "../components/ui/Button";
 import { Card, CardContent } from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
@@ -145,7 +145,7 @@ export function CourseList() {
         </div>
         {isInstructor && (
           <Button asChild className="shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white">
-            <Link to="/app/courses/new"><PlusCircle className="h-4 w-4 mr-2" /> Add Course</Link>
+            <Link href="/app/courses/new"><PlusCircle className="h-4 w-4 mr-2" /> Add Course</Link>
           </Button>
         )}
       </div>

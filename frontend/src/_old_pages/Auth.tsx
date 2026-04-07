@@ -29,7 +29,7 @@ export function Auth() {
         className="w-full max-w-[420px] space-y-8 relative"
       >
         <div className="text-center">
-          <Link to="/" className="inline-flex items-center gap-2.5 mb-8 group">
+          <Link href="/" className="inline-flex items-center gap-2.5 mb-8 group">
             <img src={ctcLogo} alt="CTC Club" className="h-10 w-10 rounded-xl transition-transform group-hover:scale-105" />
             <span className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">
               CTC <span className="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">Club</span>

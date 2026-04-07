@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import Link from "next/link";
 import { PlusCircle, Search, Edit, Trash2, MoreVertical, Eye, FileVideo, Users } from "lucide-react";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
@@ -57,7 +57,7 @@ export function InstructorCourses() {
           <p className="text-slate-500 dark:text-slate-400">Manage your created courses, lessons, and content.</p>
         </div>
         <Button asChild className="bg-emerald-600 hover:bg-emerald-700 text-white">
-          <Link to="/app/instructor/courses/new">
+          <Link href="/app/instructor/courses/new">
             <PlusCircle className="mr-2 h-4 w-4" />
             Create Course
           </Link>

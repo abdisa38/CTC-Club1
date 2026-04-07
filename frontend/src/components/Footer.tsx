@@ -1,4 +1,6 @@
-import { Link } from 'react-router';
+"use client";
+
+import Link from "next/link";
 import { Trophy, Mail, MessageCircle } from 'lucide-react';
 
 export default function Footer() {
@@ -24,27 +26,27 @@ export default function Footer() {
             <h4 className="font-semibold mb-4">Quick Links</h4>
             <ul className="space-y-2 text-sm text-gray-400">
               <li>
-                <Link to="/" className="hover:text-primary transition">
+                <Link href="/" className="hover:text-primary transition">
                   Home
                 </Link>
               </li>
               <li>
-                <Link to="/scholarships" className="hover:text-primary transition">
+                <Link href="/scholarships" className="hover:text-primary transition">
                   Scholarships
                 </Link>
               </li>
               <li>
-                <Link to="/leaderboard" className="hover:text-primary transition">
+                <Link href="/leaderboard" className="hover:text-primary transition">
                   Leaderboard
                 </Link>
               </li>
               <li>
-                <Link to="/login" className="hover:text-primary transition">
+                <Link href="/login" className="hover:text-primary transition">
                   Login
                 </Link>
               </li>
               <li>
-                <Link to="/register" className="hover:text-primary transition">
+                <Link href="/register" className="hover:text-primary transition">
                   Register
                 </Link>
               </li>
@@ -56,37 +58,37 @@ export default function Footer() {
             <h4 className="font-semibold mb-4">Exam Categories</h4>
             <ul className="space-y-2 text-sm text-gray-400">
               <li>
-                <Link to="/category/grade-6" className="hover:text-primary transition">
+                <Link href="/category/grade-6" className="hover:text-primary transition">
                   Grade 6
                 </Link>
               </li>
               <li>
-                <Link to="/category/grade-8" className="hover:text-primary transition">
+                <Link href="/category/grade-8" className="hover:text-primary transition">
                   Grade 8
                 </Link>
               </li>
               <li>
-                <Link to="/category/mock-exam" className="hover:text-primary transition">
+                <Link href="/category/mock-exam" className="hover:text-primary transition">
                   Mock Exams
                 </Link>
               </li>
               <li>
-                <Link to="/category/exit-exam" className="hover:text-primary transition">
+                <Link href="/category/exit-exam" className="hover:text-primary transition">
                   Exit Exams
                 </Link>
               </li>
               <li>
-                <Link to="/category/euee" className="hover:text-primary transition">
+                <Link href="/category/euee" className="hover:text-primary transition">
                   EUEE Exams
                 </Link>
               </li>
               <li>
-                <Link to="/category/gat" className="hover:text-primary transition">
+                <Link href="/category/gat" className="hover:text-primary transition">
                   GAT
                 </Link>
               </li>
               <li>
-                <Link to="/category/coc" className="hover:text-primary transition">
+                <Link href="/category/coc" className="hover:text-primary transition">
                   COC Exams
                 </Link>
               </li>

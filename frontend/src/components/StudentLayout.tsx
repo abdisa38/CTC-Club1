@@ -1,3 +1,5 @@
+"use client";
+
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router';
 import { 
@@ -51,7 +53,7 @@ export default function StudentLayout({ children }: StudentLayoutProps) {
         {/* Logo */}
         <div className="p-6 border-b border-[#475569]">
           <div className="flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-3">
               <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
                 <Trophy className="w-6 h-6 text-white" />
               </div>

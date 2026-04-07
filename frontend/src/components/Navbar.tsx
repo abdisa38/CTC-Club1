@@ -1,4 +1,6 @@
-import { Link } from 'react-router';
+"use client";
+
+import Link from "next/link";
 import { Trophy, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 
@@ -17,7 +19,7 @@ export default function Navbar({ isLoggedIn = false, userRole }: NavbarProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition">
+            <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition">
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                 <Trophy className="w-5 h-5 text-white" />
               </div>
@@ -28,26 +30,26 @@ export default function Navbar({ isLoggedIn = false, userRole }: NavbarProps) {
             <div className="hidden md:flex items-center gap-6">
               {!isLoggedIn ? (
                 <>
-                  <Link to="/" className="hover:text-primary transition">
+                  <Link href="/" className="hover:text-primary transition">
                     Home
                   </Link>
-                  <Link to="/exams" className="hover:text-primary transition">
+                  <Link href="/exams" className="hover:text-primary transition">
                     Browse Exams
                   </Link>
-                  <Link to="/scholarships" className="hover:text-primary transition">
+                  <Link href="/scholarships" className="hover:text-primary transition">
                     Scholarships
                   </Link>
-                  <Link to="/leaderboard" className="hover:text-primary transition">
+                  <Link href="/leaderboard" className="hover:text-primary transition">
                     Leaderboard
                   </Link>
                   <Link
-                    to="/login"
+                    href="/login"
                     className="px-4 py-2 hover:text-primary transition"
                   >
                     Login
                   </Link>
                   <Link
-                    to="/register"
+                    href="/register"
                     className="px-4 py-2 bg-primary hover:bg-blue-700 rounded-lg transition"
                   >
                     Register
@@ -57,41 +59,41 @@ export default function Navbar({ isLoggedIn = false, userRole }: NavbarProps) {
                 <>
                   {userRole === 'student' && (
                     <>
-                      <Link to="/student/dashboard" className="hover:text-primary transition">
+                      <Link href="/student/dashboard" className="hover:text-primary transition">
                         Dashboard
                       </Link>
-                      <Link to="/student/exams" className="hover:text-primary transition">
+                      <Link href="/student/exams" className="hover:text-primary transition">
                         Exams
                       </Link>
-                      <Link to="/scholarships" className="hover:text-primary transition">
+                      <Link href="/scholarships" className="hover:text-primary transition">
                         Scholarships
                       </Link>
-                      <Link to="/leaderboard" className="hover:text-primary transition">
+                      <Link href="/leaderboard" className="hover:text-primary transition">
                         Leaderboard
                       </Link>
                     </>
                   )}
                   {userRole === 'admin' && (
                     <>
-                      <Link to="/admin/dashboard" className="hover:text-primary transition">
+                      <Link href="/admin/dashboard" className="hover:text-primary transition">
                         Dashboard
                       </Link>
-                      <Link to="/admin/exams" className="hover:text-primary transition">
+                      <Link href="/admin/exams" className="hover:text-primary transition">
                         Exams
                       </Link>
-                      <Link to="/admin/questions" className="hover:text-primary transition">
+                      <Link href="/admin/questions" className="hover:text-primary transition">
                         Questions
                       </Link>
-                      <Link to="/admin/gaming-questions" className="hover:text-primary transition">
+                      <Link href="/admin/gaming-questions" className="hover:text-primary transition">
                         Gaming
                       </Link>
-                      <Link to="/admin/feedback" className="hover:text-primary transition">
+                      <Link href="/admin/feedback" className="hover:text-primary transition">
                         Feedback
                       </Link>
                     </>
                   )}
                   {userRole === 'encoder' && (
-                    <Link to="/encoder/dashboard" className="hover:text-primary transition">
+                    <Link href="/encoder/dashboard" className="hover:text-primary transition">
                       Dashboard
                     </Link>
                   )}
@@ -119,42 +121,42 @@ export default function Navbar({ isLoggedIn = false, userRole }: NavbarProps) {
               {!isLoggedIn ? (
                 <>
                   <Link
-                    to="/"
+                    href="/"
                     className="block py-2 hover:text-primary transition"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Home
                   </Link>
                   <Link
-                    to="/exams"
+                    href="/exams"
                     className="block py-2 hover:text-primary transition"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Browse Exams
                   </Link>
                   <Link
-                    to="/scholarships"
+                    href="/scholarships"
                     className="block py-2 hover:text-primary transition"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Scholarships
                   </Link>
                   <Link
-                    to="/leaderboard"
+                    href="/leaderboard"
                     className="block py-2 hover:text-primary transition"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Leaderboard
                   </Link>
                   <Link
-                    to="/login"
+                    href="/login"
                     className="block py-2 hover:text-primary transition"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Login
                   </Link>
                   <Link
-                    to="/register"
+                    href="/register"
                     className="block py-2 px-4 bg-primary hover:bg-blue-700 rounded-lg transition text-center"
                     onClick={() => setMobileMenuOpen(false)}
                   >
@@ -166,28 +168,28 @@ export default function Navbar({ isLoggedIn = false, userRole }: NavbarProps) {
                   {userRole === 'student' && (
                     <>
                       <Link
-                        to="/student/dashboard"
+                        href="/student/dashboard"
                         className="block py-2 hover:text-primary transition"
                         onClick={() => setMobileMenuOpen(false)}
                       >
                         Dashboard
                       </Link>
                       <Link
-                        to="/student/exams"
+                        href="/student/exams"
                         className="block py-2 hover:text-primary transition"
                         onClick={() => setMobileMenuOpen(false)}
                       >
                         Exams
                       </Link>
                       <Link
-                        to="/scholarships"
+                        href="/scholarships"
                         className="block py-2 hover:text-primary transition"
                         onClick={() => setMobileMenuOpen(false)}
                       >
                         Scholarships
                       </Link>
                       <Link
-                        to="/leaderboard"
+                        href="/leaderboard"
                         className="block py-2 hover:text-primary transition"
                         onClick={() => setMobileMenuOpen(false)}
                       >

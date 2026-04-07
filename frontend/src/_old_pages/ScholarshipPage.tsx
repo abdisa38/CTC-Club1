@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router';
+import Link from "next/link";
 import { 
   Calendar, MapPin, DollarSign, CheckCircle, ExternalLink, Filter, Bell, Settings,
   Search, SlidersHorizontal, Bookmark, BookmarkCheck, Clock, TrendingUp, X, Eye,
@@ -137,8 +137,7 @@ export default function ScholarshipPage() {
                   </span>
                 )}
               </button>
-              <Link
-                to="/student/scholarship-preferences"
+              <Linkhref=
                 className="flex items-center gap-2 px-4 py-3 bg-gradient-to-br from-primary to-blue-700 hover:from-blue-700 hover:to-primary text-white rounded-xl font-semibold transition shadow-lg"
               >
                 <Settings className="w-5 h-5" />

@@ -10,7 +10,7 @@ import {
   Users, BookOpen, Activity, AlertCircle, FileText, MessageSquare,
   TrendingUp, Bell, Clock, Shield, ChevronRight, RefreshCw, Zap
 } from "lucide-react";
-import { Link } from "react-router";
+import Link from "next/link";
 import { Skeleton } from "../../components/ui/Skeleton";
 
 const userGrowthData = [
@@ -252,7 +252,7 @@ export function AdminDashboard() {
               <CardTitle className="text-lg">Platform Activity Feed</CardTitle>
               <CardDescription>Recent actions across the platform</CardDescription>
             </div>
-            <Link to="/app/admin/logs">
+            <Link href="/app/admin/logs">
               <Button variant="ghost" size="sm">View All <ChevronRight className="h-4 w-4 ml-1" /></Button>
             </Link>
           </CardHeader>
@@ -310,10 +310,10 @@ export function AdminDashboard() {
             <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800">
               <p className="text-sm font-medium text-slate-900 dark:text-white mb-3">Quick Actions</p>
               <div className="grid grid-cols-2 gap-2">
-                <Link to="/app/admin/users"><Button variant="outline" size="sm" className="w-full justify-start"><Users className="h-4 w-4 mr-2" />Manage Users</Button></Link>
-                <Link to="/app/admin/courses"><Button variant="outline" size="sm" className="w-full justify-start"><BookOpen className="h-4 w-4 mr-2" />Review Courses</Button></Link>
-                <Link to="/app/admin/tickets"><Button variant="outline" size="sm" className="w-full justify-start"><MessageSquare className="h-4 w-4 mr-2" />Open Tickets</Button></Link>
-                <Link to="/app/admin/settings"><Button variant="outline" size="sm" className="w-full justify-start"><Activity className="h-4 w-4 mr-2" />Settings</Button></Link>
+                <Link href="/app/admin/users"><Button variant="outline" size="sm" className="w-full justify-start"><Users className="h-4 w-4 mr-2" />Manage Users</Button></Link>
+                <Link href="/app/admin/courses"><Button variant="outline" size="sm" className="w-full justify-start"><BookOpen className="h-4 w-4 mr-2" />Review Courses</Button></Link>
+                <Link href="/app/admin/tickets"><Button variant="outline" size="sm" className="w-full justify-start"><MessageSquare className="h-4 w-4 mr-2" />Open Tickets</Button></Link>
+                <Link href="/app/admin/settings"><Button variant="outline" size="sm" className="w-full justify-start"><Activity className="h-4 w-4 mr-2" />Settings</Button></Link>
               </div>
             </div>
           </CardContent>

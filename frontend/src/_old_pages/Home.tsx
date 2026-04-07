@@ -114,7 +114,7 @@ function CourseCard({ course }: { course: typeof featuredCourses[0] }) {
             <span className="text-[11px] text-slate-400">({course.students})</span>
           </div>
           <Button size="sm" className="text-[11px] h-8 px-3.5 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white shadow-sm shadow-indigo-500/20" asChild>
-            <Link to="/app/courses">Enroll</Link>
+            <Link href="/app/courses">Enroll</Link>
           </Button>
         </div>
       </div>
@@ -227,12 +227,12 @@ export function Home() {
                 className="mt-10 flex flex-col sm:flex-row items-center gap-3 justify-center lg:justify-start"
               >
                 <Button size="lg" className="w-full sm:w-auto px-8 h-12 text-[15px] font-semibold bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-all duration-300 rounded-xl" asChild>
-                  <Link to="/register">
+                  <Link href="/register">
                     Start Learning Free <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
                 <Button size="lg" variant="outline" className="w-full sm:w-auto px-8 h-12 text-[15px] font-semibold border-slate-200 dark:border-white/10 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-all duration-300" asChild>
-                  <Link to="/app/courses">Browse Courses</Link>
+                  <Link href="/app/courses">Browse Courses</Link>
                 </Button>
               </motion.div>
 
@@ -255,7 +255,7 @@ export function Home() {
                 {showSearchSuggestions && searchSuggestions.length > 0 && (
                   <div className="absolute top-full mt-2 w-full bg-white dark:bg-[#131827] border border-slate-200/60 dark:border-white/10 rounded-xl shadow-lg shadow-black/5 z-50 overflow-hidden">
                     {searchSuggestions.map((s, i) => (
-                      <Link key={i} to="/app/courses" className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors text-sm text-slate-600 dark:text-slate-400">
+                      <Link key={i} href="/app/courses" className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors text-sm text-slate-600 dark:text-slate-400">
                         <Search className="h-3.5 w-3.5 text-slate-400" />
                         {s}
                       </Link>
@@ -389,7 +389,7 @@ export function Home() {
                 <p className="mt-3 text-base text-slate-500 dark:text-slate-400">Handpicked courses to accelerate your learning journey.</p>
               </div>
               <Button variant="outline" className="rounded-xl font-semibold border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5" asChild>
-                <Link to="/app/courses">View All <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                <Link href="/app/courses">View All <ArrowRight className="ml-2 h-4 w-4" /></Link>
               </Button>
             </div>
           </AnimatedSection>
@@ -440,7 +440,7 @@ export function Home() {
                       ))}
                     </div>
                     <Button className="w-full mt-6 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 shadow-sm shadow-indigo-500/20" asChild>
-                      <Link to="/register">Start Path <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                      <Link href="/register">Start Path <ArrowRight className="ml-2 h-4 w-4" /></Link>
                     </Button>
                   </div>
                 </PremiumCard>
@@ -589,7 +589,7 @@ export function Home() {
                 ))}
               </div>
               <Button size="lg" className="bg-white text-indigo-700 hover:bg-white/90 rounded-xl h-12 px-8 font-semibold shadow-lg shadow-black/10 transition-all duration-300" asChild>
-                <Link to="/register">Join the Community <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                <Link href="/register">Join the Community <ArrowRight className="ml-2 h-4 w-4" /></Link>
               </Button>
             </AnimatedSection>
             <AnimatedSection delay={0.15} className="flex-1 hidden lg:block">
@@ -628,7 +628,7 @@ export function Home() {
                   <h3 className="text-[15px] font-semibold text-slate-900 dark:text-white mb-2">{item.title}</h3>
                   <p className="text-sm text-slate-500 mb-5 leading-relaxed">{item.desc}</p>
                   <Button variant="outline" size="sm" className="rounded-lg font-semibold border-slate-200/60 dark:border-white/10" asChild>
-                    <Link to="/app/support">{item.cta}</Link>
+                    <Link href="/app/support">{item.cta}</Link>
                   </Button>
                 </PremiumCard>
               </AnimatedSection>
@@ -696,7 +696,7 @@ export function Home() {
                   ))}
                 </ul>
                 <Button className="w-full rounded-xl h-11 font-semibold" variant="outline" asChild>
-                  <Link to="/register">Get Started Free</Link>
+                  <Link href="/register">Get Started Free</Link>
                 </Button>
               </PremiumCard>
             </AnimatedSection>
@@ -746,10 +746,10 @@ export function Home() {
               </p>
               <div className="flex flex-col sm:flex-row items-center gap-3 justify-center">
                 <Button size="lg" className="bg-white text-indigo-700 hover:bg-white/90 px-8 h-12 rounded-xl font-semibold shadow-lg shadow-black/10 transition-all duration-300" asChild>
-                  <Link to="/register">Register Now <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                  <Link href="/register">Register Now <ArrowRight className="ml-2 h-4 w-4" /></Link>
                 </Button>
                 <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10 px-8 h-12 rounded-xl font-semibold backdrop-blur-sm transition-all duration-300" asChild>
-                  <Link to="/app/courses">Explore Courses</Link>
+                  <Link href="/app/courses">Explore Courses</Link>
                 </Button>
               </div>
             </div>

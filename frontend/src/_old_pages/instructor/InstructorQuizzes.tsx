@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import Link from "next/link";
 import { Plus, Edit, Trash2, Search, CheckCircle, Clock, BookOpen, ChevronRight, Check } from "lucide-react";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/ui/Card";

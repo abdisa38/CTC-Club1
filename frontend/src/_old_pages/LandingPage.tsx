@@ -1,4 +1,4 @@
-import { Link } from 'react-router';
+import Link from "next/link";
 import { Trophy, BookOpen, Zap, Users, Star } from 'lucide-react';
 import ExamCard from '../components/ExamCard';
 import { mockExams } from '../data/mockData';
@@ -27,13 +27,13 @@ export default function LandingPage() {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
               <Link
-                to="/register"
+                href="/register"
                 className="px-8 py-4 bg-primary hover:bg-blue-700 rounded-lg text-lg font-semibold transition"
               >
                 Get Started Free
               </Link>
               <Link
-                to="/exams"
+                href="/exams"
                 className="px-8 py-4 bg-white hover:bg-gray-100 text-black rounded-lg text-lg font-semibold transition"
               >
                 Browse Exams
@@ -119,7 +119,7 @@ export default function LandingPage() {
 
           <div className="text-center mt-8">
             <Link
-              to="/register"
+              href="/register"
               className="inline-block px-8 py-3 bg-primary hover:bg-red-700 text-white rounded-lg font-semibold transition"
             >
               View All Exams
@@ -175,7 +175,7 @@ export default function LandingPage() {
             Join thousands of students already improving their grades with Ofijan.
           </p>
           <Link
-            to="/register"
+            href="/register"
             className="inline-block px-8 py-4 bg-primary hover:bg-red-700 rounded-lg text-lg font-semibold transition"
           >
             Register Now - It's Free!

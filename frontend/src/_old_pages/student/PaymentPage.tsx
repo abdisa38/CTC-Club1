@@ -32,8 +32,7 @@ export default function PaymentPage() {
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <p className="text-xl text-gray-600 mb-4">Exam not found</p>
-            <Link
-              to="/student/exams"
+            <Linkhref=
               className="inline-block px-6 py-3 bg-primary hover:bg-red-700 text-white rounded-lg transition"
             >
               Browse Exams
@@ -65,8 +64,7 @@ export default function PaymentPage() {
                 >
                   Start Gaming Mode
                 </Link>
-                <Link
-                  to="/student/exams"
+                <Linkhref=
                   className="block w-full px-6 py-3 bg-gray-100 hover:bg-gray-200 text-black rounded-lg font-semibold transition"
                 >
                   Back to Exams
@@ -100,8 +98,7 @@ export default function PaymentPage() {
                 >
                   Try Again
                 </button>
-                <Link
-                  to="/student/exams"
+                <Linkhref=
                   className="block w-full px-6 py-3 bg-gray-100 hover:bg-gray-200 text-black rounded-lg font-semibold transition"
                 >
                   Back to Exams
@@ -121,8 +118,7 @@ export default function PaymentPage() {
       <main className="flex-1 py-8">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Back Link */}
-          <Link
-            to="/student/exams"
+          <Linkhref=
             className="inline-flex items-center gap-2 text-gray-600 hover:text-primary mb-6"
           >
             <ArrowLeft className="w-4 h-4" />

@@ -1,5 +1,5 @@
 import { Clock, FileText, Gamepad2, Lock } from "lucide-react";
-import { Link } from "react-router";
+import Link from "next/link";
 import { Exam } from "../data/mockData";
 
 interface ExamCardProps {

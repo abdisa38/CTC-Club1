@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router";
+import Link from "next/link";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/ui/Card";
 import { Progress } from "../../components/ui/Progress";
@@ -137,10 +137,10 @@ export function StudentDashboard() {
         </div>
         <div className="flex gap-3">
           <Button variant="outline" asChild>
-            <Link to="/app/notifications"><Bell className="h-4 w-4 mr-2" /> Notifications</Link>
+            <Linkhref=><Bell className="h-4 w-4 mr-2" /> Notifications</Link>
           </Button>
           <Button asChild>
-            <Link to="/app/courses">Find Courses</Link>
+            <Linkhref=>Find Courses</Link>
           </Button>
         </div>
       </div>
@@ -226,7 +226,7 @@ export function StudentDashboard() {
                   <PlayCircle className="h-5 w-5 text-indigo-600" /> Continue Learning
                 </CardTitle>
                 <Button variant="ghost" size="sm" asChild>
-                  <Link to="/app/courses">View all</Link>
+                  <Linkhref=>View all</Link>
                 </Button>
               </div>
             </CardHeader>
@@ -349,7 +349,7 @@ export function StudentDashboard() {
                   <Bell className="h-4 w-4 text-red-500" /> Notifications
                 </CardTitle>
                 <Button variant="ghost" size="sm" asChild>
-                  <Link to="/app/notifications">View all</Link>
+                  <Linkhref=>View all</Link>
                 </Button>
               </div>
             </CardHeader>
@@ -432,7 +432,7 @@ export function StudentDashboard() {
                   <Trophy className="h-4 w-4 text-amber-500" /> Top Students
                 </CardTitle>
                 <Button variant="ghost" size="sm" asChild>
-                  <Link to="/app/leaderboard">View all</Link>
+                  <Linkhref=>View all</Link>
                 </Button>
               </div>
             </CardHeader>
@@ -469,7 +469,7 @@ export function StudentDashboard() {
               <Sparkles className="h-5 w-5 text-amber-500" /> Recommended For You
             </CardTitle>
             <Button variant="ghost" size="sm" asChild>
-              <Link to="/app/courses">Browse all <ChevronRight className="h-4 w-4 ml-1" /></Link>
+              <Linkhref=>Browse all <ChevronRight className="h-4 w-4 ml-1" /></Link>
             </Button>
           </div>
         </CardHeader>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import Link from "next/link";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
 import { Badge } from "../../components/ui/Badge";
@@ -80,7 +80,7 @@ export function Favorites() {
               <Heart className="mx-auto h-12 w-12 text-slate-400 mb-4" />
               <h3 className="text-lg font-medium text-slate-900 dark:text-white">No saved courses</h3>
               <p className="text-sm text-slate-500 mt-1 mb-4">Browse courses and bookmark the ones you like.</p>
-              <Button asChild><Link to="/app/courses">Browse Courses</Link></Button>
+              <Button asChild><Linkhref=>Browse Courses</Link></Button>
             </div>
           ) : (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -143,7 +143,7 @@ export function Favorites() {
               <FileText className="mx-auto h-12 w-12 text-slate-400 mb-4" />
               <h3 className="text-lg font-medium text-slate-900 dark:text-white">No saved resources</h3>
               <p className="text-sm text-slate-500 mt-1 mb-4">Bookmark resources from your courses to access them quickly.</p>
-              <Button asChild><Link to="/app/resources">Browse Resources</Link></Button>
+              <Button asChild><Linkhref=>Browse Resources</Link></Button>
             </div>
           ) : (
             <div className="space-y-3">

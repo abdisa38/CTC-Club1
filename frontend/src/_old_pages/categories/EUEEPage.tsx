@@ -1,4 +1,4 @@
-import { Link } from 'react-router';
+import Link from "next/link";
 import { ArrowLeft, Award } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
@@ -18,7 +18,7 @@ export default function EUEEPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Back Link */}
           <Link
-            to="/"
+            href="/"
             className="inline-flex items-center gap-2 text-gray-600 hover:text-primary mb-6 transition"
           >
             <ArrowLeft className="w-4 h-4" />

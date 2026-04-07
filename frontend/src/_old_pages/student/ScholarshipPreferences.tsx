@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router';
+import Link from "next/link";
 import { ArrowLeft, Bell, Save, CheckCircle, Mail, MessageSquare } from 'lucide-react';
 import Navbar from '../../components/Navbar';
 import Footer from '../../components/Footer';
@@ -115,8 +115,7 @@ export default function ScholarshipPreferences() {
       <main className="flex-1 py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Back Link */}
-          <Link
-            to="/scholarships"
+          <Linkhref=
             className="inline-flex items-center gap-2 text-gray-600 hover:text-primary mb-6 transition"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -322,8 +321,7 @@ export default function ScholarshipPreferences() {
                 <Save className="w-5 h-5" />
                 Save Preferences
               </button>
-              <Link
-                to="/scholarships"
+              <Linkhref=
                 className="py-4 px-6 bg-gray-200 hover:bg-gray-300 text-black rounded-xl font-semibold text-lg transition"
               >
                 Cancel

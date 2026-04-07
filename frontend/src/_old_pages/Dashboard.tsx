@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+import Link from "next/link";
 import { Button } from "../components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/Card";
 import { Progress } from "../components/ui/Progress";
@@ -48,10 +48,10 @@ function InstructorDashboard() {
         </div>
         <div className="flex gap-3">
           <Button variant="outline" asChild>
-            <Link to="/app/instructor/analytics">View Full Report</Link>
+            <Link href="/app/instructor/analytics">View Full Report</Link>
           </Button>
           <Button asChild className="bg-emerald-600 hover:bg-emerald-700 text-white">
-            <Link to="/app/instructor/courses/new">Create Course</Link>
+            <Link href="/app/instructor/courses/new">Create Course</Link>
           </Button>
         </div>
       </div>
@@ -131,7 +131,7 @@ function InstructorDashboard() {
                   </div>
                 </div>
                 <Button size="sm" variant="outline" asChild className="h-8">
-                  <Link to="/app/instructor/projects">Review</Link>
+                  <Link href="/app/instructor/projects">Review</Link>
                 </Button>
               </div>
 
@@ -146,7 +146,7 @@ function InstructorDashboard() {
                   </div>
                 </div>
                 <Button size="sm" variant="outline" asChild className="h-8">
-                  <Link to="/app/community">Reply</Link>
+                  <Link href="/app/community">Reply</Link>
                 </Button>
               </div>
 
