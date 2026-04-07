@@ -5,6 +5,8 @@ import cookieParser from 'cookie-parser';
 import connectDB from './config/db';
 import { notFound, errorHandler } from './middleware/errorMiddleware';
 import authRoutes from './routes/authRoutes';
+import courseRoutes from './routes/courseRoutes';
+import lessonRoutes from './routes/lessonRoutes';
 
 // Load env vars
 dotenv.config();
@@ -32,6 +34,11 @@ app.get('/api', (req: Request, res: Response) => {
 });
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/courses', courseRoutes);
+
+// For operations purely based on LessonId (Update, Delete a lesson)
+app.use('/api/lessons', lessonRoutes);
+
 // Error handling middleware
 app.use(notFound);
 app.use(errorHandler);
