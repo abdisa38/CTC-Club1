@@ -7,6 +7,9 @@ import { notFound, errorHandler } from './middleware/errorMiddleware';
 import authRoutes from './routes/authRoutes';
 import courseRoutes from './routes/courseRoutes';
 import lessonRoutes from './routes/lessonRoutes';
+import quizRoutes from './routes/quizRoutes';
+import projectRoutes from './routes/projectRoutes';
+import supportRoutes from './routes/supportRoutes';
 
 // Load env vars
 dotenv.config();
@@ -35,6 +38,9 @@ app.get('/api', (req: Request, res: Response) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/courses', courseRoutes);
+app.use('/api/quizzes', quizRoutes);
+app.use('/api/projects', projectRoutes);
+app.use('/api/support', supportRoutes);
 
 // For operations purely based on LessonId (Update, Delete a lesson)
 app.use('/api/lessons', lessonRoutes);
