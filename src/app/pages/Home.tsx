@@ -173,10 +173,10 @@ export function Home() {
 
   const [realCourses, setRealCourses] = useState<any[]>(featuredCourses);
   const [stats, setStats] = useState({
-    activeStudents: 5000,
-    videoCourses: 120,
-    instructors: 35,
-    certificates: 2500
+    activeStudents: 9,
+    videoCourses: 3,
+    instructors: 5,
+    certificates: 2
   });
 
   useEffect(() => {
