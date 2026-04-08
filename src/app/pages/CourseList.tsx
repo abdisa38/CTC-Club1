@@ -39,7 +39,7 @@ export function CourseList() {
     const fetchCourses = async () => {
       try {
         const { data } = await api.get('/courses');
-        setCourses(data);
+        setCourses(data.courses || []);
       } catch (error) {
         console.error("Failed to fetch courses:", error);
       } finally {

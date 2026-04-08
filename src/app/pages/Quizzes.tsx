@@ -5,6 +5,7 @@ import { Badge } from "../components/ui/Badge";
 import { Progress } from "../components/ui/Progress";
 import { Skeleton } from "../components/ui/Skeleton";
 import { Clock, HelpCircle, CheckCircle2, ChevronRight, RotateCcw, Award } from "lucide-react";
+import api from "../utils/api";
 
 type QuizState = 'list' | 'taking' | 'results';
 
@@ -15,20 +16,24 @@ export function Quizzes() {
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
   const [timeLeft, setTimeLeft] = useState(600); // 10 mins
 
-  // Mock data
-  const quizzes = [
-    { id: 1, title: "React Fundamentals", module: "Module 2", questions: 10, duration: "10 mins", score: null, status: "available" },
-    { id: 2, title: "CSS Layouts (Flexbox & Grid)", module: "Module 1", questions: 15, duration: "15 mins", score: 95, status: "completed" },
-    { id: 3, title: "Advanced Node.js Patterns", module: "Module 5", questions: 20, duration: "25 mins", score: null, status: "locked" },
-  ];
+  const [quizzes, setQuizzes] = useState<any[]>([]);
+  const [currentQuizData, setCurrentQuizData] = useState<any>(null);
+  const [quizResult, setQuizResult] = useState<any>(null);
 
-  const currentQuizData = {
-    title: "React Fundamentals",
-    questions: [
-      { id: 1, text: "What hook is used to manage local state in functional components?", options: ["useEffect", "useState", "useContext", "useReducer"], correct: 1 },
-      { id: 2, text: "Which method is used to pass data deeply through the component tree without passing props down manually at every level?", options: ["Context API", "Redux", "Prop drilling", "Portals"], correct: 0 },
-      { id: 3, text: "What is the virtual DOM?", options: ["A direct copy of the real DOM", "A lightweight copy of the real DOM kept in memory", "A React native plugin", "A browser API"], correct: 1 },
-    ]
+  useEffect(() => {
+    fetchQuizzes();
+  }, []);
+
+  const fetchQuizzes = async () => {
+    setLoading(true);
+    try {
+      const { data } = await api.get('/quizzes');
+      setQuizzes(data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -41,15 +46,20 @@ export function Quizzes() {
     return () => clearInterval(timer);
   }, [view, timeLeft]);
 
-  const handleStart = () => {
+  const handleStart = async (quizId: string) => {
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setView('taking');
-      setTimeLeft(600);
+    try {
+      const { data } = await api.get('/quizzes/' + quizId);
+      setCurrentQuizData(data);
+      setTimeLeft(data.timeLimit ? data.timeLimit * 60 : 600);
       setActiveQuestion(0);
       setSelectedAnswers({});
-    }, 1000);
+      setView('taking');
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSelect = (optionIdx: number) => {
@@ -64,12 +74,28 @@ export function Quizzes() {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const answersOutput = currentQuizData.questions.map((q: any, i: number) => ({
+        questionId: q._id,
+        userAnswerIndex: selectedAnswers[i]
+      }));
+      const timeSpent = (currentQuizData.timeLimit ? currentQuizData.timeLimit * 60 : 600) - timeLeft;
+
+      const { data } = await api.post('/quizzes/' + currentQuizData._id + '/submit', {
+        answers: answersOutput,
+        timeSpent
+      });
+      
+      setQuizResult(data);
       setView('results');
-    }, 1500);
+    } catch (error) {
+      console.error(error);
+      setView('list');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const formatTime = (seconds: number) => {
@@ -78,7 +104,7 @@ export function Quizzes() {
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
-  if (loading) {
+  if (loading && view === 'list') {
     return (
       <div className="space-y-6">
         <Skeleton className="h-12 w-64" />
@@ -87,7 +113,15 @@ export function Quizzes() {
     );
   }
 
-  if (view === 'taking') {
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Card><CardContent className="p-12 text-center"><h3>Loading...</h3></CardContent></Card>
+      </div>
+    );
+  }
+
+  if (view === 'taking' && currentQuizData) {
     const q = currentQuizData.questions[activeQuestion];
     return (
       <div className="max-w-3xl mx-auto space-y-6">
@@ -104,11 +138,11 @@ export function Quizzes() {
           <CardContent className="p-8 sm:p-12">
             <Badge variant="outline" className="mb-6">Question {activeQuestion + 1} of {currentQuizData.questions.length}</Badge>
             <h3 className="text-xl font-medium text-slate-900 dark:text-white mb-8 leading-relaxed">
-              {q.text}
+              {q.questionText || q.text}
             </h3>
             
             <div className="space-y-3">
-              {q.options.map((opt, idx) => (
+              {q.options?.map((opt: string, idx: number) => (
                 <button
                   key={idx}
                   onClick={() => handleSelect(idx)}
@@ -146,12 +180,8 @@ export function Quizzes() {
     );
   }
 
-  if (view === 'results') {
-    // Calculate score
-    const correctAnswers = currentQuizData.questions.reduce((acc, q, idx) => {
-      return acc + (selectedAnswers[idx] === q.correct ? 1 : 0);
-    }, 0);
-    const scorePct = Math.round((correctAnswers / currentQuizData.questions.length) * 100);
+  if (view === 'results' && currentQuizData && quizResult) {
+    const scorePct = Math.round((quizResult.score / quizResult.totalPoints) * 100) || 0;
 
     return (
       <div className="max-w-3xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -161,6 +191,7 @@ export function Quizzes() {
           </div>
           <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Quiz Completed!</h2>
           <p className="text-lg text-slate-500">You scored <strong className="text-indigo-600">{scorePct}%</strong></p>
+          {quizResult.xpEarned > 0 && <p className="text-md text-purple-600 font-bold">+{quizResult.xpEarned} XP Earned!</p>}
         </div>
 
         <Card>
@@ -168,22 +199,22 @@ export function Quizzes() {
             <CardTitle>Detailed Breakdown</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {currentQuizData.questions.map((q, idx) => {
-              const isCorrect = selectedAnswers[idx] === q.correct;
+            {currentQuizData.questions.map((q: any, idx: number) => {
+              const isCorrect = quizResult.answers[idx]?.isCorrect;
               return (
                 <div key={idx} className={`p-4 rounded-lg border ${isCorrect ? 'border-emerald-200 bg-emerald-50/50 dark:bg-emerald-900/10 dark:border-emerald-900/50' : 'border-red-200 bg-red-50/50 dark:bg-red-900/10 dark:border-red-900/50'}`}>
                   <div className="flex gap-3">
                     {isCorrect ? <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" /> : <HelpCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />}
                     <div>
-                      <p className="font-medium text-slate-900 dark:text-white mb-2">{q.text}</p>
+                      <p className="font-medium text-slate-900 dark:text-white mb-2">{q.questionText}</p>
                       <p className="text-sm">
                         <span className="text-slate-500">Your answer: </span>
-                        <span className={`font-semibold ${isCorrect ? 'text-emerald-600' : 'text-red-600 line-through'}`}>{q.options[selectedAnswers[idx]]}</span>
+                        <span className={`font-semibold ${isCorrect ? 'text-emerald-600' : 'text-red-600 line-through'}`}>{q.options ? q.options[selectedAnswers[idx] as number] : selectedAnswers[idx]}</span>
                       </p>
                       {!isCorrect && (
                         <p className="text-sm mt-1">
                           <span className="text-slate-500">Correct answer: </span>
-                          <span className="font-semibold text-emerald-600">{q.options[q.correct]}</span>
+                          <span className="font-semibold text-emerald-600">{q.options[q.correctAnswerIndex]}</span>
                         </p>
                       )}
                     </div>
@@ -195,8 +226,8 @@ export function Quizzes() {
         </Card>
 
         <div className="flex justify-center gap-4">
-          <Button variant="outline" onClick={() => setView('list')}>Back to Quizzes</Button>
-          <Button onClick={handleStart}><RotateCcw className="h-4 w-4 mr-2" /> Retake Quiz</Button>
+          <Button variant="outline" onClick={() => { setView('list'); fetchQuizzes(); }}>Back to Quizzes</Button>
+          <Button onClick={() => handleStart(currentQuizData._id)}><RotateCcw className="h-4 w-4 mr-2" /> Retake Quiz</Button>
         </div>
       </div>
     );
@@ -210,38 +241,31 @@ export function Quizzes() {
         <p className="text-slate-500 dark:text-slate-400">Test your understanding of the course material.</p>
       </div>
 
+      {quizzes.length === 0 && !loading && (
+          <p className="text-slate-500">No quizzes available.</p>
+      )}
+
       <div className="grid gap-4">
         {quizzes.map((quiz) => (
-          <Card key={quiz.id} className={`transition-all ${quiz.status === 'locked' ? 'opacity-60 bg-slate-50 dark:bg-slate-900/50' : 'hover:border-indigo-200 hover:shadow-sm dark:hover:border-indigo-800'}`}>
+          <Card key={quiz._id} className={`transition-all hover:border-indigo-200 hover:shadow-sm dark:hover:border-indigo-800`}>
             <CardContent className="p-5 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
               <div className="flex-1 space-y-1">
                 <div className="flex items-center gap-2">
-                  <Badge variant={quiz.status === 'completed' ? 'success' : quiz.status === 'locked' ? 'secondary' : 'default'} className="text-[10px] uppercase">
-                    {quiz.status}
+                  <Badge variant={quiz.isPublished ? 'outline' : 'secondary'} className="text-[10px] uppercase">
+                    {quiz.isPublished ? 'Available' : 'Draft'}
                   </Badge>
-                  <span className="text-xs font-medium text-slate-500">{quiz.module}</span>
+                  <span className="text-xs font-medium text-slate-500">{quiz.course?.title}</span>
                 </div>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white">{quiz.title}</h3>
                 <div className="flex items-center gap-4 text-sm text-slate-500">
-                  <span className="flex items-center gap-1"><HelpCircle className="h-4 w-4" /> {quiz.questions} Questions</span>
-                  <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> {quiz.duration}</span>
+                  <span className="flex items-center gap-1"><HelpCircle className="h-4 w-4" /> {quiz.questions?.length || 0} Questions</span>
+                  <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> {quiz.timeLimit || 'No limit'} mins</span>
                 </div>
               </div>
               
               <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
-                {quiz.score !== null && (
-                  <div className="text-right">
-                    <span className="block text-xs text-slate-500">Best Score</span>
-                    <span className="text-lg font-bold text-emerald-500">{quiz.score}%</span>
-                  </div>
-                )}
-                <Button 
-                  onClick={handleStart} 
-                  disabled={quiz.status === 'locked'}
-                  variant={quiz.status === 'completed' ? 'outline' : 'default'}
-                >
-                  {quiz.status === 'completed' ? 'Retake' : quiz.status === 'locked' ? 'Locked' : 'Start Quiz'}
-                  {quiz.status !== 'locked' && <ChevronRight className="h-4 w-4 ml-1" />}
+                <Button onClick={() => handleStart(quiz._id)} >
+                  Start Quiz <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               </div>
             </CardContent>
