@@ -138,3 +138,31 @@ export const getQuizResults = asyncHandler(async (req: AuthRequest, res: Respons
 
   res.json(results);
 });
+
+export const getQuizzes = asyncHandler(async (req: AuthRequest, res: Response) => {
+    let filter: any = { isDeleted: false };
+    if (req.user.role === 'student') {
+        filter.isPublished = true;
+    } else if (req.user.role === 'instructor') {
+        const instructorCourses = await Course.find({ instructor: req.user._id }).select('_id');
+        filter.course = { $in: instructorCourses.map(c => c._id) };
+    }
+    const quizzes = await Quiz.find(filter).populate('course', 'title coverImage').sort({ createdAt: -1 });
+    res.json(quizzes);
+});
+
+export const getQuizById = asyncHandler(async (req: AuthRequest, res: Response) => {
+    const quiz = await Quiz.findById(req.params.id).populate('course', 'title');
+    if (!quiz) {
+        res.status(404);
+        throw new Error('Quiz not found');
+    }
+    // Remove correct answers if student
+    if (req.user.role === 'student') {
+        quiz.questions.forEach(q => {
+            q.correctAnswerIndex = undefined;
+            q.correctAnswerText = undefined;
+        });
+    }
+    res.json(quiz);
+});

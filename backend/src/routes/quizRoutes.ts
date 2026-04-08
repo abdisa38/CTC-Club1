@@ -1,8 +1,11 @@
 import express from 'express';
 import { protect, authorizeRoles } from '../middleware/authMiddleware';
-import { createQuiz, submitQuiz, getQuizResults } from '../controllers/quizController';
+import { createQuiz, submitQuiz, getQuizResults, getQuizzes, getQuizById } from '../controllers/quizController';
 
 const router = express.Router();
+
+router.get('/', protect as any, getQuizzes as any);
+router.get('/:id', protect as any, getQuizById as any);
 
 router.post('/', protect as any, authorizeRoles('instructor', 'admin'), createQuiz as any);
 router.post('/:id/submit', protect as any, submitQuiz as any);
