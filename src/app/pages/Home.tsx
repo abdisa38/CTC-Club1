@@ -194,7 +194,7 @@ export function Home() {
           const mappedCourses = coursesRes.data.courses.map((c: any) => ({
             id: c._id,
             title: c.title,
-            instructor: c.instructor?.name || 'CTC Instructor',
+            instructor: c.instructor?.name || 'Command Line ',
             rating: c.rating || 4.5,
             students: c.students?.length + 'k' || '1.1k',
             category: c.category || 'Tech',
