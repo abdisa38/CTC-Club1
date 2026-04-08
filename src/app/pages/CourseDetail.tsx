@@ -282,55 +282,57 @@ export function CourseDetail() {
         <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
           <h3 className="font-semibold text-lg text-slate-900 dark:text-white mb-2">Course Content</h3>
           <div className="flex justify-between items-center text-sm mb-1 text-slate-600 dark:text-slate-400">
-            <span>Progress: {course.progress}%</span>
-            <span>{isEnrolled ? "2" : "0"} / 12 Lessons</span>
+            <span>Progress: {progress}%</span>
+            <span>{isEnrolled ? "1" : "0"} / {lessons?.length || 0} Lessons</span>
           </div>
-          <Progress value={course.progress} className="h-2" />
+          <Progress value={progress} className="h-2" />
         </div>
         
         <div className="flex-1 overflow-y-auto">
-          {course.modules.map((module) => (
-            <div key={module.id} className="border-b border-slate-200 dark:border-slate-800 last:border-0">
-              <button className="w-full flex items-center justify-between p-4 bg-slate-50/50 hover:bg-slate-100 dark:bg-slate-900/30 dark:hover:bg-slate-900 transition-colors">
-                <div className="text-left">
-                  <h4 className="font-semibold text-sm text-slate-900 dark:text-white">{module.title}</h4>
-                  <p className="text-xs text-slate-500 mt-0.5">{module.lessons.length} lessons • {module.duration}</p>
-                </div>
-                <ChevronRight className="h-5 w-5 text-slate-400 rotate-90" />
-              </button>
-              <div className="bg-white dark:bg-slate-950 divide-y divide-slate-100 dark:divide-slate-800/50">
-                {module.lessons.map((lesson) => (
-                  <button 
-                    key={lesson.id} 
-                    className={`w-full flex items-start gap-3 p-4 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors text-left ${
-                      lesson.locked ? "opacity-60 cursor-not-allowed" : ""
-                    }`}
-                  >
-                    <div className="mt-0.5">
-                      {lesson.completed ? (
-                        <CheckCircle className="h-5 w-5 text-emerald-500" />
-                      ) : lesson.locked ? (
-                        <Lock className="h-5 w-5 text-slate-400" />
-                      ) : (
-                        <PlayCircle className="h-5 w-5 text-indigo-500" />
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <p className={`text-sm ${
-                        lesson.locked ? "text-slate-500" : "font-medium text-slate-900 dark:text-white"
-                      }`}>
-                        {lesson.title}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
-                        {lesson.type === 'video' ? <PlayCircle className="h-3 w-3" /> : <FileText className="h-3 w-3" />}
-                        <span>{lesson.duration}</span>
-                      </div>
-                    </div>
-                  </button>
-                ))}
+          <div className="border-b border-slate-200 dark:border-slate-800 last:border-0">
+            <button className="w-full flex items-center justify-between p-4 bg-slate-50/50 hover:bg-slate-100 dark:bg-slate-900/30 dark:hover:bg-slate-900 transition-colors">
+              <div className="text-left">
+                <h4 className="font-semibold text-sm text-slate-900 dark:text-white">All Lectures</h4>
+                <p className="text-xs text-slate-500 mt-0.5">{lessons?.length || 0} lessons</p>
               </div>
+              <ChevronRight className="h-5 w-5 text-slate-400 rotate-90" />
+            </button>
+            <div className="bg-white dark:bg-slate-950 divide-y divide-slate-100 dark:divide-slate-800/50">
+              {lessons?.length > 0 ? lessons.map((lesson: any, i: number) => (
+                <button 
+                  key={lesson._id} 
+                  className={`w-full flex items-start gap-3 p-4 hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors text-left ${
+                    !isEnrolled && !isInstructor ? "opacity-60 cursor-not-allowed" : ""
+                  }`}
+                >
+                  <div className="mt-0.5">
+                    {isEnrolled && i === 0 ? (
+                      <CheckCircle className="h-5 w-5 text-emerald-500" />
+                    ) : (!isEnrolled && !isInstructor) ? (
+                      <Lock className="h-5 w-5 text-slate-400" />
+                    ) : (
+                      <PlayCircle className="h-5 w-5 text-indigo-500" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className={`text-sm ${
+                      (!isEnrolled && !isInstructor) ? "text-slate-500" : "font-medium text-slate-900 dark:text-white"
+                    }`}>
+                      {lesson.title}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
+                      <PlayCircle className="h-3 w-3" />
+                      <span>{lesson.duration || '10m'}</span>
+                    </div>
+                  </div>
+                </button>
+              )) : (
+                <div className="p-6 text-center text-slate-500 text-sm">
+                  {isInstructor ? "Add lessons to this course view the instructor dashboard!" : "No lessons available yet."}
+                </div>
+              )}
             </div>
-          ))}
+          </div>
         </div>
       </div>
     </div>
