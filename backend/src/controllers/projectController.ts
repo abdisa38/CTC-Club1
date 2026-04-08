@@ -4,6 +4,72 @@ import { AuthRequest } from '../middleware/authMiddleware';
 import { Project, ProjectSubmission } from '../models/projectModel';
 import User from '../models/userModel';
 import Course from '../models/courseModel';
+import { sendSuccess } from '../utils/apiResponse';
+
+// @desc    Get projects based on role
+// @route   GET /api/projects
+// @access  Private
+export const getProjects = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const courseId = req.query.courseId as string | undefined;
+
+  let filter: any = { isDeleted: false };
+  if (courseId) {
+    filter.course = courseId;
+  }
+
+  if (req.user.role === 'student') {
+    filter.isPublished = true;
+  }
+
+  if (req.user.role === 'instructor') {
+    const instructorCourses = await Course.find({ instructor: req.user._id, isDeleted: false }).select('_id');
+    const courseIds = instructorCourses.map((c) => c._id);
+
+    if (courseId) {
+      const hasAccess = courseIds.some((id) => id.toString() === courseId.toString());
+      if (!hasAccess) {
+        filter.course = null;
+      }
+    } else {
+      filter.course = { $in: courseIds };
+    }
+  }
+
+  const projects = await Project.find(filter)
+    .populate('course', 'title')
+    .sort({ createdAt: -1 });
+
+  sendSuccess(res, projects);
+});
+
+// @desc    Get project submissions for role
+// @route   GET /api/projects/submissions
+// @access  Private
+export const getProjectSubmissions = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const projectId = req.query.projectId as string | undefined;
+  let filter: any = {};
+
+  if (projectId) {
+    filter.project = projectId;
+  }
+
+  if (req.user.role === 'student') {
+    filter.student = req.user._id;
+  }
+
+  if (req.user.role === 'instructor') {
+    const instructorCourses = await Course.find({ instructor: req.user._id, isDeleted: false }).select('_id');
+    filter.course = { $in: instructorCourses.map((c) => c._id) };
+  }
+
+  const submissions = await ProjectSubmission.find(filter)
+    .populate('student', 'name email avatar')
+    .populate('project', 'title maxPoints xpReward')
+    .populate('course', 'title')
+    .sort({ updatedAt: -1 });
+
+  sendSuccess(res, submissions);
+});
 
 // @desc    Create a project
 // @route   POST /api/projects
@@ -36,8 +102,8 @@ export const createProject = asyncHandler(async (req: AuthRequest, res: Response
     deadline,
     isPublished: isPublished ?? false
   });
-  
-  res.status(201).json(project);
+
+  sendSuccess(res, project, { statusCode: 201, message: 'Project created successfully' });
 });
 
 // @desc    Submit a project
@@ -68,7 +134,8 @@ export const submitProject = asyncHandler(async (req: AuthRequest, res: Response
     existingSubmission.status = 'submitted';
     
     await existingSubmission.save();
-    return res.status(200).json(existingSubmission);
+    sendSuccess(res, existingSubmission, { message: 'Project submission updated' });
+    return;
   }
 
   const submission = await ProjectSubmission.create({
@@ -82,7 +149,7 @@ export const submitProject = asyncHandler(async (req: AuthRequest, res: Response
     status: 'submitted'
   });
 
-  res.status(201).json(submission);
+  sendSuccess(res, submission, { statusCode: 201, message: 'Project submitted successfully' });
 });
 
 // @desc    Review and Grade a projected
@@ -123,5 +190,5 @@ export const reviewProject = asyncHandler(async (req: AuthRequest, res: Response
   }
 
   await submission.save();
-  res.json(submission);
+  sendSuccess(res, submission, { message: 'Project reviewed successfully' });
 });
