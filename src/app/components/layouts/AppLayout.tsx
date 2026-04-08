@@ -261,16 +261,19 @@ export function AppLayout() {
               <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-lg border-slate-200/60 dark:border-white/10">
                 <DropdownMenuLabel>
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-semibold leading-none capitalize">{role} User</p>
-                    <p className="text-xs leading-none text-slate-500">{role}@university.edu</p>
+                    <p className="text-sm font-semibold leading-none capitalize">{user.name}</p>
+                    <p className="text-xs leading-none text-slate-500">{user.email}</p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild className="rounded-lg"><Link to="/app/profile">Profile</Link></DropdownMenuItem>
                 <DropdownMenuItem asChild className="rounded-lg"><Link to="/app/settings">Settings</Link></DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild className="rounded-lg text-red-600 focus:text-red-600">
-                  <Link to="/login" className="flex items-center gap-2"><LogOut className="h-4 w-4" />Log out</Link>
+                <DropdownMenuItem 
+                  onClick={() => logout()} 
+                  className="rounded-lg text-red-600 focus:text-red-600 cursor-pointer flex items-center gap-2"
+                >
+                  <LogOut className="h-4 w-4" />Log out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
