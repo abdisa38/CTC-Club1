@@ -2,6 +2,7 @@ import { Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import { AuthRequest } from '../middleware/authMiddleware';
 import Ticket from '../models/ticketModel';
+import { sendSuccess } from '../utils/apiResponse';
 
 // @desc    Create a support ticket
 // @route   POST /api/support/tickets
@@ -21,7 +22,7 @@ export const submitTicket = asyncHandler(async (req: AuthRequest, res: Response)
       }]
   });
 
-  res.status(201).json(ticket);
+    sendSuccess(res, ticket, { statusCode: 201, message: 'Ticket submitted successfully' });
 });
 
 // @desc    Get list of tickets (user sees own, admin sees all)
@@ -45,7 +46,14 @@ export const getTickets = asyncHandler(async (req: AuthRequest, res: Response) =
       .limit(pageSize)
       .skip(pageSize * (page - 1));
 
-  res.json({ tickets, page, pages: Math.ceil(count / pageSize) });
+    res.json({
+        success: true,
+        data: tickets,
+        tickets,
+        page,
+        pages: Math.ceil(count / pageSize),
+        total: count,
+    });
 });
 
 // @desc    Get singular ticket by ID
@@ -67,7 +75,7 @@ export const getTicketById = asyncHandler(async (req: AuthRequest, res: Response
         throw new Error('Not authorized to view this ticket');
     }
 
-    res.json(ticket);
+    sendSuccess(res, ticket);
 });
 
 
@@ -107,7 +115,7 @@ export const replyTicket = asyncHandler(async (req: AuthRequest, res: Response) 
 
   await ticket.save();
 
-  res.json(ticket);
+    sendSuccess(res, ticket, { message: 'Reply sent successfully' });
 });
 
 
@@ -126,5 +134,5 @@ export const changeTicketStatus = asyncHandler(async (req: AuthRequest, res: Res
     ticket.status = status;
     await ticket.save();
 
-    res.json(ticket);
+    sendSuccess(res, ticket, { message: 'Ticket status updated' });
 });
