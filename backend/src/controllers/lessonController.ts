@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/authMiddleware';
 import Lesson from '../models/lessonModel';
 import Course from '../models/courseModel';
+import { sendSuccess } from '../utils/apiResponse';
 
 // @desc    Add a lesson to a course
 // @route   POST /api/courses/:courseId/lessons
@@ -30,7 +31,7 @@ export const addLesson = async (req: AuthRequest, res: Response) => {
       course: courseId,
     });
 
-    res.status(201).json(lesson);
+    sendSuccess(res, lesson, { statusCode: 201, message: 'Lesson created successfully' });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
@@ -60,7 +61,7 @@ export const updateLesson = async (req: AuthRequest, res: Response) => {
     lesson.order = order !== undefined ? order : lesson.order;
 
     const updatedLesson = await lesson.save();
-    res.json(updatedLesson);
+    sendSuccess(res, updatedLesson, { message: 'Lesson updated successfully' });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
@@ -84,7 +85,7 @@ export const deleteLesson = async (req: AuthRequest, res: Response) => {
     }
 
     await lesson.deleteOne();
-    res.json({ message: 'Lesson removed' });
+    sendSuccess(res, null, { message: 'Lesson removed' });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
@@ -98,7 +99,7 @@ export const getLessonsByCourse = async (req: AuthRequest, res: Response) => {
     const courseId = req.params.courseId;
     // For a fully secure app, check if user is enrolled. For now, just return them.
     const lessons = await Lesson.find({ course: courseId }).sort({ order: 1 });
-    res.json(lessons);
+    sendSuccess(res, lessons);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

@@ -3,6 +3,7 @@ import asyncHandler from 'express-async-handler';
 import { AuthRequest } from '../middleware/authMiddleware';
 import Course from '../models/courseModel';
 import User from '../models/userModel';
+import { sendSuccess } from '../utils/apiResponse';
 
 // @desc    Create a course
 // @route   POST /api/courses
@@ -19,7 +20,7 @@ export const createCourse = asyncHandler(async (req: AuthRequest, res: Response)
     price,
   });
 
-  res.status(201).json(course);
+  sendSuccess(res, course, { statusCode: 201, message: 'Course created successfully' });
 });
 
 // @desc    Get all courses
@@ -54,7 +55,14 @@ export const getCourses = asyncHandler(async (req: AuthRequest, res: Response) =
     .limit(pageSize)
     .skip(pageSize * (page - 1));
 
-  res.json({ courses, page, pages: Math.ceil(count / pageSize) });
+  res.json({
+    success: true,
+    data: courses,
+    courses,
+    page,
+    pages: Math.ceil(count / pageSize),
+    total: count,
+  });
 });
 
 // @desc    Get singular course
@@ -66,7 +74,7 @@ export const getCourseById = asyncHandler(async (req: AuthRequest, res: Response
     .slice('students', 10); // Only bring back first 10 students if ever needed for preview, prevents memory overload
 
   if (course) {
-    res.json(course);
+    sendSuccess(res, course);
   } else {
     res.status(404);
     throw new Error('Course not found');
@@ -98,7 +106,7 @@ export const updateCourse = asyncHandler(async (req: AuthRequest, res: Response)
   course.price = price !== undefined ? price : course.price;
 
   const updatedCourse = await course.save();
-  res.json(updatedCourse);
+  sendSuccess(res, updatedCourse, { message: 'Course updated successfully' });
 });
 
 // @desc    Delete a course
@@ -118,7 +126,7 @@ export const deleteCourse = asyncHandler(async (req: AuthRequest, res: Response)
   }
 
   await course.deleteOne();
-  res.json({ message: 'Course removed' });
+  sendSuccess(res, null, { message: 'Course removed' });
 });
 
 // @desc    Enroll in a course
@@ -137,5 +145,9 @@ export const enrollCourse = asyncHandler(async (req: AuthRequest, res: Response)
     throw new Error('Course not found');
   }
 
-  res.status(200).json({ message: 'Successfully enrolled in course' });
+  await User.findByIdAndUpdate(req.user._id, {
+    $addToSet: { enrolledCourses: course._id },
+  });
+
+  sendSuccess(res, course, { message: 'Successfully enrolled in course' });
 });

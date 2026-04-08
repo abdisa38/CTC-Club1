@@ -4,6 +4,7 @@ import { AuthRequest } from '../middleware/authMiddleware';
 import { Quiz, QuizResult } from '../models/quizModel';
 import Course from '../models/courseModel';
 import User from '../models/userModel';
+import { sendSuccess } from '../utils/apiResponse';
 
 export const createQuiz = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { title, description, courseId, lessonId, questions, passingScore, timeLimit, maxAttempts, xpReward, isPublished } = req.body;
@@ -32,8 +33,8 @@ export const createQuiz = asyncHandler(async (req: AuthRequest, res: Response) =
     xpReward: xpReward || 10,
     isPublished: isPublished ?? false
   });
-  
-  res.status(201).json(quiz);
+
+  sendSuccess(res, quiz, { statusCode: 201, message: 'Quiz created successfully' });
 });
 
 export const submitQuiz = asyncHandler(async (req: AuthRequest, res: Response) => {
@@ -121,7 +122,7 @@ export const submitQuiz = asyncHandler(async (req: AuthRequest, res: Response) =
       });
   }
 
-  res.status(201).json(result);
+  sendSuccess(res, result, { statusCode: 201, message: 'Quiz submitted successfully' });
 });
 
 export const getQuizResults = asyncHandler(async (req: AuthRequest, res: Response) => {
@@ -136,7 +137,7 @@ export const getQuizResults = asyncHandler(async (req: AuthRequest, res: Respons
     .populate('user', 'name email avatar')
     .sort({ createdAt: -1 });
 
-  res.json(results);
+  sendSuccess(res, results);
 });
 
 export const getQuizzes = asyncHandler(async (req: AuthRequest, res: Response) => {
@@ -148,7 +149,7 @@ export const getQuizzes = asyncHandler(async (req: AuthRequest, res: Response) =
         filter.course = { $in: instructorCourses.map(c => c._id) };
     }
     const quizzes = await Quiz.find(filter).populate('course', 'title coverImage').sort({ createdAt: -1 });
-    res.json(quizzes);
+    sendSuccess(res, quizzes);
 });
 
 export const getQuizById = asyncHandler(async (req: AuthRequest, res: Response) => {
@@ -167,5 +168,5 @@ export const getQuizById = asyncHandler(async (req: AuthRequest, res: Response) 
             q.correctAnswerText = undefined;
         });
     }
-    res.json(quiz);
+    sendSuccess(res, quiz);
 });
