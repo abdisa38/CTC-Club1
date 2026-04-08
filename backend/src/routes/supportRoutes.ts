@@ -13,3 +13,4 @@ router.get('/:id', protect as any, getTicketById as any);
 // Users can reply too now, auth checks ownership in the controller
 router.post('/:id/reply', protect as any, replyTicket as any); 
 router.put('/:id/status', protect as any, authorizeRoles('admin'), changeTicketStatus as any);
+export default router;
