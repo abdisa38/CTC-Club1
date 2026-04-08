@@ -2,10 +2,15 @@ import { Link, useNavigate } from 'react-router';
 import { Trophy, Mail, Lock, User, Phone, MessageCircle, CheckCircle, BookOpen } from 'lucide-react';
 import { useState } from 'react';
 import { getExamCountByCategory, getGamingQuestionCountByCategory } from '../data/mockData';
+import { useAuth } from '../context/AuthContext';
+import api from '../utils/api';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [step, setStep] = useState(1); // Multi-step form
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -52,17 +57,26 @@ export default function RegisterPage() {
     setShowResourceCount(true);
   };
 
-  const handleFinalSubmit = () => {
-    // In a real app, this would register with backend
-    console.log('Registration data:', {
-      name,
-      email,
-      password,
-      phone,
-      telegramId,
-      preferredCategories,
-    });
-    navigate('/student/dashboard');
+  const handleFinalSubmit = async () => {
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const response = await api.post('/auth/register', {
+        name,
+        email,
+        password,
+        role: 'student'
+      });
+      login(response.data);
+      navigate('/student/dashboard');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Registration failed. Please try again.');
+      setStep(1); // Go back to step 1 to show error
+      setShowResourceCount(false);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const getTotalResources = () => {
@@ -121,6 +135,12 @@ export default function RegisterPage() {
             <>
               <h1 className="text-2xl font-bold text-center mb-2 text-black">Create Account</h1>
               <p className="text-center text-gray-600 mb-8">Start your learning journey today</p>
+
+              {error && (
+                <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm text-center">
+                  {error}
+                </div>
+              )}
 
               <form onSubmit={handleStep1Submit} className="space-y-5">
                 {/* Name */}
@@ -386,9 +406,10 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={handleFinalSubmit}
-                  className="flex-1 py-3 px-4 bg-primary hover:bg-red-700 text-white rounded-lg font-semibold transition"
+                  disabled={isLoading}
+                  className={`flex-1 py-3 px-4 ${isLoading ? 'bg-red-400' : 'bg-primary hover:bg-red-700'} text-white rounded-lg font-semibold transition`}
                 >
-                  Complete Registration
+                  {isLoading ? 'Creating Account...' : 'Complete Registration'}
                 </button>
               </div>
             </>
