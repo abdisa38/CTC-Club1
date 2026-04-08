@@ -14,18 +14,43 @@ export const getDashboardMetrics = asyncHandler(async (req: AuthRequest, res: Re
     const role = req.user.role;
 
     if (role === 'admin') {
-        const totalUsers = await User.countDocuments({ isDeleted: false });     
+        const totalUsers = await User.countDocuments({ isDeleted: false });
         const totalCourses = await Course.countDocuments({ isDeleted: false }); 
         const openTickets = await Ticket.countDocuments({ status: { $in: ['open', 'in_progress'] } });
-        const totalRevenue = await Course.aggregate([
+        
+        const totalRevenueResult = await Course.aggregate([
              { $match: { isDeleted: false } },
-             { $group: { _id: null, total: { $sum: "$price" } } } // Assuming revenue = sum of all course prices (simplification without a payment/order model) 
+             { $group: { _id: null, total: { $sum: "$price" } } }
         ]);
+
+        const recentUsers = await User.find({ isDeleted: false }).sort({ createdAt: -1 }).limit(10).select('-password');
+
+        // Simple mock aggregations for charts until fully implemented
+        const userActivityData = [
+          { name: 'Mon', active: Math.floor(Math.random() * 5000) },
+          { name: 'Tue', active: Math.floor(Math.random() * 5000) },
+          { name: 'Wed', active: Math.floor(Math.random() * 5000) },
+          { name: 'Thu', active: Math.floor(Math.random() * 5000) },
+          { name: 'Fri', active: Math.floor(Math.random() * 5000) },
+          { name: 'Sat', active: Math.floor(Math.random() * 5000) },
+          { name: 'Sun', active: Math.floor(Math.random() * 5000) },
+        ];
+
+        const courseCompletionData = [
+          { name: 'Web Dev', completed: Math.floor(Math.random() * 150) },
+          { name: 'Data Sci', completed: Math.floor(Math.random() * 150) },
+          { name: 'Security', completed: Math.floor(Math.random() * 150) },
+          { name: 'Mobile', completed: Math.floor(Math.random() * 150) },
+          { name: 'Cloud', completed: Math.floor(Math.random() * 150) },
+        ];
 
         res.json({
             totals: { users: totalUsers, courses: totalCourses },
             openTickets,
-            totalRevenue: totalRevenue[0]?.total || 0,
+            totalRevenue: totalRevenueResult[0]?.total || 0,
+            recentUsers,
+            userActivityData,
+            courseCompletionData
         });
         return;
     } 
