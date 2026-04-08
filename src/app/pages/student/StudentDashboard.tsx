@@ -65,7 +65,7 @@ const notifications = [
   { id: 3, text: "Hackathon registration open!", time: "Yesterday", unread: false },
 ];
 
-export function StudentDashboard() {
+export function StudentDashboard({ metrics }: { metrics?: any }) {
   const [loading, setLoading] = useState(true);
   const [showBadgePopup, setShowBadgePopup] = useState(false);
 
@@ -100,10 +100,10 @@ export function StudentDashboard() {
     );
   }
 
-  const xp = 2450;
-  const level = 8;
-  const xpToNext = 3000;
-  const streak = 12;
+  const xp = metrics?.xp || 0;
+  const level = Math.floor(xp / 1000) + 1;
+  const xpToNext = level * 1000;
+  const streak = metrics?.activeStreak || 0;
 
   return (
     <div className="space-y-6">
@@ -131,7 +131,7 @@ export function StudentDashboard() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-            Welcome back, Alex! 👋
+            Welcome back, Student! 👋
           </h1>
           <p className="text-slate-500 dark:text-slate-400">Here's your learning journey at a glance.</p>
         </div>
@@ -148,8 +148,8 @@ export function StudentDashboard() {
       {/* Stats Row */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { title: "Courses in Progress", value: "4", icon: PlayCircle, color: "text-blue-500", bg: "bg-blue-50 dark:bg-blue-900/20" },
-          { title: "Completed Courses", value: "12", icon: GraduationCap, color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
+          { title: "Courses in Progress", value: metrics?.enrolledCourses || 0, icon: PlayCircle, color: "text-blue-500", bg: "bg-blue-50 dark:bg-blue-900/20" },
+          { title: "Completed Courses", value: metrics?.completedCourses || 0, icon: GraduationCap, color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
           { title: "Learning Hours", value: "148h", icon: Clock, color: "text-orange-500", bg: "bg-orange-50 dark:bg-orange-900/20" },
           { title: "Global Rank", value: "#12", icon: Trophy, color: "text-purple-500", bg: "bg-purple-50 dark:bg-purple-900/20" },
         ].map((stat, i) => (

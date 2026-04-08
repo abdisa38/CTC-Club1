@@ -35,7 +35,7 @@ type User = {
   joined: string;
 };
 
-export function AdminDashboard() {
+export function AdminDashboard({ metrics }: { metrics?: any }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [users, setUsers] = useState<User[]>([
     { id: 1, name: "Alex Chen", role: "Student", status: "Active", joined: "2026-08-15" },
@@ -87,7 +87,7 @@ export function AdminDashboard() {
             <Users className="h-4 w-4 text-slate-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900 dark:text-white">12,450</div>
+            <div className="text-2xl font-bold text-slate-900 dark:text-white">{metrics?.totals?.users || "12,450"}</div>
             <p className="text-xs text-emerald-500 font-medium">+180 from last month</p>
           </CardContent>
         </Card>
@@ -97,7 +97,7 @@ export function AdminDashboard() {
             <BookOpen className="h-4 w-4 text-slate-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900 dark:text-white">145</div>
+            <div className="text-2xl font-bold text-slate-900 dark:text-white">{metrics?.totals?.courses || "145"}</div>
             <p className="text-xs text-emerald-500 font-medium">+4 new this week</p>
           </CardContent>
         </Card>

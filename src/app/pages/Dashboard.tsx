@@ -5,28 +5,53 @@ import { Progress } from "../components/ui/Progress";
 import { Badge } from "../components/ui/Badge";
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/Avatar";
 import { 
-  PlayCircle, Clock, Award, TrendingUp, Calendar, BookOpen, Users, Star, CheckCircle, FileText, MessageSquare, DollarSign, Bell
+  PlayCircle, Clock, Award, TrendingUp, Calendar, BookOpen, Users, Star, CheckCircle, FileText, MessageSquare, DollarSign, Bell, Loader2
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { AdminDashboard } from "./AdminDashboard";
 import { StudentDashboard } from "./student/StudentDashboard";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
-
+import { useEffect, useState } from "react";
+import api from "../utils/api";
 export function Dashboard() {
   const { role } = useAuth();
+  const [metrics, setMetrics] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      try {
+        const { data } = await api.get('/dashboard/metrics');
+        setMetrics(data);
+      } catch (error) {
+        console.error("Failed to fetch dashboard metrics", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchMetrics();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+      </div>
+    );
+  }
 
   if (role === 'admin') {
-    return <AdminDashboard />;
+    return <AdminDashboard metrics={metrics} />;
   }
 
   if (role === 'instructor') {
-    return <InstructorDashboard />;
+    return <InstructorDashboard metrics={metrics} />;
   }
 
-  return <StudentDashboard />;
+  return <StudentDashboard metrics={metrics} />;
 }
 
-function InstructorDashboard() {
+function InstructorDashboard({ metrics }: { metrics?: any }) {
   const analyticsData = [
     { name: 'Mon', views: 400, enrollments: 24 },
     { name: 'Tue', views: 300, enrollments: 13 },
@@ -59,9 +84,9 @@ function InstructorDashboard() {
       {/* Instructor Stats Overview */}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { title: "Total Revenue", value: "$12,450", change: "+14%", icon: DollarSign, color: "text-emerald-500", bg: "bg-emerald-100" },
-          { title: "Total Students", value: "3,248", change: "+12%", icon: Users, color: "text-blue-500", bg: "bg-blue-100" },
-          { title: "Active Courses", value: "6", change: "+1", icon: BookOpen, color: "text-indigo-500", bg: "bg-indigo-100" },
+          { title: "Total Revenue", value: `$${metrics?.revenue || 0}`, change: "+14%", icon: DollarSign, color: "text-emerald-500", bg: "bg-emerald-100" },
+          { title: "Total Students", value: metrics?.students || 0, change: "+12%", icon: Users, color: "text-blue-500", bg: "bg-blue-100" },
+          { title: "Active Courses", value: metrics?.activeCourses || 0, change: "+1", icon: BookOpen, color: "text-indigo-500", bg: "bg-indigo-100" },
           { title: "Avg Rating", value: "4.8", change: "+0.2", icon: Star, color: "text-amber-500", bg: "bg-amber-100" },
         ].map((stat, i) => (
           <Card key={i}>
