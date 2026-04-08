@@ -152,14 +152,17 @@ export const getQuizzes = asyncHandler(async (req: AuthRequest, res: Response) =
 });
 
 export const getQuizById = asyncHandler(async (req: AuthRequest, res: Response) => {
-    const quiz = await Quiz.findById(req.params.id).populate('course', 'title');
-    if (!quiz) {
+    const quizDoc = await Quiz.findById(req.params.id).populate('course', 'title');
+    if (!quizDoc) {
         res.status(404);
         throw new Error('Quiz not found');
     }
+    
+    const quiz = quizDoc.toObject();
+    
     // Remove correct answers if student
     if (req.user.role === 'student') {
-        quiz.questions.forEach(q => {
+        quiz.questions.forEach((q: any) => {
             q.correctAnswerIndex = undefined;
             q.correctAnswerText = undefined;
         });
