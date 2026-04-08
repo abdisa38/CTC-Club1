@@ -67,15 +67,15 @@ export function AdminDashboard({ metrics }: { metrics?: any }) {
     }, 1000);
   };
 
-  const handleToggleStatus = (id: number, currentStatus: string) => {
-    setUsers(prev => prev.map(u => 
-      u.id === id 
-        ? { ...u, status: currentStatus === "Suspended" ? "Active" : "Suspended" } 
+  const handleToggleStatus = (id: number | string, currentStatus: string) => {
+    setUsers(prev => prev.map(u =>
+      u.id === id
+        ? { ...u, status: currentStatus === "Suspended" ? "Active" : "Suspended" }
         : u
     ));
   };
 
-  const handleDeleteUser = (id: number) => {
+  const handleDeleteUser = (id: number | string) => {
     setUsers(prev => prev.filter(u => u.id !== id));
   };
 
