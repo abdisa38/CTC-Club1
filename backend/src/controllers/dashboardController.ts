@@ -10,24 +10,24 @@ import { ProjectSubmission } from '../models/projectModel';
 // @desc    Get dashboard metrics based on role
 // @route   GET /api/dashboard/metrics
 // @access  Private
-export const getDashboardMetrics = asyncHandler(async (req: AuthRequest, res: Response) => {
+export const getDashboardMetrics = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
     const role = req.user.role;
 
     if (role === 'admin') {
-        const totalUsers = await User.countDocuments({ isDeleted: false });
-        const totalCourses = await Course.countDocuments({ isDeleted: false });
+        const totalUsers = await User.countDocuments({ isDeleted: false });     
+        const totalCourses = await Course.countDocuments({ isDeleted: false }); 
         const openTickets = await Ticket.countDocuments({ status: { $in: ['open', 'in_progress'] } });
         const totalRevenue = await Course.aggregate([
              { $match: { isDeleted: false } },
-             { $group: { _id: null, total: { $sum: "$price" } } } // Assuming revenue = sum of all course prices (simplification without a payment/order model)
+             { $group: { _id: null, total: { $sum: "$price" } } } // Assuming revenue = sum of all course prices (simplification without a payment/order model) 
         ]);
 
-        return res.json({
-            totalUsers,
-            totalCourses,
+        res.json({
+            totals: { users: totalUsers, courses: totalCourses },
             openTickets,
             totalRevenue: totalRevenue[0]?.total || 0,
         });
+        return;
     } 
     
     if (role === 'instructor') {
@@ -49,12 +49,13 @@ export const getDashboardMetrics = asyncHandler(async (req: AuthRequest, res: Re
             status: { $in: ['submitted', 'under_review'] }
         });
 
-        return res.json({
+        res.json({
             totalCourses,
             totalStudents,
             totalRevenue,
             pendingSubmissions
         });
+        return;
     }
 
     // Role is Student
