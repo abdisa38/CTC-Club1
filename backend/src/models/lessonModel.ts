@@ -103,7 +103,7 @@ lessonSchema.index({ course: 1, isPublished: 1, isDeleted: 1 });
 // Query Middleware to automatically filter out soft-deleted lessons
 lessonSchema.pre(/^find/, function (this: any) {
   this.where({ isDeleted: { $ne: true } });
-  next();
+
 });
 
 const Lesson = mongoose.model<ILesson>('Lesson', lessonSchema);

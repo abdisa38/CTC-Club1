@@ -44,7 +44,7 @@ const projectSchema = new Schema<IProject>(
 
 projectSchema.pre(/^find/, function (this: any) {
   this.where({ isDeleted: { $ne: true } });
-  next();
+
 });
 
 export const Project = mongoose.model<IProject>('Project', projectSchema);

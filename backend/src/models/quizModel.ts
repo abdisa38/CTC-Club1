@@ -66,7 +66,7 @@ const quizSchema = new Schema<IQuiz>(
 
 quizSchema.pre(/^find/, function (this: any) {
   this.where({ isDeleted: { $ne: true } });
-  next();
+
 });
 
 export const Quiz = mongoose.model<IQuiz>('Quiz', quizSchema);

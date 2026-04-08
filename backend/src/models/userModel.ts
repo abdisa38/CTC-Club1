@@ -112,7 +112,7 @@ userSchema.methods.matchPassword = async function (enteredPassword: string) {
 // Middleware to hash passwords before saving them
 userSchema.pre('save', async function (this: any) {
   if (!this.isModified('password') || !this.password) {
-    next();
+
   }
   else {
       const salt = await bcrypt.genSalt(10);

@@ -55,7 +55,7 @@ communityPostSchema.index({ title: 'text', content: 'text', tags: 'text' });
 
 communityPostSchema.pre(/^find/, function (this: any) {
   this.where({ isDeleted: { $ne: true } });
-  next();
+
 });
 
 export const CommunityPost = mongoose.model<ICommunityPost>('CommunityPost', communityPostSchema);
@@ -89,7 +89,7 @@ const communityReplySchema = new Schema<ICommunityReply>(
 
 communityReplySchema.pre(/^find/, function (this: any) {
   this.where({ isDeleted: { $ne: true } });
-  next();
+
 });
 
 export const CommunityReply = mongoose.model<ICommunityReply>('CommunityReply', communityReplySchema);

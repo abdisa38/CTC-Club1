@@ -56,7 +56,7 @@ const ticketSchema = new Schema<ITicket>(
 
 ticketSchema.pre(/^find/, function (this: any) {
   this.where({ isDeleted: { $ne: true } });
-  next();
+
 });
 
 const Ticket = mongoose.model<ITicket>('Ticket', ticketSchema);
