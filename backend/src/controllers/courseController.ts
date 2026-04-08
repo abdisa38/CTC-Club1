@@ -38,8 +38,17 @@ export const getCourses = asyncHandler(async (req: AuthRequest, res: Response) =
       }
     : {};
 
-  const count = await Course.countDocuments({ ...keyword });
-  const courses = await Course.find({ ...keyword })
+  const queryFilter: any = { ...keyword, isDeleted: false };
+  
+  if (req.query.status) {
+      queryFilter.status = req.query.status;
+  } else if (!req.user || req.user.role === 'student') { 
+      // Public / Students should only see published ones
+      queryFilter.status = 'published';
+  } // Admins and Instructors can fetch without limit if specified (dashboard logic handled separate usually)
+
+  const count = await Course.countDocuments(queryFilter);
+  const courses = await Course.find(queryFilter)
     .populate('instructor', 'name email avatar')
     .select('-students') // Exclude heavy students array by default
     .limit(pageSize)
