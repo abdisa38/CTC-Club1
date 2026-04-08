@@ -1,5 +1,7 @@
 import express from 'express';
 import { protect, authorizeRoles } from '../middleware/authMiddleware';
+import { validateRequest } from '../middleware/validateMiddleware';
+import { createCourseSchema, updateCourseSchema } from '../validators/courseValidator';
 import {
   createCourse,
   deleteCourse,
@@ -15,12 +17,12 @@ const router = express.Router();
 // Get all courses & Create a course (Instructors/Admins)
 router.route('/')
   .get(getCourses as any)
-  .post(protect as any, authorizeRoles('instructor', 'admin'), createCourse as any);
+  .post(protect as any, authorizeRoles('instructor', 'admin'), validateRequest(createCourseSchema), createCourse as any);
 
 // ID operations: Get singular, Update, Delete
 router.route('/:id')
   .get(getCourseById as any)
-  .put(protect as any, authorizeRoles('instructor', 'admin'), updateCourse as any)
+  .put(protect as any, authorizeRoles('instructor', 'admin'), validateRequest(updateCourseSchema), updateCourse as any)
   .delete(protect as any, authorizeRoles('instructor', 'admin'), deleteCourse as any);
 
 // Enroll in a course (Students mostly, but maybe others too)
