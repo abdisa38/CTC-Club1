@@ -1,4 +1,4 @@
-import { Outlet, Link, useLocation } from "react-router";
+import { Outlet, Link, useLocation, Navigate } from "react-router";
 import {
   LayoutDashboard, BookOpen, FileText, CheckSquare,
   MessageSquare, Trophy, Settings, Bell, Search, Menu, Focus,
@@ -17,8 +17,20 @@ import ctcLogo from "../../../assets/f6c46c16a776a1f63a42e49b36947669f8dcc942.pn
 
 export function AppLayout() {
   const location = useLocation();
-  const { role } = useAuth();
+  const { role, user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (location.pathname.startsWith('/app/admin') && role !== 'admin') {
+    return <Navigate to="/app/dashboard" replace />;
+  }
+
+  if (location.pathname.startsWith('/app/instructor') && role !== 'instructor' && role !== 'admin') {
+    return <Navigate to="/app/dashboard" replace />;
+  }
 
   const sidebarNavs = {
     student: [
