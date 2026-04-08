@@ -53,7 +53,7 @@ const communityPostSchema = new Schema<ICommunityPost>(
 communityPostSchema.index({ category: 1, isDeleted: 1 });
 communityPostSchema.index({ title: 'text', content: 'text', tags: 'text' });
 
-communityPostSchema.pre(/^find/, function (next) {
+communityPostSchema.pre(/^find/, function (this: any) {
   this.where({ isDeleted: { $ne: true } });
   next();
 });
@@ -87,7 +87,7 @@ const communityReplySchema = new Schema<ICommunityReply>(
   { timestamps: true }
 );
 
-communityReplySchema.pre(/^find/, function (next) {
+communityReplySchema.pre(/^find/, function (this: any) {
   this.where({ isDeleted: { $ne: true } });
   next();
 });

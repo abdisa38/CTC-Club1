@@ -64,7 +64,7 @@ const quizSchema = new Schema<IQuiz>(
   { timestamps: true }
 );
 
-quizSchema.pre(/^find/, function (next) {
+quizSchema.pre(/^find/, function (this: any) {
   this.where({ isDeleted: { $ne: true } });
   next();
 });

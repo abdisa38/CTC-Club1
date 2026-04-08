@@ -54,7 +54,7 @@ const ticketSchema = new Schema<ITicket>(
   { timestamps: true }
 );
 
-ticketSchema.pre(/^find/, function (next) {
+ticketSchema.pre(/^find/, function (this: any) {
   this.where({ isDeleted: { $ne: true } });
   next();
 });

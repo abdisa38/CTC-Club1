@@ -152,9 +152,8 @@ courseSchema.index({ category: 1, level: 1 });
 courseSchema.index({ title: 'text', description: 'text', tags: 'text' });
 
 // Query Middleware to filter deleted
-courseSchema.pre(/^find/, function (next) {
+courseSchema.pre(/^find/, function (this: any) {
   this.where({ isDeleted: { $ne: true } });
-  next();
 });
 
 // Middleware to automatically generate slug from title before saving

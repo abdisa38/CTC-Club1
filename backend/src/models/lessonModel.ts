@@ -101,7 +101,7 @@ lessonSchema.index({ course: 1, isPublished: 1, isDeleted: 1 });
 
 // Automatically update Course total duration on save? Handled via service/controller
 // Query Middleware to automatically filter out soft-deleted lessons
-lessonSchema.pre(/^find/, function (next) {
+lessonSchema.pre(/^find/, function (this: any) {
   this.where({ isDeleted: { $ne: true } });
   next();
 });

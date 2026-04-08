@@ -42,7 +42,7 @@ const projectSchema = new Schema<IProject>(
   { timestamps: true }
 );
 
-projectSchema.pre(/^find/, function (next) {
+projectSchema.pre(/^find/, function (this: any) {
   this.where({ isDeleted: { $ne: true } });
   next();
 });
