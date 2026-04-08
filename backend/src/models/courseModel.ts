@@ -157,14 +157,13 @@ courseSchema.pre(/^find/, function (this: any) {
 });
 
 // Middleware to automatically generate slug from title before saving
-courseSchema.pre('validate', function(next) {
+courseSchema.pre('validate', function() {
   if (this.isModified('title') && this.title) {
     this.slug = this.title
       .toLowerCase()
       .replace(/[^a-zA-Z0-9 ]/g, '') // remove special chars
       .replace(/\s+/g, '-');
   }
-  next();
 });
 
 const Course = mongoose.model<ICourse>('Course', courseSchema);
