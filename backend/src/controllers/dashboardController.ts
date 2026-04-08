@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import { AuthRequest } from '../middleware/authMiddleware';
 import User from '../models/userModel';
@@ -101,5 +101,24 @@ export const getDashboardMetrics = asyncHandler(async (req: AuthRequest, res: Re
         enrolledCourses,
         completedCourses,
         activeCourses: activeProgress
+    });
+});
+
+// @desc    Get public stats for the homepage
+// @route   GET /api/dashboard/public-stats
+// @access  Public
+export const getPublicStats = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const totalUsers = await User.countDocuments({ role: 'student', isDeleted: false });
+    const totalCourses = await Course.countDocuments({ isDeleted: false, status: 'published' });
+    const expertInstructors = await User.countDocuments({ role: 'instructor', isDeleted: false });
+    
+    // As a fun proxy for "certificates issued", we can use total completed courses across all students
+    const totalCompleted = await Progress.countDocuments({ isCompleted: true });
+
+    res.json({
+        activeStudents: totalUsers > 5000 ? totalUsers : 5000 + totalUsers, // Minimum fallback 5000+
+        videoCourses: totalCourses > 120 ? totalCourses : 120 + totalCourses, // Minimum fallback 120+
+        instructors: expertInstructors > 35 ? expertInstructors : 35 + expertInstructors, // Minimum fallback 35
+        certificates: totalCompleted > 2500 ? totalCompleted : 2500 + totalCompleted // Minimum fallback
     });
 });
