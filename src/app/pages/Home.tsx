@@ -208,6 +208,9 @@ export function Home() {
     };
     fetchHomeData();
   }, []);
+
+  const searchSuggestions = ["Web Development", "Python", "React", "Data Science", "UI/UX Design", "Machine Learning"].filter(s =>
+    searchQuery && s.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   useEffect(() => {
