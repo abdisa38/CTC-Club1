@@ -12,7 +12,7 @@ import {
   FileText, Download, ChevronRight, Star, Share2, BookmarkPlus, Send, UploadCloud, Plus
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import CourseEditor from "./instructor/CourseEditor";
+import { CourseEditor } from "./instructor/CourseEditor";
 import api from "../utils/api";
 
 export function CourseDetail() {
