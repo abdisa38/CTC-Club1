@@ -311,7 +311,7 @@ export function Home() {
                   ))}
                 </div>
                 <div className="text-sm">
-                  <span className="font-semibold text-slate-900 dark:text-white">5,000+</span>
+                  <span className="font-semibold text-slate-900 dark:text-white">{stats.activeStudents.toLocaleString()}+</span>
                   <span className="text-slate-500 ml-1">students already learning</span>
                 </div>
               </motion.div>
