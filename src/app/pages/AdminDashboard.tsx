@@ -28,21 +28,30 @@ const courseCompletionData = [
 ];
 
 type User = {
-  id: number;
+  id: number | string;
   name: string;
   role: string;
-  status: "Active" | "Inactive" | "Suspended";
+  status: string;
   joined: string;
 };
 
 export function AdminDashboard({ metrics }: { metrics?: any }) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [users, setUsers] = useState<User[]>([
-    { id: 1, name: "Alex Chen", role: "Student", status: "Active", joined: "2026-08-15" },
-    { id: 2, name: "Prof. Sarah Jenkins", role: "Instructor", status: "Active", joined: "2026-01-10" },
-    { id: 3, name: "Emily Parker", role: "Student", status: "Inactive", joined: "2026-08-20" },
-    { id: 4, name: "David Kumar", role: "Admin", status: "Active", joined: "2025-11-05" },
-  ]);
+  const [users, setUsers] = useState<User[]>([]);
+
+  useEffect(() => {
+    if (metrics?.recentUsers) {
+      setUsers(
+        metrics.recentUsers.map((u: any) => ({
+          id: u._id,
+          name: u.name,
+          role: u.role.charAt(0).toUpperCase() + u.role.slice(1),
+          status: "Active",
+          joined: new Date(u.createdAt).toISOString().split("T")[0],
+        }))
+      );
+    }
+  }, [metrics]);
 
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [newRole, setNewRole] = useState("");
