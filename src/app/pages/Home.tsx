@@ -431,7 +431,7 @@ export function Home() {
           </AnimatedSection>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {featuredCourses.map((course, i) => (
+            {realCourses.map((course, i) => (
               <AnimatedSection key={course.id} delay={i * 0.08}>
                 <CourseCard course={course} />
               </AnimatedSection>
