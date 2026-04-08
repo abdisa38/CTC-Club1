@@ -363,10 +363,10 @@ export function Home() {
         <div className="max-w-[1200px] mx-auto px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 lg:gap-12">
             {[
-              { value: 5000, suffix: "+", label: "Active Students", icon: Users, color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-50 dark:bg-indigo-500/10" },
-              { value: 120, suffix: "+", label: "Video Courses", icon: BookOpen, color: "text-violet-600 dark:text-violet-400", bg: "bg-violet-50 dark:bg-violet-500/10" },
-              { value: 35, suffix: "", label: "Expert Instructors", icon: Award, color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-500/10" },
-              { value: 2500, suffix: "+", label: "Certificates Issued", icon: CheckCircle2, color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-500/10" },
+              { value: stats.activeStudents, suffix: "+", label: "Active Students", icon: Users, color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-50 dark:bg-indigo-500/10" },
+              { value: stats.videoCourses, suffix: "+", label: "Video Courses", icon: BookOpen, color: "text-violet-600 dark:text-violet-400", bg: "bg-violet-50 dark:bg-violet-500/10" },
+              { value: stats.instructors, suffix: "+", label: "Expert Instructors", icon: Award, color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-500/10" },
+              { value: stats.certificates, suffix: "+", label: "Certificates Issued", icon: CheckCircle2, color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-500/10" },
             ].map((stat, i) => (
               <AnimatedSection key={i} delay={i * 0.08}>
                 <div className="flex flex-col items-center text-center gap-3">
