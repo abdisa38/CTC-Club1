@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { Link } from "react-router";
 import { Button } from "../components/ui/Button";
@@ -7,115 +7,51 @@ import { Input } from "../components/ui/Input";
 import { Badge } from "../components/ui/Badge";
 import { Search, Filter, Star, Clock, Users, PlayCircle, PlusCircle, X, Heart } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import api from "../utils/api";
+
+type CourseType = {
+  _id: string;
+  title: string;
+  instructor: { _id: string; name: string };
+  students: string[];
+  coverImage: string;
+  category: string;
+  price: number;
+  description: string;
+};
 
 export function CourseList() {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const isAdmin = role === 'admin';
   const isInstructor = role === 'instructor' || isAdmin;
 
+  const [courses, setCourses] = useState<CourseType[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedLevel, setSelectedLevel] = useState("");
   const [selectedDuration, setSelectedDuration] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-  const [favorites, setFavorites] = useState<Set<string>>(new Set(["1", "5"]));
-  const [enrolledIds] = useState<Set<string>>(new Set(["1", "2"]));
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [enrollingId, setEnrollingId] = useState<string | null>(null);
 
-  const courses = [
-    {
-      id: "1",
-      title: "Full-Stack Web Development Boot-camp",
-      instructor: "Prof. Michael Jordan",
-      rating: 4.9,
-      students: "12.5k",
-      duration: "40h 30m",
-      durationHours: 40,
-      level: "Beginner",
-      category: "Web Dev",
-      image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80&w=800",
-      price: "Free",
-      tags: ["React", "Node.js", "MongoDB"]
-    },
-    {
-      id: "2",
-      title: "Advanced Data Structures & Algorithms",
-      instructor: "Dr. Alan Turing",
-      rating: 4.8,
-      students: "8.2k",
-      duration: "25h 15m",
-      durationHours: 25,
-      level: "Advanced",
-      category: "Computer Science",
-      image: "https://images.unsplash.com/photo-1516116216624-53e697fedbea?auto=format&fit=crop&q=80&w=800",
-      price: "Free",
-      tags: ["C++", "Algorithms", "DSA"]
-    },
-    {
-      id: "3",
-      title: "UI/UX Design for Developers",
-      instructor: "Sarah Jenkins",
-      rating: 4.7,
-      students: "5.4k",
-      duration: "12h 00m",
-      durationHours: 12,
-      level: "Intermediate",
-      category: "Design",
-      image: "https://images.unsplash.com/photo-1561070791-2526d30994b5?auto=format&fit=crop&q=80&w=800",
-      price: "Free",
-      tags: ["Figma", "Design Systems", "CSS"]
-    },
-    {
-      id: "4",
-      title: "DevOps Masterclass: Docker & Kubernetes",
-      instructor: "Alex Chen",
-      rating: 4.9,
-      students: "3.1k",
-      duration: "18h 45m",
-      durationHours: 18,
-      level: "Advanced",
-      category: "Cloud",
-      image: "https://images.unsplash.com/photo-1620912189868-30761e649ce4?auto=format&fit=crop&q=80&w=800",
-      price: "Free",
-      tags: ["Docker", "K8s", "CI/CD"]
-    },
-    {
-      id: "5",
-      title: "Machine Learning Foundations A-Z",
-      instructor: "Dr. Andrew Ng",
-      rating: 4.9,
-      students: "22k",
-      duration: "45h 00m",
-      durationHours: 45,
-      level: "Beginner",
-      category: "AI/ML",
-      image: "https://images.unsplash.com/photo-1527474305487-b87b222841cc?auto=format&fit=crop&q=80&w=800",
-      price: "Free",
-      tags: ["Python", "TensorFlow", "Math"]
-    },
-    {
-      id: "6",
-      title: "Mastering Command Line Interface",
-      instructor: "Linus T.",
-      rating: 4.6,
-      students: "4.8k",
-      duration: "5h 30m",
-      durationHours: 5,
-      level: "Beginner",
-      category: "Tools",
-      image: "https://images.unsplash.com/photo-1629654297299-c8506221ca97?auto=format&fit=crop&q=80&w=800",
-      price: "Free",
-      tags: ["Bash", "Linux", "Scripting"]
-    }
-  ];
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const { data } = await api.get('/courses');
+        setCourses(data);
+      } catch (error) {
+        console.error("Failed to fetch courses:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchCourses();
+  }, []);
 
   const filteredCourses = courses.filter(c => {
-    if (searchQuery && !c.title.toLowerCase().includes(searchQuery.toLowerCase()) && !c.instructor.toLowerCase().includes(searchQuery.toLowerCase()) && !c.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))) return false;
+    if (searchQuery && !c.title.toLowerCase().includes(searchQuery.toLowerCase()) && !c.instructor?.name?.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     if (selectedCategory && c.category !== selectedCategory) return false;
-    if (selectedLevel && c.level !== selectedLevel) return false;
-    if (selectedDuration === "short" && c.durationHours > 10) return false;
-    if (selectedDuration === "medium" && (c.durationHours <= 10 || c.durationHours > 25)) return false;
-    if (selectedDuration === "long" && c.durationHours <= 25) return false;
     return true;
   });
 
@@ -129,10 +65,25 @@ export function CourseList() {
     });
   };
 
-  const handleEnroll = (id: string) => {
+  const handleEnroll = async (id: string) => {
+    if (!user) return; // need to be logged in
     setEnrollingId(id);
-    setTimeout(() => setEnrollingId(null), 1500);
+    try {
+      await api.post(`/courses/${id}/enroll`);
+      // Update local state to reflect enrollment
+      setCourses(courses.map(c => 
+        c._id === id ? { ...c, students: [...c.students, user._id] } : c
+      ));
+    } catch (error) {
+      console.error("Failed to enroll:", error);
+    } finally {
+      setEnrollingId(null);
+    }
   };
+
+  if (isLoading) {
+    return <div className="text-center py-20 text-slate-500">Loading courses...</div>;
+  }
 
   return (
     <div className="space-y-6">
