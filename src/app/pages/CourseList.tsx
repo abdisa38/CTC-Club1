@@ -201,23 +201,23 @@ export function CourseList() {
                 <Card className="overflow-hidden group flex flex-col hover:border-indigo-200 hover:shadow-md transition-all dark:hover:border-indigo-800">
                   <div className="relative aspect-video w-full overflow-hidden">
                     <img
-                      src={course.image}
+                      src={course.coverImage || 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80&w=800'}
                       alt={course.title}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       <Button size="icon" className="rounded-full h-12 w-12 bg-indigo-600 hover:bg-indigo-700" asChild>
-                        <Link to={`/app/courses/${course.id}`}><PlayCircle className="h-6 w-6 text-white" /></Link>
+                        <Link to={`/app/courses/${course._id}`}><PlayCircle className="h-6 w-6 text-white" /></Link>
                       </Button>
                     </div>
                     <Badge className="absolute top-3 left-3 bg-white/90 text-slate-900 hover:bg-white">{course.category}</Badge>
                     <button
-                      onClick={(e) => { e.preventDefault(); toggleFavorite(course.id); }}
+                      onClick={(e) => { e.preventDefault(); toggleFavorite(course._id); }}
                       className="absolute top-3 right-3 h-8 w-8 bg-white/90 hover:bg-white rounded-full flex items-center justify-center transition-colors"
                     >
-                      <Heart className={`h-4 w-4 ${favorites.has(course.id) ? "text-red-500 fill-red-500" : "text-slate-600"}`} />
+                      <Heart className={`h-4 w-4 ${favorites.has(course._id) ? "text-red-500 fill-red-500" : "text-slate-600"}`} />
                     </button>
-                    {enrolledIds.has(course.id) && (
+                    {user && course.students?.includes(user._id) && (
                       <Badge className="absolute bottom-3 left-3 bg-emerald-600 text-white hover:bg-emerald-600">Enrolled</Badge>
                     )}
                   </div>
@@ -225,43 +225,41 @@ export function CourseList() {
                   <CardContent className="p-5 flex-1 flex flex-col">
                     <div className="flex items-center gap-1 text-sm text-amber-500 font-medium mb-2">
                       <Star className="h-4 w-4 fill-amber-500" />
-                      <span>{course.rating}</span>
+                      <span>{4.5}</span>
                       <span className="text-slate-400 mx-1">·</span>
-                      <span className="text-slate-500">({course.students})</span>
+                      <span className="text-slate-500">({course.students?.length || 0})</span>
                     </div>
 
-                    <Link to={`/app/courses/${course.id}`} className="block mb-2">
+                    <Link to={`/app/courses/${course._id}`} className="block mb-2">
                       <h3 className="font-bold text-lg leading-tight text-slate-900 dark:text-white hover:text-indigo-600 transition-colors line-clamp-2">
                         {course.title}
                       </h3>
                     </Link>
 
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{course.instructor}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{course.instructor?.name || 'Unknown Instructor'}</p>
 
                     <div className="flex flex-wrap gap-2 mb-4 mt-auto">
-                      {course.tags.map(tag => (
-                        <Badge key={tag} variant="secondary" className="text-xs px-2 py-0.5">
-                          {tag}
-                        </Badge>
-                      ))}
+                      <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                        {course.category}
+                      </Badge>
                     </div>
 
                     <div className="flex items-center justify-between text-sm text-slate-500 pt-4 border-t border-slate-100 dark:border-slate-800">
                       <div className="flex items-center gap-4">
-                        <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> {course.duration}</span>
-                        <span className="flex items-center gap-1"><Users className="h-4 w-4" /> {course.level}</span>
+                        <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> 10h</span>
+                        <span className="flex items-center gap-1"><Users className="h-4 w-4" /> All Levels</span>
                       </div>
-                      {!enrolledIds.has(course.id) && (
+                      {!user || !course.students?.includes(user._id) ? (
                         <Button
                           size="sm"
                           variant="outline"
                           className="h-8 text-xs"
-                          onClick={() => handleEnroll(course.id)}
-                          disabled={enrollingId === course.id}
+                          onClick={() => handleEnroll(course._id)}
+                          disabled={enrollingId === course._id}
                         >
-                          {enrollingId === course.id ? "Enrolling..." : "Enroll"}
+                          {enrollingId === course._id ? "Enrolling..." : "Enroll"}
                         </Button>
-                      )}
+                      ) : null}
                     </div>
                   </CardContent>
                 </Card>
