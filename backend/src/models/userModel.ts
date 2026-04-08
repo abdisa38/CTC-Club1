@@ -94,9 +94,8 @@ userSchema.index({ role: 1, isActive: 1 });
 userSchema.index({ xp: -1 });
 
 // Query Middleware to automatically filter out soft-deleted users
-userSchema.pre(/^find/, function (this: any, next: any) {
+userSchema.pre(/^find/, function (this: any) {
   this.where({ isDeleted: { $ne: true } });
-  if (typeof next === 'function') next();
 });
 
 // Method to verify passwords on login
