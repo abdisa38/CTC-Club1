@@ -13,7 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/Avatar";
 import { cn } from "../../utils/cn";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/DropdownMenu";
 import { useAuth } from "../../context/AuthContext";
-import ctcLogo from "figma:asset/f6c46c16a776a1f63a42e49b36947669f8dcc942.png";
+import ctcLogo from "../../../assets/f6c46c16a776a1f63a42e49b36947669f8dcc942.png";
 
 export function AppLayout() {
   const location = useLocation();

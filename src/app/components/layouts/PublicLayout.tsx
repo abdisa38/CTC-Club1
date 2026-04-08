@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Button } from "../ui/button";
 import { Menu, X, Github, Twitter, Linkedin, Youtube, Instagram, Mail, ArrowRight, ArrowUpRight } from "lucide-react";
 import { Input } from "../ui/input";
-import ctcLogo from "figma:asset/f6c46c16a776a1f63a42e49b36947669f8dcc942.png";
+import ctcLogo from "../../../assets/f6c46c16a776a1f63a42e49b36947669f8dcc942.png";
 
 export function PublicLayout() {
   const location = useLocation();

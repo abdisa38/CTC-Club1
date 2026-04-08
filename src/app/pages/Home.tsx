@@ -5,7 +5,7 @@ import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Input } from "../components/ui/input";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
-import ctcLogo from "figma:asset/f6c46c16a776a1f63a42e49b36947669f8dcc942.png";
+import ctcLogo from "../../assets/f6c46c16a776a1f63a42e49b36947669f8dcc942.png";
 import {
   ArrowRight, CheckCircle2, Star, Users, BookOpen, GitMerge,
   LifeBuoy, Shield, Award, TrendingUp, Code2, Terminal,
