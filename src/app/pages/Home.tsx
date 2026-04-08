@@ -5,6 +5,7 @@ import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Input } from "../components/ui/input";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
+import api from "../utils/api";
 import ctcLogo from "../../assets/f6c46c16a776a1f63a42e49b36947669f8dcc942.png";
 import {
   ArrowRight, CheckCircle2, Star, Users, BookOpen, GitMerge,
@@ -170,8 +171,43 @@ export function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
 
-  const searchSuggestions = ["Web Development", "Python", "React", "Data Science", "UI/UX Design", "Machine Learning"].filter(s =>
-    searchQuery && s.toLowerCase().includes(searchQuery.toLowerCase())
+  const [realCourses, setRealCourses] = useState<any[]>(featuredCourses);
+  const [stats, setStats] = useState({
+    activeStudents: 5000,
+    videoCourses: 120,
+    instructors: 35,
+    certificates: 2500
+  });
+
+  useEffect(() => {
+    const fetchHomeData = async () => {
+      try {
+        const [statsRes, coursesRes] = await Promise.all([
+          api.get('/dashboard/public-stats'),
+          api.get('/courses?limit=4')
+        ]);
+        if (statsRes.data) {
+          setStats(statsRes.data);
+        }
+        if (coursesRes.data && coursesRes.data.courses && coursesRes.data.courses.length > 0) {
+          // Map backend course data to featuredCourses format
+          const mappedCourses = coursesRes.data.courses.map((c: any) => ({
+            id: c._id,
+            title: c.title,
+            instructor: c.instructor?.name || 'CTC Instructor',
+            rating: c.rating || 4.5,
+            students: c.students?.length + 'k' || '1.1k',
+            category: c.category || 'Tech',
+            image: c.coverImage || 'https://images.unsplash.com/photo-1637937459053-c788742455be?w=600&h=340&fit=crop'
+          }));
+          setRealCourses(mappedCourses);
+        }
+      } catch (err) {
+        console.error("Error fetching homepage data:", err);
+      }
+    };
+    fetchHomeData();
+  }, []);
   );
 
   useEffect(() => {
