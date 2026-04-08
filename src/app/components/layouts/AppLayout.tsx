@@ -17,7 +17,7 @@ import ctcLogo from "../../../assets/f6c46c16a776a1f63a42e49b36947669f8dcc942.pn
 
 export function AppLayout() {
   const location = useLocation();
-  const { role, setRole } = useAuth();
+  const { role } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const sidebarNavs = {
@@ -191,15 +191,15 @@ export function AppLayout() {
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="hidden md:flex gap-2 rounded-lg h-9 text-xs font-semibold border-slate-200/60 dark:border-white/10">
                   <Shield className="h-3.5 w-3.5" />
-                  <span className="capitalize">{role}</span>
+                  <span className="capitalize">{role || 'Student'}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="rounded-xl shadow-lg border-slate-200/60 dark:border-white/10">
-                <DropdownMenuLabel className="text-xs text-slate-500">Switch Role (Demo)</DropdownMenuLabel>
+                <DropdownMenuLabel className="text-xs text-slate-500">Current Role</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setRole("student")} className="rounded-lg text-sm">Student</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setRole("instructor")} className="rounded-lg text-sm">Instructor</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setRole("admin")} className="rounded-lg text-sm">Admin</DropdownMenuItem>
+                <DropdownMenuItem className="rounded-lg text-sm bg-slate-100 dark:bg-slate-800 capitalize pointer-events-none">
+                  {role || 'Student'}
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
