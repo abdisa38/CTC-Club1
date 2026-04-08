@@ -1,19 +1,81 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Card, CardContent, CardFooter } from "../components/ui/Card";
 import ctcLogo from "../../assets/f6c46c16a776a1f63a42e49b36947669f8dcc942.png";
 import { motion } from "motion/react";
 import { ArrowRight, Github, Mail } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
+import api from "../utils/api";
 
 export function Auth() {
-  const [isLogin, setIsLogin] = useState(true);
+  const { pathname } = useLocation();
+  const [isLogin, setIsLogin] = useState(pathname === "/login");
   const navigate = useNavigate();
+  const { login } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [formData, setFormData] = useState({ name: "", email: "", password: "" });
+  const [errorMsg, setErrorMsg] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    setIsLogin(pathname === "/login" || pathname === "/");
+    setErrorMsg("");
+  }, [pathname]);
+
+  const toggleAuthMode = () => {
+    setIsLogin(!isLogin);
+    setErrorMsg("");
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    navigate("/app/dashboard");
+    setIsLoading(true);
+    setErrorMsg("");
+
+    try {
+      if (isLogin) {
+        const { data } = await api.post("/auth/login", {
+          email: formData.email,
+          password: formData.password,
+        });
+        login(data);
+        redirectByRole(data.role);
+      } else {
+        const { data } = await api.post("/auth/register", {
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          // Backend forces new accounts to 'student' for security
+        });
+        login(data);
+        redirectByRole(data.role);
+      }
+    } catch (error: any) {
+      setErrorMsg(error.response?.data?.message || "Something went wrong. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const redirectByRole = (role: string) => {
+    switch (role) {
+      case "admin":
+        navigate("/app/admin");
+        break;
+      case "instructor":
+        navigate("/app/instructor/courses");
+        break;
+      case "student":
+      default:
+        navigate("/app/dashboard"); // The Dashboard acts as traffic controller or default student view
+        break;
+    }
   };
 
   return (
@@ -29,13 +91,13 @@ export function Auth() {
         className="w-full max-w-[420px] space-y-8 relative"
       >
         <div className="text-center">
-          <Link to="/" className="inline-flex items-center gap-2.5 mb-8 group">
+          <Link to="/" className="inline-flex items-center gap-2.5 mb-2 group">
             <img src={ctcLogo} alt="CTC Club" className="h-10 w-10 rounded-xl transition-transform group-hover:scale-105" />
             <span className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">
               CTC <span className="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">Club</span>
             </span>
           </Link>
-          <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+          <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white mt-4">
             {isLogin ? "Welcome back" : "Create your account"}
           </h2>
           <p className="mt-2 text-sm text-slate-500">
@@ -44,6 +106,11 @@ export function Auth() {
         </div>
 
         <Card className="border-slate-200/60 dark:border-white/[0.06] shadow-xl shadow-slate-900/5 dark:shadow-black/20">
+          {errorMsg && (
+            <div className="bg-red-100 text-red-700 text-sm text-center font-medium mx-6 mt-4 p-2 rounded-lg break-words">
+              {errorMsg}
+            </div>
+          )}
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4 pt-6">
               {/* Social login buttons */}
@@ -70,33 +137,45 @@ export function Auth() {
                   <label className="text-[13px] font-medium text-slate-700 dark:text-slate-300">
                     Full Name
                   </label>
-                  <Input type="text" placeholder="John Doe" required className="h-10 rounded-xl" />
+                  <Input 
+                    type="text" 
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    placeholder="John Doe" 
+                    required={!isLogin} 
+                    className="h-10 rounded-xl" 
+                  />
                 </div>
               )}
               <div className="space-y-1.5">
                 <label className="text-[13px] font-medium text-slate-700 dark:text-slate-300">
-                  University Email
+                  Email Address
                 </label>
-                <Input type="email" placeholder="student@university.edu" required className="h-10 rounded-xl" />
+                <Input 
+                  type="email" 
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  placeholder="student@university.edu" 
+                  required 
+                  className="h-10 rounded-xl" 
+                />
               </div>
               <div className="space-y-1.5">
                 <label className="text-[13px] font-medium text-slate-700 dark:text-slate-300">
                   Password
                 </label>
-                <Input type="password" placeholder="••••••••" required className="h-10 rounded-xl" />
+                <Input 
+                  type="password" 
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  placeholder="••••••••" 
+                  required 
+                  className="h-10 rounded-xl" 
+                />
               </div>
-
-              {!isLogin && (
-                <div className="space-y-1.5">
-                  <label className="text-[13px] font-medium text-slate-700 dark:text-slate-300">
-                    Role
-                  </label>
-                  <select className="flex h-10 w-full rounded-xl border border-slate-200/60 dark:border-white/10 bg-input-background px-3.5 py-2 text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/20 focus-visible:border-ring dark:bg-input/30 text-slate-900 dark:text-slate-100">
-                    <option value="student">Student</option>
-                    <option value="instructor">Instructor</option>
-                  </select>
-                </div>
-              )}
 
               {isLogin && (
                 <div className="flex items-center justify-between">
@@ -118,15 +197,15 @@ export function Auth() {
               )}
             </CardContent>
             <CardFooter className="flex-col gap-4">
-              <Button type="submit" className="w-full h-11 rounded-xl font-semibold bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 shadow-sm shadow-indigo-500/20">
-                {isLogin ? "Sign in" : "Create Account"}
-                <ArrowRight className="ml-2 h-4 w-4" />
+              <Button disabled={isLoading} type="submit" className="w-full h-11 rounded-xl font-semibold bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 shadow-sm shadow-indigo-500/20">
+                {isLoading ? "Please wait..." : isLogin ? "Sign in" : "Create Account"}
+                {!isLoading && <ArrowRight className="ml-2 h-4 w-4" />}
               </Button>
               <p className="text-[13px] text-slate-500 text-center">
                 {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
                 <button
                   type="button"
-                  onClick={() => setIsLogin(!isLogin)}
+                  onClick={toggleAuthMode}
                   className="font-semibold text-indigo-600 hover:text-indigo-500 transition-colors"
                 >
                   {isLogin ? "Sign up free" : "Sign in"}

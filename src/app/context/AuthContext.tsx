@@ -3,21 +3,20 @@ import api from "../utils/api";
 
 export type Role = "student" | "instructor" | "admin";
 
+// Notice: Removed `token` because JWT is now securely stored in httpOnly cookie
 export interface User {
   _id: string;
   name: string;
   email: string;
   role: Role;
-  token: string;
   avatar?: string;
 }
 
 interface AuthContextType {
-  role: Role;
-  setRole: (role: Role) => void;
+  role: Role | null;
   user: User | null;
   login: (userData: User) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -25,7 +24,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [role, setRole] = useState<Role>("student");
+  const [role, setRole] = useState<Role | null>(null);
+  // Optional: keep `isLoading` to true during token-validation if you add a /me endpoint later
   const [isLoading, setIsLoading] = useState(true);
 
   // Initialize from LocalStorage
@@ -46,21 +46,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = (userData: User) => {
     setUser(userData);
     setRole(userData.role);
+    // Store non-sensitive metadata in localStorage. 
+    // Actual Auth JWT is inside an HttpOnly cookie thanks to the backend.
     localStorage.setItem("userInfo", JSON.stringify(userData));
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      // Hit backend logout point to clear the httpOnly cookie
+      await api.post("/auth/logout");
+    } catch(err) {
+      console.error(err);
+    }
     setUser(null);
-    setRole("student"); // Reset to default
+    setRole(null);
     localStorage.removeItem("userInfo");
-  };
-
-  const overrideRole = (newRole: Role) => {
-    setRole(newRole); // Retain this for UI debugging component dropdowns without breaking
+    window.location.href = "/login";
   };
 
   return (
-    <AuthContext.Provider value={{ user, role, setRole: overrideRole, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, role, login, logout, isLoading }}>
       {!isLoading && children}
     </AuthContext.Provider>
   );
