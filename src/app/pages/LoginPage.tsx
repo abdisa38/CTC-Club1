@@ -1,17 +1,36 @@
 import { Link, useNavigate } from 'react-router';
 import { Trophy, Mail, Lock } from 'lucide-react';
 import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+import api from '../utils/api';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, this would authenticate with backend
-    // For demo, just redirect to student dashboard
-    navigate('/student/dashboard');
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const response = await api.post('/auth/login', { email, password });
+      login(response.data);
+
+      // Redirect based on role
+      const role = response.data.role;
+      if (role === 'admin') navigate('/admin/dashboard');
+      else if (role === 'instructor') navigate('/instructor/dashboard');
+      else navigate('/student/dashboard');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to login. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -29,6 +48,12 @@ export default function LoginPage() {
         <div className="bg-white rounded-2xl p-8 shadow-xl">
           <h1 className="text-2xl font-bold text-center mb-2 text-black">Welcome Back</h1>
           <p className="text-center text-gray-600 mb-8">Login to continue your learning journey</p>
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm text-center">
+              {error}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email */}
@@ -81,9 +106,10 @@ export default function LoginPage() {
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full py-3 bg-primary hover:bg-red-700 text-white rounded-lg font-semibold transition"
+              disabled={isLoading}
+              className={`w-full py-3 ${isLoading ? 'bg-red-400' : 'bg-primary hover:bg-red-700'} text-white rounded-lg font-semibold transition`}
             >
-              Login
+              {isLoading ? 'Logging in...' : 'Login'}
             </button>
 
             {/* OAuth */}
