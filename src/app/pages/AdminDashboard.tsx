@@ -9,7 +9,7 @@ import { Badge } from "../components/ui/Badge";
 import { Input } from "../components/ui/Input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "../components/ui/Dialog";
 
-const userActivityData = [
+const fallbackUserActivityData = [
   { name: 'Mon', active: 4000 },
   { name: 'Tue', active: 3000 },
   { name: 'Wed', active: 5000 },
@@ -19,7 +19,7 @@ const userActivityData = [
   { name: 'Sun', active: 3490 },
 ];
 
-const courseCompletionData = [
+const fallbackCourseCompletionData = [
   { name: 'Web Dev', completed: 120 },
   { name: 'Data Sci', completed: 80 },
   { name: 'Security', completed: 45 },
@@ -139,7 +139,7 @@ export function AdminDashboard({ metrics }: { metrics?: any }) {
           </CardHeader>
           <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={userActivityData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <LineChart data={metrics?.userActivityData || fallbackUserActivityData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid key="grid-line" strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.2} />
                 <XAxis key="xaxis-line" dataKey="name" axisLine={false} tickLine={false} stroke="#64748b" fontSize={12} />
                 <YAxis key="yaxis-line" axisLine={false} tickLine={false} stroke="#64748b" fontSize={12} />
@@ -156,7 +156,7 @@ export function AdminDashboard({ metrics }: { metrics?: any }) {
           </CardHeader>
           <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={courseCompletionData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <BarChart data={metrics?.courseCompletionData || fallbackCourseCompletionData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid key="grid-bar" strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.2} />
                 <XAxis key="xaxis-bar" dataKey="name" axisLine={false} tickLine={false} stroke="#64748b" fontSize={12} />
                 <YAxis key="yaxis-bar" axisLine={false} tickLine={false} stroke="#64748b" fontSize={12} />
