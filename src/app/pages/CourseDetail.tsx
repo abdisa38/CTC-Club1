@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router";
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
@@ -12,25 +12,62 @@ import {
   FileText, Download, ChevronRight, Star, Share2, BookmarkPlus, Send, UploadCloud, Plus
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import CourseEditor from "./instructor/CourseEditor";
+import api from "../utils/api";
 
 export function CourseDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   
   const isInstructor = role === 'instructor' || role === 'admin';
   const isAdmin = role === 'admin';
 
   const [activeTab, setActiveTab] = useState("content");
-  const [isEnrolled, setIsEnrolled] = useState(false);
+  const [course, setCourse] = useState<any>(null);
+  const [lessons, setLessons] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isEnrolling, setIsEnrolling] = useState(false);
 
-  const handleEnroll = () => {
+  useEffect(() => {
+    if (id === 'new') return;
+    
+    const fetchCourseData = async () => {
+      try {
+        const [courseRes, lessonsRes] = await Promise.all([
+          api.get(`/courses/${id}`),
+          api.get(`/courses/${id}/lessons`)
+        ]);
+        setCourse(courseRes.data);
+        setLessons(lessonsRes.data);
+      } catch (error) {
+        console.error("Failed to load course details", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchCourseData();
+  }, [id]);
+
+  const handleEnroll = async () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
     setIsEnrolling(true);
-    setTimeout(() => {
-      setIsEnrolled(true);
+    try {
+      await api.post(`/courses/${id}/enroll`);
+      // Update local state instead of re-fetching immediately
+      setCourse({
+        ...course,
+        students: [...course.students, { _id: user._id, name: user.name }]
+      });
+    } catch (error) {
+      console.error("Failed to enroll", error);
+    } finally {
       setIsEnrolling(false);
-    }, 1000);
+    }
   };
 
   // If we are creating a new course:
@@ -38,35 +75,16 @@ export function CourseDetail() {
     return <CourseEditor />;
   }
 
-  const course = {
-    title: "Full-Stack Web Development Bootcamp",
-    instructor: "Prof. Michael Jordan",
-    description: "Master modern web development from frontend basics to backend scalable architecture using React, Node, and MongoDB. Perfect for CS students wanting practical skills.",
-    progress: isEnrolled ? 15 : 0,
-    modules: [
-      {
-        id: "m1",
-        title: "Module 1: Frontend Fundamentals",
-        duration: "3h 45m",
-        lessons: [
-          { id: "l1", title: "Introduction to the Course", duration: "10m", type: "video", completed: isEnrolled },
-          { id: "l2", title: "HTML5 Semantic Tags", duration: "45m", type: "video", completed: isEnrolled },
-          { id: "l3", title: "CSS Flexbox & Grid", duration: "1h 20m", type: "video", completed: false },
-          { id: "l4", title: "Assignment: Build a Landing Page", duration: "1h", type: "assignment", completed: false },
-        ]
-      },
-      {
-        id: "m2",
-        title: "Module 2: React Core Concepts",
-        duration: "5h 20m",
-        lessons: [
-          { id: "l5", title: "JSX & Components", duration: "1h 10m", type: "video", completed: false, locked: !isEnrolled },
-          { id: "l6", title: "State and Props", duration: "1h 30m", type: "video", completed: false, locked: !isEnrolled },
-          { id: "l7", title: "Quiz: React Basics", duration: "20m", type: "quiz", completed: false, locked: !isEnrolled },
-        ]
-      }
-    ]
-  };
+  if (isLoading) {
+    return <div className="text-center py-20 text-slate-500">Loading course...</div>;
+  }
+
+  if (!course) {
+    return <div className="text-center py-20 text-slate-500">Course not found.</div>;
+  }
+
+  const isEnrolled = user && course.students?.some((s: any) => s._id === user._id);
+  const progress = isEnrolled ? 15 : 0;
 
   return (
     <div className="flex flex-col lg:flex-row h-[calc(100vh-8rem)] bg-white dark:bg-slate-950 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm">
@@ -75,7 +93,7 @@ export function CourseDetail() {
       <div className="flex-1 flex flex-col overflow-y-auto bg-slate-50 dark:bg-slate-950/50">
         <div className="aspect-video bg-slate-900 relative group flex flex-col">
           <img 
-            src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80&w=1200" 
+            src={course.coverImage || "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80&w=1200"} 
             alt="Video Thumbnail" 
             className="w-full h-full object-cover opacity-60"
           />
@@ -128,13 +146,13 @@ export function CourseDetail() {
               <div className="flex items-center gap-4 text-sm text-slate-500">
                 <span className="flex items-center gap-1">
                   <Avatar className="h-6 w-6">
-                    <AvatarImage src="https://i.pravatar.cc/150?u=instructor" />
-                    <AvatarFallback>MJ</AvatarFallback>
+                    <AvatarImage src={course.instructor?.avatar || "https://i.pravatar.cc/150?u=instructor"} />
+                    <AvatarFallback>{course.instructor?.name?.charAt(0) || "M"}</AvatarFallback>
                   </Avatar>
-                  {course.instructor}
+                  {course.instructor?.name || "Unknown Instructor"}
                 </span>
                 <span className="flex items-center gap-1 text-amber-500">
-                  <Star className="h-4 w-4 fill-amber-500" /> 4.9 (2k ratings)
+                  <Star className="h-4 w-4 fill-amber-500" /> 4.9 ({course.students?.length || 0} students)
                 </span>
               </div>
             </div>
