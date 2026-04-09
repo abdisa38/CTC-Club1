@@ -2,61 +2,24 @@ import { createBrowserRouter, Navigate } from "react-router";
 import { AppLayout } from "./components/layouts/AppLayout";
 import { PublicLayout } from "./components/layouts/PublicLayout";
 
-// Pages
-import { Home } from "./pages/Home";
-import { Auth } from "./pages/Auth";
-import { Dashboard } from "./pages/Dashboard";
-import { CourseList } from "./pages/CourseList";
-import { CourseDetail } from "./pages/CourseDetail";
-import { Profile } from "./pages/Profile";
-import { Projects } from "./pages/Projects";
-import { Resources } from "./pages/Resources";
-import { Quizzes } from "./pages/Quizzes";
-import { Community } from "./pages/Community";
-import { Support } from "./pages/Support";
-import { Leaderboard } from "./pages/Leaderboard";
-import { Settings } from "./pages/Settings";
-
-// Student Pages
-import { LessonView } from "./pages/student/LessonView";
-import { Favorites } from "./pages/student/Favorites";
-import { Certificates } from "./pages/student/Certificates";
-import { Notifications } from "./pages/student/Notifications";
-
-// Instructor Pages
-import { InstructorCourses } from "./pages/instructor/InstructorCourses";
-import { CourseEditor } from "./pages/instructor/CourseEditor";
-import { InstructorProjects } from "./pages/instructor/InstructorProjects";
-import { InstructorAnalytics } from "./pages/instructor/InstructorAnalytics";
-import { InstructorStudents } from "./pages/instructor/InstructorStudents";
-import { InstructorLessons } from "./pages/instructor/InstructorLessons";
-import { InstructorQuizzes } from "./pages/instructor/InstructorQuizzes";
-import { InstructorComments } from "./pages/instructor/InstructorComments";
-
-// Admin Pages
-import { AdminDashboard } from "./pages/admin/AdminDashboard";
-import { AdminUsers } from "./pages/AdminUsers";
-import { AdminReports } from "./pages/AdminReports";
-import { AdminCourses } from "./pages/admin/AdminCourses";
-import { AdminResources } from "./pages/admin/AdminResources";
-import { AdminTickets } from "./pages/admin/AdminTickets";
-import { AdminAnnouncements } from "./pages/admin/AdminAnnouncements";
-import { AdminEvents } from "./pages/admin/AdminEvents";
-import { AdminLogs } from "./pages/admin/AdminLogs";
-import { AdminModeration } from "./pages/admin/AdminModeration";
-import { AdminSettings } from "./pages/admin/AdminSettings";
+const lazyComponent = <T extends Record<string, any>>(loader: () => Promise<T>, exportName: keyof T) => {
+  return async () => {
+    const module = await loader();
+    return { Component: module[exportName] };
+  };
+};
 
 export const router = createBrowserRouter([
   {
     path: "/",
     Component: PublicLayout,
     children: [
-      { index: true, Component: Home },
-      { path: "login", Component: Auth },
-      { path: "register", Component: Auth },
-      { path: "features", Component: Home },
-      { path: "pricing", Component: Home },
-      { path: "events", Component: Home },
+      { index: true, lazy: lazyComponent(() => import("./pages/Home"), "Home") },
+      { path: "login", lazy: lazyComponent(() => import("./pages/Auth"), "Auth") },
+      { path: "register", lazy: lazyComponent(() => import("./pages/Auth"), "Auth") },
+      { path: "features", lazy: lazyComponent(() => import("./pages/Home"), "Home") },
+      { path: "pricing", lazy: lazyComponent(() => import("./pages/Home"), "Home") },
+      { path: "events", lazy: lazyComponent(() => import("./pages/Home"), "Home") },
     ],
   },
   {
@@ -64,45 +27,45 @@ export const router = createBrowserRouter([
     Component: AppLayout,
     children: [
       { index: true, element: <Navigate to="/app/dashboard" replace /> },
-      { path: "dashboard", Component: Dashboard },
-      { path: "courses", Component: CourseList },
-      { path: "courses/:id", Component: CourseDetail },
-      { path: "courses/:courseId/lessons/:lessonId", Component: LessonView },
-      { path: "instructor/courses", Component: InstructorCourses },
-      { path: "instructor/courses/new", Component: CourseEditor },
-      { path: "instructor/courses/:id/edit", Component: CourseEditor },
-      { path: "instructor/courses/:id/lessons", Component: InstructorLessons },
-      { path: "instructor/quizzes", Component: InstructorQuizzes },
-      { path: "instructor/comments", Component: InstructorComments },
-      { path: "instructor/students", Component: InstructorStudents },
-      { path: "instructor/projects", Component: InstructorProjects },
-      { path: "instructor/analytics", Component: InstructorAnalytics },
-      { path: "resources", Component: Resources },
-      { path: "quizzes", Component: Quizzes },
-      { path: "projects", Component: Projects },
-      { path: "support", Component: Support },
-      { path: "community", Component: Community },
-      { path: "leaderboard", Component: Leaderboard },
-      { path: "favorites", Component: Favorites },
-      { path: "certificates", Component: Certificates },
-      { path: "notifications", Component: Notifications },
+      { path: "dashboard", lazy: lazyComponent(() => import("./pages/Dashboard"), "Dashboard") },
+      { path: "courses", lazy: lazyComponent(() => import("./pages/CourseList"), "CourseList") },
+      { path: "courses/:id", lazy: lazyComponent(() => import("./pages/CourseDetail"), "CourseDetail") },
+      { path: "courses/:courseId/lessons/:lessonId", lazy: lazyComponent(() => import("./pages/student/LessonView"), "LessonView") },
+      { path: "instructor/courses", lazy: lazyComponent(() => import("./pages/instructor/InstructorCourses"), "InstructorCourses") },
+      { path: "instructor/courses/new", lazy: lazyComponent(() => import("./pages/instructor/CourseEditor"), "CourseEditor") },
+      { path: "instructor/courses/:id/edit", lazy: lazyComponent(() => import("./pages/instructor/CourseEditor"), "CourseEditor") },
+      { path: "instructor/courses/:id/lessons", lazy: lazyComponent(() => import("./pages/instructor/InstructorLessons"), "InstructorLessons") },
+      { path: "instructor/quizzes", lazy: lazyComponent(() => import("./pages/instructor/InstructorQuizzes"), "InstructorQuizzes") },
+      { path: "instructor/comments", lazy: lazyComponent(() => import("./pages/instructor/InstructorComments"), "InstructorComments") },
+      { path: "instructor/students", lazy: lazyComponent(() => import("./pages/instructor/InstructorStudents"), "InstructorStudents") },
+      { path: "instructor/projects", lazy: lazyComponent(() => import("./pages/instructor/InstructorProjects"), "InstructorProjects") },
+      { path: "instructor/analytics", lazy: lazyComponent(() => import("./pages/instructor/InstructorAnalytics"), "InstructorAnalytics") },
+      { path: "resources", lazy: lazyComponent(() => import("./pages/Resources"), "Resources") },
+      { path: "quizzes", lazy: lazyComponent(() => import("./pages/Quizzes"), "Quizzes") },
+      { path: "projects", lazy: lazyComponent(() => import("./pages/Projects"), "Projects") },
+      { path: "support", lazy: lazyComponent(() => import("./pages/Support"), "Support") },
+      { path: "community", lazy: lazyComponent(() => import("./pages/Community"), "Community") },
+      { path: "leaderboard", lazy: lazyComponent(() => import("./pages/Leaderboard"), "Leaderboard") },
+      { path: "favorites", lazy: lazyComponent(() => import("./pages/student/Favorites"), "Favorites") },
+      { path: "certificates", lazy: lazyComponent(() => import("./pages/student/Certificates"), "Certificates") },
+      { path: "notifications", lazy: lazyComponent(() => import("./pages/student/Notifications"), "Notifications") },
       // Admin routes
-      { path: "admin", Component: AdminDashboard },
-      { path: "admin/users", Component: AdminUsers },
-      { path: "admin/courses", Component: AdminCourses },
-      { path: "admin/resources", Component: AdminResources },
-      { path: "admin/tickets", Component: AdminTickets },
-      { path: "admin/analytics", Component: AdminReports },
-      { path: "admin/announcements", Component: AdminAnnouncements },
-      { path: "admin/events", Component: AdminEvents },
-      { path: "admin/logs", Component: AdminLogs },
-      { path: "admin/moderation", Component: AdminModeration },
-      { path: "admin/settings", Component: AdminSettings },
-      { path: "analytics", Component: AdminReports },
-      { path: "jobs", Component: Dashboard },
-      { path: "profile", Component: Profile },
-      { path: "settings", Component: Settings },
-      { path: "*", Component: Dashboard },
+      { path: "admin", lazy: lazyComponent(() => import("./pages/admin/AdminDashboard"), "AdminDashboard") },
+      { path: "admin/users", lazy: lazyComponent(() => import("./pages/AdminUsers"), "AdminUsers") },
+      { path: "admin/courses", lazy: lazyComponent(() => import("./pages/admin/AdminCourses"), "AdminCourses") },
+      { path: "admin/resources", lazy: lazyComponent(() => import("./pages/admin/AdminResources"), "AdminResources") },
+      { path: "admin/tickets", lazy: lazyComponent(() => import("./pages/admin/AdminTickets"), "AdminTickets") },
+      { path: "admin/analytics", lazy: lazyComponent(() => import("./pages/AdminReports"), "AdminReports") },
+      { path: "admin/announcements", lazy: lazyComponent(() => import("./pages/admin/AdminAnnouncements"), "AdminAnnouncements") },
+      { path: "admin/events", lazy: lazyComponent(() => import("./pages/admin/AdminEvents"), "AdminEvents") },
+      { path: "admin/logs", lazy: lazyComponent(() => import("./pages/admin/AdminLogs"), "AdminLogs") },
+      { path: "admin/moderation", lazy: lazyComponent(() => import("./pages/admin/AdminModeration"), "AdminModeration") },
+      { path: "admin/settings", lazy: lazyComponent(() => import("./pages/admin/AdminSettings"), "AdminSettings") },
+      { path: "analytics", lazy: lazyComponent(() => import("./pages/AdminReports"), "AdminReports") },
+      { path: "jobs", lazy: lazyComponent(() => import("./pages/Dashboard"), "Dashboard") },
+      { path: "profile", lazy: lazyComponent(() => import("./pages/Profile"), "Profile") },
+      { path: "settings", lazy: lazyComponent(() => import("./pages/Settings"), "Settings") },
+      { path: "*", lazy: lazyComponent(() => import("./pages/Dashboard"), "Dashboard") },
     ],
   },
   { path: "*", element: <Navigate to="/" replace /> },

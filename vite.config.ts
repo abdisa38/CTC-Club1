@@ -24,6 +24,25 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) {
+            return;
+          }
+
+          const modulePath = id.split('node_modules/')[1] || '';
+          const parts = modulePath.split('/');
+          const packageName = parts[0]?.startsWith('@')
+            ? `${parts[0]}-${parts[1] || 'pkg'}`
+            : parts[0] || 'pkg';
+
+          return `vendor-${packageName.replace(/[@]/g, '')}`;
+        },
+      },
+    },
+  },
 
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
   assetsInclude: ['**/*.svg', '**/*.csv'],
