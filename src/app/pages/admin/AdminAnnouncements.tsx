@@ -1,211 +1,236 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { Badge } from "../../components/ui/Badge";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../components/ui/Dialog";
 import { Input } from "../../components/ui/Input";
 import { Textarea } from "../../components/ui/Textarea";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../components/ui/Dialog";
-import { Megaphone, Plus, Edit2, Trash2, Clock, Eye, Calendar } from "lucide-react";
+import { Megaphone, Plus, Loader2, Users } from "lucide-react";
+import apiService, { Announcement } from "../../services/api";
 
-type Announcement = {
-  id: number;
+type BroadcastForm = {
   title: string;
-  content: string;
-  author: string;
-  status: "Published" | "Scheduled" | "Draft";
-  createdAt: string;
-  scheduledFor?: string;
-  views: number;
+  message: string;
+  role: "all" | "student" | "instructor" | "admin";
+  type: "system" | "course_update" | "project_graded" | "achievement" | "message";
 };
 
-const initialAnnouncements: Announcement[] = [
-  { id: 1, title: "Platform Maintenance - April 10th", content: "We'll be performing scheduled maintenance on April 10th from 2:00 AM to 6:00 AM UTC. The platform will be temporarily unavailable during this period. Please save your work beforehand.", author: "David Kumar", status: "Published", createdAt: "2026-04-05", views: 2340 },
-  { id: 2, title: "New AI/ML Course Launching Soon!", content: "We're excited to announce our new Advanced Machine Learning course by Prof. James Wright. Pre-registration opens next week with an early bird discount.", author: "David Kumar", status: "Scheduled", createdAt: "2026-04-04", scheduledFor: "2026-04-12", views: 0 },
-  { id: 3, title: "Spring Hackathon 2026 Registration Open", content: "Join our annual Spring Hackathon! Teams of 2-4, prizes worth $5,000. Registration closes April 20th. Theme: Sustainable Tech Solutions.", author: "Sarah Admin", status: "Published", createdAt: "2026-04-01", views: 4120 },
-  { id: 4, title: "Updated Code of Conduct", content: "We've updated our community guidelines and code of conduct. Please review the changes in the Community section.", author: "David Kumar", status: "Draft", createdAt: "2026-04-03", views: 0 },
-  { id: 5, title: "Summer Internship Partnerships", content: "We've partnered with 15 top tech companies for summer internship placements. Check the Jobs section for opportunities.", author: "Sarah Admin", status: "Published", createdAt: "2026-03-28", views: 5680 },
-];
+const initialForm: BroadcastForm = {
+  title: "",
+  message: "",
+  role: "all",
+  type: "system",
+};
 
 export function AdminAnnouncements() {
-  const [announcements, setAnnouncements] = useState<Announcement[]>(initialAnnouncements);
-  const [createOpen, setCreateOpen] = useState(false);
-  const [editItem, setEditItem] = useState<Announcement | null>(null);
-  const [deleteItem, setDeleteItem] = useState<Announcement | null>(null);
-  const [form, setForm] = useState({ title: "", content: "", status: "Draft" as Announcement["status"], scheduledFor: "" });
-  const [processing, setProcessing] = useState(false);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const handleCreate = () => {
-    if (!form.title || !form.content) return;
-    setProcessing(true);
-    setTimeout(() => {
-      setAnnouncements(prev => [{
-        id: Date.now(), title: form.title, content: form.content, author: "Admin",
-        status: form.status, createdAt: new Date().toISOString().split("T")[0],
-        scheduledFor: form.scheduledFor || undefined, views: 0,
-      }, ...prev]);
-      setProcessing(false);
-      setCreateOpen(false);
-      setForm({ title: "", content: "", status: "Draft", scheduledFor: "" });
-    }, 800);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState<BroadcastForm>(initialForm);
+  const [lastAudienceCount, setLastAudienceCount] = useState<number | null>(null);
+
+  const published = useMemo(
+    () =>
+      [...announcements].sort(
+        (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+      ),
+    [announcements]
+  );
+
+  useEffect(() => {
+    const loadAnnouncements = async () => {
+      try {
+        const data = await apiService.getAnnouncements();
+        setAnnouncements(Array.isArray(data) ? data : []);
+      } catch (err: any) {
+        setError(err?.response?.data?.message || "Failed to load announcements");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void loadAnnouncements();
+  }, []);
+
+  const handleBroadcast = async () => {
+    if (!form.title.trim() || !form.message.trim()) return;
+
+    setSubmitting(true);
+    setError("");
+    try {
+      const payload = await apiService.broadcastNotification({
+        title: form.title.trim(),
+        message: form.message.trim(),
+        type: form.type,
+        role: form.role === "all" ? undefined : form.role,
+      });
+
+      setLastAudienceCount(Number(payload?.count || 0));
+      setDialogOpen(false);
+      setForm(initialForm);
+
+      const refreshed = await apiService.getAnnouncements();
+      setAnnouncements(Array.isArray(refreshed) ? refreshed : []);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to send announcement");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleEdit = () => {
-    if (!editItem || !form.title) return;
-    setProcessing(true);
-    setTimeout(() => {
-      setAnnouncements(prev => prev.map(a => a.id === editItem.id ? { ...a, title: form.title, content: form.content, status: form.status, scheduledFor: form.scheduledFor || undefined } : a));
-      setProcessing(false);
-      setEditItem(null);
-    }, 800);
-  };
-
-  const handleDelete = () => {
-    if (!deleteItem) return;
-    setAnnouncements(prev => prev.filter(a => a.id !== deleteItem.id));
-    setDeleteItem(null);
-  };
-
-  const statusVariant = (s: string) => s === "Published" ? "success" : s === "Scheduled" ? "outline" : "secondary";
+  if (loading) {
+    return (
+      <div className="flex h-[40vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Announcements</h1>
-          <p className="text-slate-500 dark:text-slate-400">Create and manage platform-wide announcements.</p>
+          <p className="text-slate-500 dark:text-slate-400">Broadcast platform updates and review latest public announcements.</p>
         </div>
-        <Button className="bg-purple-600 hover:bg-purple-700" onClick={() => { setForm({ title: "", content: "", status: "Draft", scheduledFor: "" }); setCreateOpen(true); }}>
-          <Plus className="h-4 w-4 mr-2" /> New Announcement
+
+        <Button className="bg-indigo-600 hover:bg-indigo-700" onClick={() => setDialogOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          New Broadcast
         </Button>
       </div>
 
-      {/* Announcement Cards */}
-      <div className="grid gap-4">
-        {announcements.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center py-12">
-              <Megaphone className="h-12 w-12 text-slate-300 mb-3" />
-              <p className="text-slate-500 font-medium">No announcements yet</p>
-              <p className="text-sm text-slate-400">Create your first announcement to notify users.</p>
-            </CardContent>
-          </Card>
-        ) : announcements.map((a) => (
-          <Card key={a.id} className="hover:shadow-md transition-shadow">
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-start gap-3 min-w-0">
-                  <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${a.status === "Published" ? "bg-emerald-50 dark:bg-emerald-900/20" : a.status === "Scheduled" ? "bg-amber-50 dark:bg-amber-900/20" : "bg-slate-100 dark:bg-slate-800"}`}>
-                    <Megaphone className={`h-5 w-5 ${a.status === "Published" ? "text-emerald-600" : a.status === "Scheduled" ? "text-amber-600" : "text-slate-500"}`} />
-                  </div>
+      {error ? (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
+          {error}
+        </div>
+      ) : null}
+
+      {lastAudienceCount !== null ? (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300">
+          Broadcast sent successfully to {lastAudienceCount} user{lastAudienceCount === 1 ? "" : "s"}.
+        </div>
+      ) : null}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Recent Announcements</CardTitle>
+          <CardDescription>Data sourced from live backend announcements feed.</CardDescription>
+        </CardHeader>
+
+        <CardContent className="space-y-3">
+          {published.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-slate-300 p-8 text-center text-slate-500 dark:border-slate-700">
+              No announcements available yet.
+            </div>
+          ) : (
+            published.map((item) => (
+              <div key={item.id} className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
+                <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-medium text-slate-900 dark:text-white">{a.title}</h3>
-                      <Badge variant={statusVariant(a.status) as any} className="text-[10px] uppercase">{a.status}</Badge>
-                    </div>
-                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 line-clamp-2">{a.content}</p>
-                    <div className="flex items-center gap-4 mt-2 text-xs text-slate-400">
-                      <span>{a.author}</span>
-                      <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{a.createdAt}</span>
-                      {a.scheduledFor && <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />Scheduled: {a.scheduledFor}</span>}
-                      {a.status === "Published" && <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{a.views.toLocaleString()} views</span>}
-                    </div>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white">{item.title}</p>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 line-clamp-3">{item.content}</p>
+                  </div>
+                  <div className="h-8 w-8 rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-300 flex items-center justify-center shrink-0">
+                    <Megaphone className="h-4 w-4" />
                   </div>
                 </div>
-                <div className="flex gap-1 shrink-0">
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-purple-600" onClick={() => { setEditItem(a); setForm({ title: a.title, content: a.content, status: a.status, scheduledFor: a.scheduledFor || "" }); }}>
-                    <Edit2 className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-red-600" onClick={() => setDeleteItem(a)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+
+                <div className="mt-3 flex items-center gap-2 text-[11px] text-slate-500">
+                  <Badge variant="outline" className="text-[10px] uppercase">{item.category || "announcement"}</Badge>
+                  <span>By {item.author || "CTC Team"}</span>
+                  <span>•</span>
+                  <span>{item.createdAt ? new Date(item.createdAt).toLocaleString() : "-"}</span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
 
-      {/* Create Dialog */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-[560px]">
           <DialogHeader>
-            <DialogTitle>New Announcement</DialogTitle>
-            <DialogDescription>Create a new platform announcement.</DialogDescription>
+            <DialogTitle>New Broadcast Announcement</DialogTitle>
+            <DialogDescription>Send a live notification to users by role.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Title <span className="text-red-500">*</span></label>
-              <Input value={form.title} onChange={(e) => setForm(p => ({ ...p, title: e.target.value }))} placeholder="Announcement title" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Content <span className="text-red-500">*</span></label>
-              <Textarea value={form.content} onChange={(e) => setForm(p => ({ ...p, content: e.target.value }))} placeholder="Write your announcement..." className="min-h-[120px]" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Status</label>
-                <select className="flex h-10 w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-800" value={form.status} onChange={(e) => setForm(p => ({ ...p, status: e.target.value as any }))}>
-                  <option value="Draft">Draft</option>
-                  <option value="Published">Publish Now</option>
-                  <option value="Scheduled">Schedule</option>
-                </select>
-              </div>
-              {form.status === "Scheduled" && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Schedule Date</label>
-                  <Input type="date" value={form.scheduledFor} onChange={(e) => setForm(p => ({ ...p, scheduledFor: e.target.value }))} />
-                </div>
-              )}
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreate} disabled={!form.title || !form.content || processing} className="bg-purple-600 hover:bg-purple-700">
-              {processing ? "Creating..." : "Create"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
-      {/* Edit Dialog */}
-      <Dialog open={!!editItem} onOpenChange={() => setEditItem(null)}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader><DialogTitle>Edit Announcement</DialogTitle></DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Title</label>
-              <Input value={form.title} onChange={(e) => setForm(p => ({ ...p, title: e.target.value }))} />
+              <Input
+                value={form.title}
+                onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
+                placeholder="Announcement title"
+              />
             </div>
+
             <div className="space-y-2">
-              <label className="text-sm font-medium">Content</label>
-              <Textarea value={form.content} onChange={(e) => setForm(p => ({ ...p, content: e.target.value }))} className="min-h-[120px]" />
+              <label className="text-sm font-medium">Message</label>
+              <Textarea
+                value={form.message}
+                onChange={(e) => setForm((prev) => ({ ...prev, message: e.target.value }))}
+                placeholder="Write your announcement"
+                className="min-h-[120px]"
+              />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Status</label>
-              <select className="flex h-10 w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-800" value={form.status} onChange={(e) => setForm(p => ({ ...p, status: e.target.value as any }))}>
-                <option value="Draft">Draft</option>
-                <option value="Published">Published</option>
-                <option value="Scheduled">Scheduled</option>
-              </select>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Audience</label>
+                <select
+                  className="flex h-10 w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-800"
+                  value={form.role}
+                  onChange={(e) => setForm((prev) => ({ ...prev, role: e.target.value as BroadcastForm["role"] }))}
+                >
+                  <option value="all">All users</option>
+                  <option value="student">Students</option>
+                  <option value="instructor">Instructors</option>
+                  <option value="admin">Admins</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Type</label>
+                <select
+                  className="flex h-10 w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-800"
+                  value={form.type}
+                  onChange={(e) => setForm((prev) => ({ ...prev, type: e.target.value as BroadcastForm["type"] }))}
+                >
+                  <option value="system">System</option>
+                  <option value="course_update">Course Update</option>
+                  <option value="project_graded">Project Graded</option>
+                  <option value="achievement">Achievement</option>
+                  <option value="message">Message</option>
+                </select>
+              </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditItem(null)}>Cancel</Button>
-            <Button onClick={handleEdit} disabled={processing} className="bg-purple-600 hover:bg-purple-700">{processing ? "Saving..." : "Save"}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
-      {/* Delete Dialog */}
-      <Dialog open={!!deleteItem} onOpenChange={() => setDeleteItem(null)}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>Delete Announcement</DialogTitle>
-            <DialogDescription>Are you sure you want to delete "{deleteItem?.title}"? This cannot be undone.</DialogDescription>
-          </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteItem(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              className="bg-indigo-600 hover:bg-indigo-700"
+              disabled={submitting || !form.title.trim() || !form.message.trim()}
+              onClick={() => void handleBroadcast()}
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Users className="h-4 w-4 mr-2" />
+                  Send Broadcast
+                </>
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
