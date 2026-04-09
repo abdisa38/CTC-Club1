@@ -7,7 +7,7 @@ const LazyAdminDashboard = lazy(() =>
   import("./admin/AdminDashboard").then((module) => ({ default: module.AdminDashboard }))
 );
 const LazyInstructorDashboard = lazy(() =>
-  import("./instructor/InstructorDashboard").then((module) => ({ default: module.InstructorDashboard }))
+  import("./InstructorDashboard").then((module) => ({ default: module.InstructorDashboard }))
 );
 const LazyStudentDashboard = lazy(() =>
   import("./StudentDashboard").then((module) => ({ default: module.StudentDashboard }))
