@@ -268,7 +268,14 @@ export function Projects() {
                       {!submission || submission.status !== "graded" ? (
                         <Dialog>
                           <DialogTrigger asChild>
-                            <Button>
+                            <Button
+                              onClick={() => {
+                                setActiveProjectId(project._id);
+                                setRepoUrl(submission?.repoUrl || "");
+                                setLiveUrl(submission?.liveUrl || "");
+                                setComments(submission?.comments || "");
+                              }}
+                            >
                               <UploadCloud className="mr-2 h-4 w-4" />
                               {submission ? "Update Submission" : "Submit Project"}
                             </Button>
@@ -286,9 +293,8 @@ export function Projects() {
                                 <div className="relative">
                                   <Github className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
                                   <Input
-                                    value={activeProjectId === project._id ? repoUrl : submission?.repoUrl || ""}
+                                    value={repoUrl}
                                     onChange={(e) => {
-                                      setActiveProjectId(project._id);
                                       setRepoUrl(e.target.value);
                                     }}
                                     placeholder="https://github.com/username/repo"
@@ -301,9 +307,8 @@ export function Projects() {
                                 <div className="relative">
                                   <LinkIcon className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
                                   <Input
-                                    value={activeProjectId === project._id ? liveUrl : submission?.liveUrl || ""}
+                                    value={liveUrl}
                                     onChange={(e) => {
-                                      setActiveProjectId(project._id);
                                       setLiveUrl(e.target.value);
                                     }}
                                     placeholder="https://your-app.vercel.app"
@@ -314,9 +319,8 @@ export function Projects() {
                               <div className="space-y-2">
                                 <label className="text-sm font-medium">Comments for Instructor</label>
                                 <Textarea
-                                  value={activeProjectId === project._id ? comments : submission?.comments || ""}
+                                  value={comments}
                                   onChange={(e) => {
-                                    setActiveProjectId(project._id);
                                     setComments(e.target.value);
                                   }}
                                   placeholder="Any implementation notes or challenges?"
@@ -326,7 +330,7 @@ export function Projects() {
                             <DialogFooter>
                               <Button
                                 onClick={handleSubmitProject}
-                                disabled={isSubmitting || !(activeProjectId === project._id ? repoUrl : submission?.repoUrl)}
+                                disabled={isSubmitting || !repoUrl.trim() || activeProjectId !== project._id}
                               >
                                 {isSubmitting ? "Submitting..." : "Save Submission"}
                               </Button>
