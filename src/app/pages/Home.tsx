@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { motion, useInView } from "motion/react";
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
@@ -131,11 +131,14 @@ const featuredCourses = [
   { id: 4, title: "Mobile App Development with React Native", instructor: "Eng. Maria Lopez", rating: 4.7, students: "1.5k", category: "Mobile", image: "https://images.unsplash.com/photo-1760531932521-8eb5a064dbca?w=600&h=340&fit=crop" },
 ];
 
-const testimonials = [
-  { name: "Amira Hassan", role: "CS Senior", comment: "CTC Club transformed my coding skills. The structured courses and real projects helped me land my dream internship!", image: "https://images.unsplash.com/photo-1573497620166-aef748c8c792?w=80&h=80&fit=crop&crop=face", rating: 5 },
-  { name: "Daniel Kim", role: "IT Junior", comment: "The community support is incredible. Whenever I'm stuck, there's always someone ready to help. Best learning platform!", image: "https://images.unsplash.com/photo-1568880893176-fb2bdab44e41?w=80&h=80&fit=crop&crop=face", rating: 5 },
-  { name: "Sofia Rodriguez", role: "IS Graduate", comment: "Earned 3 certificates and built a portfolio that impressed every interviewer. CTC Club is a game changer!", image: "https://images.unsplash.com/photo-1752738372136-2602aaafdcb7?w=80&h=80&fit=crop&crop=face", rating: 5 },
-];
+type HomeAnnouncement = {
+  id: string;
+  title: string;
+  content: string;
+  author: string;
+  createdAt: string;
+  category?: string;
+};
 
 const features = [
   { title: "Structured Courses", desc: "Follow curated learning paths with video lessons, quizzes, and hands-on labs.", icon: BookOpen, color: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50 dark:bg-blue-500/10" },
@@ -154,24 +157,13 @@ const howItWorks = [
   { step: 5, title: "Get Certified", desc: "Earn certificates and level up", icon: Award },
 ];
 
-const studentProjects = [
-  { title: "E-Commerce Dashboard", tech: "React, Node.js, MongoDB", image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=250&fit=crop", github: "#", demo: "#" },
-  { title: "AI Chat Application", tech: "Python, TensorFlow, Flask", image: "https://images.unsplash.com/photo-1760531932521-8eb5a064dbca?w=400&h=250&fit=crop", github: "#", demo: "#" },
-  { title: "Portfolio Website", tech: "HTML, CSS, JavaScript", image: "https://images.unsplash.com/photo-1637937459053-c788742455be?w=400&h=250&fit=crop", github: "#", demo: "#" },
-];
-
-const events = [
-  { title: "Web Development Workshop", date: "Apr 15, 2026", time: "2:00 PM", type: "Workshop", desc: "Build a full-stack app from scratch" },
-  { title: "AI/ML Study Group Kickoff", date: "Apr 20, 2026", time: "10:00 AM", type: "Study Group", desc: "Weekly sessions on machine learning fundamentals" },
-  { title: "Spring Hackathon 2026", date: "May 1-3, 2026", time: "All Day", type: "Hackathon", desc: "48-hour hackathon with prizes and mentors" },
-];
-
 export function Home() {
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
 
   const [realCourses, setRealCourses] = useState<any[]>(featuredCourses);
+  const [announcements, setAnnouncements] = useState<HomeAnnouncement[]>([]);
   const [stats, setStats] = useState({
     activeStudents: 9,
     videoCourses: 3,
@@ -187,9 +179,10 @@ export function Home() {
   useEffect(() => {
     const fetchHomeData = async () => {
       try {
-        const [statsRes, coursesRes] = await Promise.all([
+        const [statsRes, coursesRes, announcementsRes] = await Promise.all([
           api.get('/dashboard/public-stats'),
-          api.get('/courses?limit=4')
+          api.get('/courses?limit=4'),
+          api.get('/dashboard/announcements')
         ]);
 
         if (statsRes.data) {
@@ -218,9 +211,26 @@ export function Home() {
             rating: toNumber(c.rating, 4.5),
             students: `${Array.isArray(c.students) ? c.students.length : 0}`,
             category: c.category || 'Tech',
-            image: c.coverImage || 'https://images.unsplash.com/photo-1637937459053-c788742455be?w=600&h=340&fit=crop'
+            image: c.coverImage || 'https://images.unsplash.com/photo-1637937459053-c788742455be?w=600&h=340&fit=crop',
+            description: c.shortDescription || c.description || ''
           }));
           setRealCourses(mappedCourses);
+        }
+
+        const announcementPayload = announcementsRes.data?.data ?? announcementsRes.data;
+        const rawAnnouncements = Array.isArray(announcementPayload) ? announcementPayload : [];
+
+        if (rawAnnouncements.length > 0) {
+          const mappedAnnouncements = rawAnnouncements.map((item: any, index: number) => ({
+            id: item.id || item._id || `announcement-${index}`,
+            title: item.title || 'Platform update',
+            content: item.content || 'New updates are available on CTC Club.',
+            author: item.author || 'CTC Team',
+            createdAt: item.createdAt || new Date().toISOString(),
+            category: item.category,
+          }));
+
+          setAnnouncements(mappedAnnouncements);
         }
       } catch (err) {
         console.error("Error fetching homepage data:", err);
@@ -232,6 +242,60 @@ export function Home() {
   const searchSuggestions = ["Web Development", "Python", "React", "Data Science", "UI/UX Design", "Machine Learning"].filter(s =>
     searchQuery && s.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const communityCards = useMemo(() => {
+    if (announcements.length > 0) {
+      return announcements.slice(0, 3).map((item) => ({
+        id: item.id,
+        title: item.title,
+        description: item.content,
+        author: item.author,
+        category: item.category || 'announcement',
+        date: new Date(item.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }),
+      }));
+    }
+
+    return realCourses.slice(0, 3).map((course: any, index: number) => ({
+      id: String(course.id || `course-update-${index}`),
+      title: `New Course: ${course.title}`,
+      description: course.description || `${course.category} track is now available for learners.`,
+      author: course.instructor || 'CTC Team',
+      category: 'course update',
+      date: new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }),
+    }));
+  }, [announcements, realCourses]);
+
+  const projectShowcase = useMemo(() => {
+    return realCourses.slice(0, 3).map((course: any, index: number) => ({
+      id: String(course.id || `project-${index}`),
+      title: course.title,
+      tech: `${course.category} • ${course.instructor}`,
+      image: course.image,
+      href: typeof course.id === 'string' ? `/app/courses/${course.id}` : '/app/courses',
+    }));
+  }, [realCourses]);
+
+  const eventCards = useMemo(() => {
+    const source = announcements.length > 0
+      ? announcements
+      : realCourses.slice(0, 3).map((course: any, index: number) => ({
+          id: String(course.id || `event-${index}`),
+          title: `Course Launch: ${course.title}`,
+          content: `${course.category} learning track is open for enrollment.`,
+          author: course.instructor || 'CTC Team',
+          createdAt: new Date().toISOString(),
+          category: 'launch',
+        }));
+
+    return source.slice(0, 3).map((item) => ({
+      id: item.id,
+      title: item.title,
+      type: item.category || 'announcement',
+      desc: item.content,
+      date: new Date(item.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }),
+      time: new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    }));
+  }, [announcements, realCourses]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -550,29 +614,30 @@ export function Home() {
         <div className="max-w-[1200px] mx-auto px-6 lg:px-8">
           <AnimatedSection>
             <SectionHeader
-              badge="Student Stories"
+              badge="Community Updates"
               badgeColor="amber"
-              title="What Our Students"
-              highlight="Say"
+              title="Latest Platform"
+              highlight="Highlights"
             />
           </AnimatedSection>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-5xl mx-auto">
-            {testimonials.map((t, i) => (
-              <AnimatedSection key={i} delay={i * 0.08}>
+            {communityCards.map((item, i) => (
+              <AnimatedSection key={item.id} delay={i * 0.08}>
                 <PremiumCard className="p-6 h-full flex flex-col">
-                  <div className="flex gap-0.5 mb-4">
-                    {Array.from({ length: t.rating }).map((_, j) => (
-                      <Star key={j} className="h-4 w-4 fill-amber-400 text-amber-400" />
-                    ))}
-                  </div>
-                  <p className="text-slate-600 dark:text-slate-400 mb-6 text-[15px] leading-relaxed flex-1">"{t.comment}"</p>
-                  <div className="flex items-center gap-3 pt-4 border-t border-slate-100 dark:border-white/[0.04]">
-                    <ImageWithFallback src={t.image} alt={t.name} className="h-10 w-10 rounded-full object-cover ring-2 ring-slate-100 dark:ring-slate-800" />
+                  <Badge variant="outline" className="mb-3 w-fit text-[11px] capitalize bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20">
+                    {item.category}
+                  </Badge>
+                  <h3 className="text-[15px] font-semibold text-slate-900 dark:text-white mb-2">{item.title}</h3>
+                  <p className="text-slate-600 dark:text-slate-400 mb-6 text-[14px] leading-relaxed flex-1 line-clamp-4">{item.description}</p>
+                  <div className="flex items-center justify-between gap-3 pt-4 border-t border-slate-100 dark:border-white/[0.04]">
                     <div>
-                      <p className="text-sm font-semibold text-slate-900 dark:text-white">{t.name}</p>
-                      <p className="text-[12px] text-slate-500">{t.role}</p>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white">{item.author}</p>
+                      <p className="text-[12px] text-slate-500">{item.date}</p>
                     </div>
+                    <Button size="sm" variant="outline" className="h-8 text-[11px]" asChild>
+                      <Link to="/app/community">Discuss</Link>
+                    </Button>
                   </div>
                 </PremiumCard>
               </AnimatedSection>
@@ -595,8 +660,8 @@ export function Home() {
           </AnimatedSection>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-5xl mx-auto">
-            {studentProjects.map((p, i) => (
-              <AnimatedSection key={i} delay={i * 0.08}>
+            {projectShowcase.map((p, i) => (
+              <AnimatedSection key={p.id} delay={i * 0.08}>
                 <PremiumCard className="overflow-hidden group">
                   <div className="aspect-video overflow-hidden">
                     <ImageWithFallback src={p.image} alt={p.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
@@ -605,11 +670,11 @@ export function Home() {
                     <h3 className="text-[15px] font-semibold text-slate-900 dark:text-white mb-1">{p.title}</h3>
                     <p className="text-[13px] text-slate-500 mb-4">{p.tech}</p>
                     <div className="flex gap-2.5">
-                      <Button size="sm" variant="outline" className="text-[11px] flex-1 h-8 rounded-lg border-slate-200/60 dark:border-white/10">
-                        <Github className="h-3.5 w-3.5 mr-1.5" /> GitHub
+                      <Button size="sm" variant="outline" className="text-[11px] flex-1 h-8 rounded-lg border-slate-200/60 dark:border-white/10" asChild>
+                        <Link to={p.href}>View Course</Link>
                       </Button>
-                      <Button size="sm" className="text-[11px] flex-1 h-8 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-sm shadow-indigo-500/20">
-                        <ExternalLink className="h-3.5 w-3.5 mr-1.5" /> Demo
+                      <Button size="sm" className="text-[11px] flex-1 h-8 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-sm shadow-indigo-500/20" asChild>
+                        <Link to="/app/courses">Explore</Link>
                       </Button>
                     </div>
                   </div>
@@ -708,17 +773,19 @@ export function Home() {
           </AnimatedSection>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-5xl mx-auto">
-            {events.map((e, i) => (
-              <AnimatedSection key={i} delay={i * 0.08}>
+            {eventCards.map((e, i) => (
+              <AnimatedSection key={e.id} delay={i * 0.08}>
                 <PremiumCard className="p-6">
-                  <Badge variant="outline" className="mb-4 text-[11px] font-semibold bg-indigo-50 text-indigo-700 border-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/20">{e.type}</Badge>
+                  <Badge variant="outline" className="mb-4 text-[11px] font-semibold bg-indigo-50 text-indigo-700 border-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/20 capitalize">{e.type}</Badge>
                   <h3 className="text-[15px] font-semibold text-slate-900 dark:text-white mb-2">{e.title}</h3>
                   <p className="text-sm text-slate-500 mb-4 leading-relaxed">{e.desc}</p>
                   <div className="flex items-center gap-4 text-[12px] text-slate-400 mb-5">
                     <span className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" /> {e.date}</span>
                     <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> {e.time}</span>
                   </div>
-                  <Button size="sm" className="w-full rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white shadow-sm shadow-indigo-500/20">Register</Button>
+                  <Button size="sm" className="w-full rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white shadow-sm shadow-indigo-500/20" asChild>
+                    <Link to="/app/community">Read Update</Link>
+                  </Button>
                 </PremiumCard>
               </AnimatedSection>
             ))}
