@@ -5,7 +5,7 @@ import { Badge } from "../components/ui/Badge";
 import { Progress } from "../components/ui/Progress";
 import { Skeleton } from "../components/ui/Skeleton";
 import { Clock, HelpCircle, CheckCircle2, ChevronRight, RotateCcw, Award } from "lucide-react";
-import api from "../utils/api";
+import apiService from "../services/api";
 
 type QuizState = 'list' | 'taking' | 'results';
 
@@ -27,8 +27,8 @@ export function Quizzes() {
   const fetchQuizzes = async () => {
     setLoading(true);
     try {
-      const { data } = await api.get('/quizzes');
-      setQuizzes(data);
+      const data = await apiService.getQuizzes();
+      setQuizzes(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error(error);
     } finally {
@@ -49,7 +49,7 @@ export function Quizzes() {
   const handleStart = async (quizId: string) => {
     setLoading(true);
     try {
-      const { data } = await api.get('/quizzes/' + quizId);
+      const data = await apiService.getQuizById(quizId);
       setCurrentQuizData(data);
       setTimeLeft(data.timeLimit ? data.timeLimit * 60 : 600);
       setActiveQuestion(0);
@@ -75,6 +75,8 @@ export function Quizzes() {
   };
 
   const handleSubmit = async () => {
+    if (!currentQuizData) return;
+
     setLoading(true);
     try {
       const answersOutput = currentQuizData.questions.map((q: any, i: number) => ({
@@ -83,7 +85,7 @@ export function Quizzes() {
       }));
       const timeSpent = (currentQuizData.timeLimit ? currentQuizData.timeLimit * 60 : 600) - timeLeft;
 
-      const { data } = await api.post('/quizzes/' + currentQuizData._id + '/submit', {
+      const data = await apiService.submitQuiz(currentQuizData._id, {
         answers: answersOutput,
         timeSpent
       });
@@ -181,7 +183,9 @@ export function Quizzes() {
   }
 
   if (view === 'results' && currentQuizData && quizResult) {
-    const scorePct = Math.round((quizResult.score / quizResult.totalPoints) * 100) || 0;
+    const scorePct = quizResult.totalPoints
+      ? Math.round((quizResult.score / quizResult.totalPoints) * 100)
+      : Math.round(quizResult.percentage || 0);
 
     return (
       <div className="max-w-3xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">

@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { CourseEditor } from "./instructor/CourseEditor";
-import api from "../utils/api";
+import apiService from "../services/api";
 
 export function CourseDetail() {
   const { id } = useParams();
@@ -34,12 +34,15 @@ export function CourseDetail() {
     
     const fetchCourseData = async () => {
       try {
+        if (!id) return;
+
         const [courseRes, lessonsRes] = await Promise.all([
-          api.get(`/courses/${id}`),
-          api.get(`/courses/${id}/lessons`)
+          apiService.getCourseById(id),
+          apiService.getLessons(id)
         ]);
-        setCourse(courseRes.data);
-        setLessons(lessonsRes.data);
+
+        setCourse(courseRes);
+        setLessons(Array.isArray(lessonsRes) ? lessonsRes : []);
       } catch (error) {
         console.error("Failed to load course details", error);
       } finally {
@@ -57,12 +60,11 @@ export function CourseDetail() {
     }
     setIsEnrolling(true);
     try {
-      await api.post(`/courses/${id}/enroll`);
-      // Update local state instead of re-fetching immediately
-      setCourse({
-        ...course,
-        students: [...course.students, { _id: user._id, name: user.name }]
-      });
+      if (!id) return;
+
+      await apiService.enrollCourse(id);
+      const updatedCourse = await apiService.getCourseById(id);
+      setCourse(updatedCourse);
     } catch (error) {
       console.error("Failed to enroll", error);
     } finally {
@@ -83,7 +85,13 @@ export function CourseDetail() {
     return <div className="text-center py-20 text-slate-500">Course not found.</div>;
   }
 
-  const isEnrolled = user && course.students?.some((s: any) => s._id === user._id);
+  const isEnrolled =
+    !!user &&
+    Array.isArray(course.students) &&
+    course.students.some((student: any) => {
+      if (typeof student === "string") return student === user._id;
+      return student?._id === user._id;
+    });
   const progress = isEnrolled ? 15 : 0;
 
   return (

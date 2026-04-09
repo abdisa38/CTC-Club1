@@ -7,18 +7,9 @@ import { Input } from "../components/ui/Input";
 import { Badge } from "../components/ui/Badge";
 import { Search, Filter, Star, Clock, Users, PlayCircle, PlusCircle, X, Heart } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import api from "../utils/api";
+import apiService, { Course as ApiCourse } from "../services/api";
 
-type CourseType = {
-  _id: string;
-  title: string;
-  instructor: { _id: string; name: string };
-  students: string[];
-  coverImage: string;
-  category: string;
-  price: number;
-  description: string;
-};
+type CourseType = ApiCourse;
 
 export function CourseList() {
   const { role, user } = useAuth();
@@ -38,8 +29,8 @@ export function CourseList() {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const { data } = await api.get('/courses');
-        setCourses(data.courses || []);
+        const payload = await apiService.getCourses({ limit: 100 });
+        setCourses(payload.items || []);
       } catch (error) {
         console.error("Failed to fetch courses:", error);
       } finally {
@@ -65,15 +56,38 @@ export function CourseList() {
     });
   };
 
+  const isUserEnrolled = (course: CourseType) => {
+    if (!user || !Array.isArray(course.students)) return false;
+
+    return course.students.some((student: any) => {
+      if (typeof student === "string") return student === user._id;
+      return student?._id === user._id;
+    });
+  };
+
   const handleEnroll = async (id: string) => {
     if (!user) return; // need to be logged in
     setEnrollingId(id);
     try {
-      await api.post(`/courses/${id}/enroll`);
+      await apiService.enrollCourse(id);
       // Update local state to reflect enrollment
-      setCourses(courses.map(c => 
-        c._id === id ? { ...c, students: [...c.students, user._id] } : c
-      ));
+      setCourses((prevCourses) =>
+        prevCourses.map((course) => {
+          if (course._id !== id) return course;
+
+          const students = Array.isArray(course.students) ? course.students : [];
+          const alreadyEnrolled = students.some((student: any) =>
+            typeof student === "string" ? student === user._id : student?._id === user._id
+          );
+
+          if (alreadyEnrolled) return course;
+
+          return {
+            ...course,
+            students: [...students, user._id],
+          };
+        })
+      );
     } catch (error) {
       console.error("Failed to enroll:", error);
     } finally {
@@ -96,7 +110,7 @@ export function CourseList() {
         </div>
         {isInstructor && (
           <Button asChild className="shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white">
-            <Link to="/app/courses/new"><PlusCircle className="h-4 w-4 mr-2" /> Add Course</Link>
+            <Link to="/app/instructor/courses/new"><PlusCircle className="h-4 w-4 mr-2" /> Add Course</Link>
           </Button>
         )}
       </div>
@@ -193,7 +207,7 @@ export function CourseList() {
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {filteredCourses.map((course, i) => (
               <motion.div
-                key={course.id}
+                key={course._id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
@@ -217,7 +231,7 @@ export function CourseList() {
                     >
                       <Heart className={`h-4 w-4 ${favorites.has(course._id) ? "text-red-500 fill-red-500" : "text-slate-600"}`} />
                     </button>
-                    {user && course.students?.includes(user._id) && (
+                    {isUserEnrolled(course) && (
                       <Badge className="absolute bottom-3 left-3 bg-emerald-600 text-white hover:bg-emerald-600">Enrolled</Badge>
                     )}
                   </div>
@@ -227,7 +241,7 @@ export function CourseList() {
                       <Star className="h-4 w-4 fill-amber-500" />
                       <span>{4.5}</span>
                       <span className="text-slate-400 mx-1">·</span>
-                      <span className="text-slate-500">({course.students?.length || 0})</span>
+                      <span className="text-slate-500">({Array.isArray(course.students) ? course.students.length : 0})</span>
                     </div>
 
                     <Link to={`/app/courses/${course._id}`} className="block mb-2">
@@ -249,7 +263,7 @@ export function CourseList() {
                         <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> 10h</span>
                         <span className="flex items-center gap-1"><Users className="h-4 w-4" /> All Levels</span>
                       </div>
-                      {!user || !course.students?.includes(user._id) ? (
+                      {!isUserEnrolled(course) ? (
                         <Button
                           size="sm"
                           variant="outline"
