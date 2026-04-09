@@ -36,18 +36,26 @@ const importData = async () => {
       }
     ];
 
-    const createdUsers = [];
+    const createdUsersByEmail: Record<string, any> = {};
     for (const user of users) {
       let existingUser = await User.findOne({ email: user.email });
       if (!existingUser) {
         existingUser = await User.create(user);
         console.log(`Created ${user.role}: ${user.email}`);
       }
-      createdUsers.push(existingUser);
+      createdUsersByEmail[user.email] = existingUser;
     }
 
-    const sarahId = createdUsers[1]._id;
-    const alexId = createdUsers[2]._id;
+    const studentUser = createdUsersByEmail['amira@ctc.com'];
+    const sarahUser = createdUsersByEmail['sarah@ctc.com'];
+    const alexUser = createdUsersByEmail['alex@ctc.com'];
+
+    if (!studentUser || !sarahUser || !alexUser) {
+      throw new Error('Required seed users were not created successfully');
+    }
+
+    const sarahId = sarahUser._id;
+    const alexId = alexUser._id;
 
     console.log('Seeding courses...');
     const courses = [
@@ -109,13 +117,16 @@ const importData = async () => {
     console.log(`Imported ${insertedCourses.length} courses!`);
 
     // Optionally create some progress
-    await Progress.create({
-      user: createdUsers[0]._id,
-      course: insertedCourses[0]._id,
-      completedLessons: [],
-      isCompleted: true
-    });
-    console.log('Seeded progress successfully.');
+    const firstCourse = insertedCourses[0];
+    if (firstCourse) {
+      await Progress.create({
+        user: studentUser._id,
+        course: firstCourse._id,
+        completedLessons: [],
+        isCompleted: true
+      });
+      console.log('Seeded progress successfully.');
+    }
 
     console.log('Data Imported!');
     process.exit();

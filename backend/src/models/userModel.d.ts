@@ -5,6 +5,14 @@ export interface IUser extends Document {
     password?: string;
     role: 'student' | 'instructor' | 'admin';
     avatar?: string;
+    xp: number;
+    level: number;
+    badges: mongoose.Types.ObjectId[];
+    isDeleted: boolean;
+    isActive: boolean;
+    lastLogin?: Date;
+    enrolledCourses: mongoose.Types.ObjectId[];
+    createdCourses: mongoose.Types.ObjectId[];
     matchPassword(enteredPassword: string): Promise<boolean>;
 }
 declare const User: mongoose.Model<IUser, {}, {}, {}, mongoose.Document<unknown, {}, IUser, {}, mongoose.DefaultSchemaOptions> & IUser & Required<{

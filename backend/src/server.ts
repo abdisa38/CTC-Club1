@@ -11,6 +11,8 @@ import quizRoutes from './routes/quizRoutes';
 import projectRoutes from './routes/projectRoutes';
 import supportRoutes from './routes/supportRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
+import communityRoutes from './routes/communityRoutes';
+import notificationRoutes from './routes/notificationRoutes';
 
 // Load env vars
 dotenv.config();
@@ -28,7 +30,11 @@ app.use(cookieParser());
 
 // Enable CORS
 app.use(cors({
-    origin: 'http://localhost:5173', // Vite default, verify with FE
+    origin: [
+        'http://localhost:5173',
+        'http://localhost:3000',
+        process.env.CLIENT_URL || '',
+    ].filter(Boolean),
     credentials: true,
 }));
 
@@ -43,6 +49,8 @@ app.use('/api/quizzes', quizRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/community', communityRoutes);
+app.use('/api/notifications', notificationRoutes);
 // For operations purely based on LessonId (Update, Delete a lesson)
 app.use('/api/lessons', lessonRoutes);
 

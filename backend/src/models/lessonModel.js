@@ -38,25 +38,72 @@ const lessonSchema = new mongoose_1.Schema({
     title: {
         type: String,
         required: [true, 'Lesson title is required'],
+        trim: true,
+        maxlength: [100, 'Lesson title cannot exceed 100 characters'],
     },
     course: {
-        type: mongoose_1.default.Schema.Types.ObjectId,
+        type: mongoose_1.Schema.Types.ObjectId,
         ref: 'Course',
         required: true,
+        index: true,
+    },
+    chapter: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'Chapter', // Can create a Chapter model later if needed, or simply string grouping
+        index: true,
     },
     content: {
         type: String,
         required: [true, 'Lesson content is required'],
     },
     videoUrl: {
-        type: String,
+        type: String, // Supports YouTube, Vimeo, AWS S3
+    },
+    duration: {
+        type: Number,
+        default: 0,
+        min: 0,
     },
     order: {
         type: Number,
         default: 0,
+        index: true, // Optimizes ordered find
     },
+    attachments: [
+        {
+            title: String,
+            url: String,
+            fileType: String,
+        }
+    ],
+    isPublished: {
+        type: Boolean,
+        default: false,
+        index: true,
+    },
+    isFreePreview: {
+        type: Boolean,
+        default: false,
+    },
+    xpReward: {
+        type: Number,
+        default: 0,
+        min: 0,
+    },
+    isDeleted: {
+        type: Boolean,
+        default: false,
+    }
 }, {
     timestamps: true,
+});
+// Compound Indexing for optimal queries inside course
+lessonSchema.index({ course: 1, order: 1 });
+lessonSchema.index({ course: 1, isPublished: 1, isDeleted: 1 });
+// Automatically update Course total duration on save? Handled via service/controller
+// Query Middleware to automatically filter out soft-deleted lessons
+lessonSchema.pre(/^find/, function () {
+    this.where({ isDeleted: { $ne: true } });
 });
 const Lesson = mongoose_1.default.model('Lesson', lessonSchema);
 exports.default = Lesson;

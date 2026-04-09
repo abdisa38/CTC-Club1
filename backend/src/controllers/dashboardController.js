@@ -1,0 +1,320 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getPublicStats = exports.getDashboardAnnouncements = exports.getDashboardResources = exports.getLeaderboard = exports.getAdminAnalytics = exports.getDashboardMetrics = void 0;
+const express_async_handler_1 = __importDefault(require("express-async-handler"));
+const userModel_1 = __importDefault(require("../models/userModel"));
+const courseModel_1 = __importDefault(require("../models/courseModel"));
+const progressModel_1 = __importDefault(require("../models/progressModel"));
+const ticketModel_1 = __importDefault(require("../models/ticketModel"));
+const lessonModel_1 = __importDefault(require("../models/lessonModel"));
+const projectModel_1 = require("../models/projectModel");
+const quizModel_1 = require("../models/quizModel");
+const notificationModel_1 = __importDefault(require("../models/notificationModel"));
+const communityModel_1 = require("../models/communityModel");
+const apiResponse_1 = require("../utils/apiResponse");
+const toIsoDayKey = (date) => date.toISOString().split('T')[0];
+const buildLastSevenDays = () => {
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        d.setHours(0, 0, 0, 0);
+        days.push(d);
+    }
+    return days;
+};
+const buildAdminMetrics = async () => {
+    const [totalUsers, totalCourses, openTickets, recentUsers] = await Promise.all([
+        userModel_1.default.countDocuments({ isDeleted: false }),
+        courseModel_1.default.countDocuments({ isDeleted: false }),
+        ticketModel_1.default.countDocuments({ status: { $in: ['open', 'in_progress'] } }),
+        userModel_1.default.find({ isDeleted: false }).sort({ createdAt: -1 }).limit(10).select('-password'),
+    ]);
+    const revenueAgg = await courseModel_1.default.aggregate([
+        { $match: { isDeleted: false, status: 'published' } },
+        {
+            $project: {
+                revenue: { $multiply: ['$price', { $size: '$students' }] },
+            },
+        },
+        { $group: { _id: null, total: { $sum: '$revenue' } } },
+    ]);
+    const lastSevenDays = buildLastSevenDays();
+    const progressActivity = await progressModel_1.default.aggregate([
+        { $match: { updatedAt: { $gte: lastSevenDays[0] } } },
+        {
+            $group: {
+                _id: { $dateToString: { format: '%Y-%m-%d', date: '$updatedAt' } },
+                count: { $sum: 1 },
+            },
+        },
+    ]);
+    const activityMap = new Map(progressActivity.map((item) => [item._id, item.count]));
+    const userActivityData = lastSevenDays.map((day) => ({
+        name: day.toLocaleDateString('en-US', { weekday: 'short' }),
+        active: activityMap.get(toIsoDayKey(day)) || 0,
+    }));
+    const courseCompletionData = await progressModel_1.default.aggregate([
+        { $match: { isCompleted: true } },
+        { $group: { _id: '$course', completed: { $sum: 1 } } },
+        { $lookup: { from: 'courses', localField: '_id', foreignField: '_id', as: 'course' } },
+        { $unwind: '$course' },
+        { $project: { _id: 0, name: '$course.title', completed: 1 } },
+        { $sort: { completed: -1 } },
+        { $limit: 8 },
+    ]);
+    const ticketStatusRaw = await ticketModel_1.default.aggregate([
+        { $group: { _id: '$status', value: { $sum: 1 } } },
+    ]);
+    const ticketStatusData = [
+        { name: 'Open', key: 'open' },
+        { name: 'In Progress', key: 'in_progress' },
+        { name: 'Resolved', key: 'resolved' },
+        { name: 'Closed', key: 'closed' },
+    ].map((s) => ({
+        name: s.name,
+        value: ticketStatusRaw.find((row) => row._id === s.key)?.value || 0,
+    }));
+    const [recentCourses, recentTickets] = await Promise.all([
+        courseModel_1.default.find({ isDeleted: false }).sort({ createdAt: -1 }).limit(8).populate('instructor', 'name'),
+        ticketModel_1.default.find({ isDeleted: false }).sort({ createdAt: -1 }).limit(8).populate('user', 'name'),
+    ]);
+    const activityLogs = [
+        ...recentUsers.map((u) => ({
+            id: `user-${u._id}`,
+            action: 'New user registered',
+            user: u.name,
+            time: u.createdAt,
+            type: 'user',
+        })),
+        ...recentCourses.map((c) => ({
+            id: `course-${c._id}`,
+            action: 'Course created',
+            user: c.instructor?.name || 'Instructor',
+            time: c.createdAt,
+            type: 'course',
+        })),
+        ...recentTickets.map((t) => ({
+            id: `ticket-${t._id}`,
+            action: 'Support ticket opened',
+            user: t.user?.name || 'User',
+            time: t.createdAt,
+            type: 'ticket',
+        })),
+    ]
+        .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+        .slice(0, 15);
+    return {
+        totals: { users: totalUsers, courses: totalCourses },
+        openTickets,
+        totalRevenue: revenueAgg[0]?.total || 0,
+        recentUsers,
+        userActivityData,
+        courseCompletionData,
+        ticketStatusData,
+        activityLogs,
+    };
+};
+// @desc    Get dashboard metrics based on role
+// @route   GET /api/dashboard/metrics
+// @access  Private
+exports.getDashboardMetrics = (0, express_async_handler_1.default)(async (req, res) => {
+    const role = req.user.role;
+    if (role === 'admin') {
+        const metrics = await buildAdminMetrics();
+        (0, apiResponse_1.sendSuccess)(res, metrics);
+        return;
+    }
+    if (role === 'instructor') {
+        const totalCourses = await courseModel_1.default.countDocuments({ instructor: req.user._id, isDeleted: false });
+        // Sum total students across all instructor courses
+        const instructorCourses = await courseModel_1.default.find({ instructor: req.user._id, isDeleted: false }).select('students price title');
+        let totalStudents = 0;
+        let totalRevenue = 0;
+        for (let c of instructorCourses) {
+            totalStudents += c.students.length;
+            totalRevenue += (c.students.length * c.price);
+        }
+        // Submissions waiting to be graded
+        const pendingSubmissions = await projectModel_1.ProjectSubmission.countDocuments({
+            course: { $in: instructorCourses.map(c => c._id) },
+            status: { $in: ['submitted', 'under_review'] }
+        });
+        const latestSubmissions = await projectModel_1.ProjectSubmission.find({
+            course: { $in: instructorCourses.map(c => c._id) },
+        })
+            .populate('student', 'name avatar')
+            .populate('project', 'title')
+            .sort({ updatedAt: -1 })
+            .limit(8);
+        (0, apiResponse_1.sendSuccess)(res, {
+            totalCourses,
+            totalStudents,
+            totalRevenue,
+            pendingSubmissions,
+            latestSubmissions,
+            coursePerformance: instructorCourses.map((course) => ({
+                name: course.title,
+                students: course.students.length,
+                revenue: course.students.length * course.price,
+            })),
+        });
+        return;
+    }
+    // Role is Student
+    const userProgress = await progressModel_1.default.find({ user: req.user._id }).populate({
+        path: 'course',
+        select: 'title coverImage totalDuration'
+    });
+    const enrolledCourses = userProgress.length;
+    const completedCourses = userProgress.filter(p => p.isCompleted).length;
+    // Next lesson logic: find progress where percentage < 100
+    const activeProgress = userProgress.filter(p => !p.isCompleted);
+    const [notifications, quizResults, projectSubmissions] = await Promise.all([
+        notificationModel_1.default.find({ user: req.user._id }).sort({ createdAt: -1 }).limit(10),
+        quizModel_1.QuizResult.find({ user: req.user._id }).populate('quiz', 'title').sort({ createdAt: -1 }).limit(10),
+        projectModel_1.ProjectSubmission.find({ student: req.user._id })
+            .populate('project', 'title')
+            .populate('course', 'title')
+            .sort({ updatedAt: -1 })
+            .limit(10),
+    ]);
+    (0, apiResponse_1.sendSuccess)(res, {
+        xp: req.user.xp,
+        level: req.user.level,
+        enrolledCourses,
+        completedCourses,
+        activeCourses: activeProgress,
+        activeStreak: 0,
+        notifications,
+        quizResults,
+        projectSubmissions,
+    });
+});
+// @desc    Get admin analytics payload
+// @route   GET /api/dashboard/analytics
+// @access  Private/Admin
+exports.getAdminAnalytics = (0, express_async_handler_1.default)(async (req, res) => {
+    if (req.user.role !== 'admin') {
+        res.status(403);
+        throw new Error('Only admins can access analytics');
+    }
+    const analytics = await buildAdminMetrics();
+    (0, apiResponse_1.sendSuccess)(res, analytics);
+});
+// @desc    Get leaderboard
+// @route   GET /api/dashboard/leaderboard
+// @access  Private
+exports.getLeaderboard = (0, express_async_handler_1.default)(async (req, res) => {
+    const users = await userModel_1.default.find({ isDeleted: false })
+        .sort({ xp: -1, createdAt: 1 })
+        .limit(100)
+        .select('name avatar xp level role');
+    const leaderboard = users.map((u, index) => ({
+        rank: index + 1,
+        id: u._id,
+        name: u.name,
+        avatar: u.avatar,
+        xp: u.xp || 0,
+        level: u.level || 1,
+        role: u.role,
+    }));
+    (0, apiResponse_1.sendSuccess)(res, leaderboard);
+});
+// @desc    Get dashboard resources from lessons/attachments
+// @route   GET /api/dashboard/resources
+// @access  Private
+exports.getDashboardResources = (0, express_async_handler_1.default)(async (req, res) => {
+    const filter = { isDeleted: false };
+    if (req.user.role === 'student') {
+        filter.isPublished = true;
+    }
+    const lessons = await lessonModel_1.default.find(filter)
+        .populate('course', 'title')
+        .sort({ updatedAt: -1 })
+        .limit(150);
+    const resources = lessons.flatMap((lesson) => {
+        const courseTitle = lesson.course?.title || 'General';
+        const items = [];
+        if (lesson.videoUrl) {
+            items.push({
+                id: `video-${lesson._id}`,
+                title: lesson.title,
+                type: 'video',
+                size: '-',
+                course: courseTitle,
+                url: lesson.videoUrl,
+                date: lesson.updatedAt,
+            });
+        }
+        if (Array.isArray(lesson.attachments)) {
+            lesson.attachments.forEach((attachment, index) => {
+                items.push({
+                    id: `attachment-${lesson._id}-${index}`,
+                    title: attachment.title || `${lesson.title} Resource`,
+                    type: attachment.fileType || 'file',
+                    size: '-',
+                    course: courseTitle,
+                    url: attachment.url,
+                    date: lesson.updatedAt,
+                });
+            });
+        }
+        return items;
+    });
+    (0, apiResponse_1.sendSuccess)(res, resources);
+});
+// @desc    Get announcements for homepage
+// @route   GET /api/dashboard/announcements
+// @access  Public
+exports.getDashboardAnnouncements = (0, express_async_handler_1.default)(async (req, res) => {
+    const posts = await communityModel_1.CommunityPost.find({ category: 'announcement', isDeleted: false })
+        .populate('user', 'name avatar role')
+        .sort({ createdAt: -1 })
+        .limit(6);
+    if (posts.length > 0) {
+        const announcements = posts.map((post) => ({
+            id: post._id,
+            title: post.title,
+            content: post.content,
+            author: post.user?.name || 'CTC Team',
+            createdAt: post.createdAt,
+            category: post.category,
+        }));
+        (0, apiResponse_1.sendSuccess)(res, announcements);
+        return;
+    }
+    const fallbackFromCourses = await courseModel_1.default.find({ isDeleted: false, status: 'published' })
+        .populate('instructor', 'name')
+        .sort({ createdAt: -1 })
+        .limit(5);
+    const announcements = fallbackFromCourses.map((course) => ({
+        id: course._id,
+        title: `New Course: ${course.title}`,
+        content: course.shortDescription || course.description,
+        author: course.instructor?.name || 'CTC Team',
+        createdAt: course.createdAt,
+        category: 'announcement',
+    }));
+    (0, apiResponse_1.sendSuccess)(res, announcements);
+});
+// @desc    Get public stats for the homepage
+// @route   GET /api/dashboard/public-stats
+// @access  Public
+exports.getPublicStats = (0, express_async_handler_1.default)(async (req, res) => {
+    const totalUsers = await userModel_1.default.countDocuments({ role: 'student', isDeleted: false });
+    const totalCourses = await courseModel_1.default.countDocuments({ isDeleted: false, status: 'published' });
+    const expertInstructors = await userModel_1.default.countDocuments({ role: 'instructor', isDeleted: false });
+    // As a fun proxy for "certificates issued", we can use total completed courses across all students
+    const totalCompleted = await progressModel_1.default.countDocuments({ isCompleted: true });
+    (0, apiResponse_1.sendSuccess)(res, {
+        activeStudents: totalUsers,
+        videoCourses: totalCourses,
+        instructors: expertInstructors,
+        certificates: totalCompleted,
+    });
+});
+//# sourceMappingURL=dashboardController.js.map

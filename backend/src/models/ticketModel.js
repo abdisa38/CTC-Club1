@@ -35,12 +35,38 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
 const ticketSchema = new mongoose_1.Schema({
-    user: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'User', required: true },
-    subject: { type: String, required: true },
-    message: { type: String, required: true },
-    status: { type: String, enum: ['open', 'closed'], default: 'open' },
-    reply: { type: String },
+    user: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    subject: { type: String, required: [true, 'Subject is required'], trim: true },
+    category: {
+        type: String,
+        enum: ['technical', 'billing', 'course_content', 'other'],
+        default: 'technical'
+    },
+    status: {
+        type: String,
+        enum: ['open', 'in_progress', 'resolved', 'closed'],
+        default: 'open',
+        index: true
+    },
+    priority: {
+        type: String,
+        enum: ['low', 'medium', 'high', 'urgent'],
+        default: 'medium'
+    },
+    messages: [
+        {
+            sender: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true },
+            message: { type: String, required: true },
+            isAdminReply: { type: Boolean, default: false },
+            createdAt: { type: Date, default: Date.now }
+        }
+    ],
+    assignedTo: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' },
+    isDeleted: { type: Boolean, default: false, index: true }
 }, { timestamps: true });
+ticketSchema.pre(/^find/, function () {
+    this.where({ isDeleted: { $ne: true } });
+});
 const Ticket = mongoose_1.default.model('Ticket', ticketSchema);
 exports.default = Ticket;
 //# sourceMappingURL=ticketModel.js.map

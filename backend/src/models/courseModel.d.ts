@@ -1,12 +1,27 @@
 import mongoose, { Document } from 'mongoose';
 export interface ICourse extends Document {
     title: string;
+    slug: string;
     description: string;
-    instructor: mongoose.Schema.Types.ObjectId;
-    students: mongoose.Schema.Types.ObjectId[];
+    shortDescription?: string;
+    instructor: mongoose.Types.ObjectId;
+    students: mongoose.Types.ObjectId[];
     coverImage?: string;
-    category?: string;
-    price?: number;
+    category: string;
+    tags: string[];
+    price: number;
+    currency: string;
+    isPublished: boolean;
+    status: 'draft' | 'published' | 'archived';
+    level: 'beginner' | 'intermediate' | 'advanced';
+    xpReward: number;
+    prerequisites: string[];
+    totalDuration?: number;
+    rating: number;
+    numReviews: number;
+    isDeleted: boolean;
+    createdAt: Date;
+    updatedAt: Date;
 }
 declare const Course: mongoose.Model<ICourse, {}, {}, {}, mongoose.Document<unknown, {}, ICourse, {}, mongoose.DefaultSchemaOptions> & ICourse & Required<{
     _id: mongoose.Types.ObjectId;

@@ -43,41 +43,94 @@ const userSchema = new mongoose_1.Schema({
     name: {
         type: String,
         required: [true, 'Name is required'],
+        trim: true,
     },
     email: {
         type: String,
         required: [true, 'Email is required'],
         unique: true,
         lowercase: true,
+        trim: true,
+        index: true,
     },
     password: {
         type: String,
         required: [true, 'Password is required'],
         minlength: 6,
+        select: false, // Security: don't return password by default
     },
     role: {
         type: String,
         enum: ['student', 'instructor', 'admin'],
         default: 'student',
+        index: true,
     },
     avatar: {
         type: String,
         default: 'https://icon-library.com/images/anonymous-avatar-icon/anonymous-avatar-icon-25.jpg',
     },
+    xp: {
+        type: Number,
+        default: 0,
+    },
+    level: {
+        type: Number,
+        default: 1,
+    },
+    badges: [{
+            type: mongoose_1.Schema.Types.ObjectId,
+            ref: 'Badge',
+        }],
+    isDeleted: {
+        type: Boolean,
+        default: false,
+        index: true, // For quicker filtering
+    },
+    isActive: {
+        type: Boolean,
+        default: true,
+    },
+    lastLogin: {
+        type: Date,
+    },
+    enrolledCourses: [{
+            type: mongoose_1.Schema.Types.ObjectId,
+            ref: 'Course',
+        }],
+    createdCourses: [{
+            type: mongoose_1.Schema.Types.ObjectId,
+            ref: 'Course',
+        }],
 }, {
     timestamps: true, // adds createdAt and updatedAt
 });
+// Indexes
+userSchema.index({ role: 1, isActive: 1 });
+userSchema.index({ xp: -1 });
+// Query Middleware to automatically filter out soft-deleted users
+userSchema.pre(/^find/, function () {
+    this.where({ isDeleted: { $ne: true } });
+});
 // Method to verify passwords on login
 userSchema.methods.matchPassword = async function (enteredPassword) {
+    // Because password is select: false, we need to explicitly query it if it's not present
+    if (!this.password) {
+        const user = await mongoose_1.default.model('User').findById(this._id).select('+password');
+        if (!user || !user.password)
+            return false;
+        return await bcrypt_1.default.compare(enteredPassword, user.password);
+    }
     return await bcrypt_1.default.compare(enteredPassword, this.password);
 };
 // Middleware to hash passwords before saving them
-userSchema.pre('save', async function (next) {
-    if (!this.isModified('password')) {
-        next();
+userSchema.pre('save', async function () {
+    if (!this.isModified('password') || !this.password) {
+        return;
     }
-    const salt = await bcrypt_1.default.genSalt(10);
-    this.password = await bcrypt_1.default.hash(this.password, salt);
+    else {
+        const salt = await bcrypt_1.default.genSalt(10);
+        this.password = await bcrypt_1.default.hash(this.password, salt);
+    }
 });
 const User = mongoose_1.default.model('User', userSchema);
 exports.default = User;

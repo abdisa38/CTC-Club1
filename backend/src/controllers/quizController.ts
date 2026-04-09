@@ -38,9 +38,14 @@ export const createQuiz = asyncHandler(async (req: AuthRequest, res: Response) =
 });
 
 export const submitQuiz = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const quizId = req.params.id;
+  const quizId = typeof req.params.id === 'string' ? req.params.id : '';
   const { answers, timeSpent } = req.body; 
   // answers format: [{ questionId, userAnswerIndex, userAnswerText }]
+
+  if (!quizId) {
+    res.status(400);
+    throw new Error('Quiz ID is required');
+  }
 
   const quiz = await Quiz.findById(quizId);
   if (!quiz) {
@@ -127,7 +132,13 @@ export const submitQuiz = asyncHandler(async (req: AuthRequest, res: Response) =
 
 export const getQuizResults = asyncHandler(async (req: AuthRequest, res: Response) => {
   // Can be used by instructor to see all results for a quiz, or student to see their own
-  let filter: any = { quiz: req.params.id };
+  const quizId = typeof req.params.id === 'string' ? req.params.id : '';
+  if (!quizId) {
+      res.status(400);
+      throw new Error('Quiz ID is required');
+  }
+
+  let filter: any = { quiz: quizId };
 
   if (req.user.role === 'student') {
       filter.user = req.user._id;
@@ -153,7 +164,13 @@ export const getQuizzes = asyncHandler(async (req: AuthRequest, res: Response) =
 });
 
 export const getQuizById = asyncHandler(async (req: AuthRequest, res: Response) => {
-    const quizDoc = await Quiz.findById(req.params.id).populate('course', 'title');
+  const quizId = typeof req.params.id === 'string' ? req.params.id : '';
+  if (!quizId) {
+    res.status(400);
+    throw new Error('Quiz ID is required');
+  }
+
+  const quizDoc = await Quiz.findById(quizId).populate('course', 'title');
     if (!quizDoc) {
         res.status(404);
         throw new Error('Quiz not found');

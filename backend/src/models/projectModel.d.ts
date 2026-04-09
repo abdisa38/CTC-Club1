@@ -2,8 +2,17 @@ import mongoose, { Document } from 'mongoose';
 export interface IProject extends Document {
     title: string;
     description: string;
-    course: mongoose.Schema.Types.ObjectId;
+    course: mongoose.Types.ObjectId;
+    lesson?: mongoose.Types.ObjectId;
+    instructions: string;
+    requirements: string[];
+    xpReward: number;
+    maxPoints: number;
     deadline?: Date;
+    isPublished: boolean;
+    isDeleted: boolean;
+    createdAt: Date;
+    updatedAt: Date;
 }
 export declare const Project: mongoose.Model<IProject, {}, {}, {}, mongoose.Document<unknown, {}, IProject, {}, mongoose.DefaultSchemaOptions> & IProject & Required<{
     _id: mongoose.Types.ObjectId;
@@ -13,13 +22,19 @@ export declare const Project: mongoose.Model<IProject, {}, {}, {}, mongoose.Docu
     id: string;
 }, any, IProject>;
 export interface IProjectSubmission extends Document {
-    student: mongoose.Schema.Types.ObjectId;
-    project: mongoose.Schema.Types.ObjectId;
-    repoUrl: string;
-    files?: string;
+    student: mongoose.Types.ObjectId;
+    project: mongoose.Types.ObjectId;
+    course: mongoose.Types.ObjectId;
+    repoUrl?: string;
+    liveUrl?: string;
+    files?: string[];
+    comments?: string;
     grade?: number;
     feedback?: string;
-    status: 'submitted' | 'reviewed';
+    status: 'pending' | 'submitted' | 'under_review' | 'graded';
+    xpEarned: number;
+    createdAt: Date;
+    updatedAt: Date;
 }
 export declare const ProjectSubmission: mongoose.Model<IProjectSubmission, {}, {}, {}, mongoose.Document<unknown, {}, IProjectSubmission, {}, mongoose.DefaultSchemaOptions> & IProjectSubmission & Required<{
     _id: mongoose.Types.ObjectId;

@@ -16,7 +16,10 @@ const validateRequest = (schema) => {
             if (error instanceof zod_1.ZodError) {
                 return res.status(400).json({
                     message: 'Validation failed',
-                    errors: error.errors.map(e => ({ field: e.path.join('.'), message: e.message })),
+                    errors: error.issues.map((issue) => ({
+                        field: issue.path.join('.'),
+                        message: issue.message,
+                    })),
                 });
             }
             next(error);

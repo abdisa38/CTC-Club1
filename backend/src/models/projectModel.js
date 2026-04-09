@@ -36,20 +36,41 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProjectSubmission = exports.Project = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const projectSchema = new mongoose_1.Schema({
-    title: { type: String, required: true },
-    description: { type: String, required: true },
-    course: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'Course', required: true },
+    title: { type: String, required: [true, 'Project title is required'], trim: true },
+    description: { type: String, required: [true, 'Project description is required'], trim: true },
+    course: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Course', required: true, index: true },
+    lesson: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Lesson', index: true },
+    instructions: { type: String, default: '' },
+    requirements: [{ type: String }],
+    xpReward: { type: Number, default: 50, min: 0 },
+    maxPoints: { type: Number, default: 100, min: 1 },
     deadline: { type: Date },
+    isPublished: { type: Boolean, default: false, index: true },
+    isDeleted: { type: Boolean, default: false, index: true },
 }, { timestamps: true });
+projectSchema.pre(/^find/, function () {
+    this.where({ isDeleted: { $ne: true } });
+});
 exports.Project = mongoose_1.default.model('Project', projectSchema);
 const projectSubmissionSchema = new mongoose_1.Schema({
-    student: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'User', required: true },
-    project: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'Project', required: true },
-    repoUrl: { type: String, required: true },
-    files: { type: String },
-    grade: { type: Number },
+    student: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    project: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Project', required: true, index: true },
+    course: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Course', required: true, index: true },
+    repoUrl: { type: String },
+    liveUrl: { type: String },
+    files: [{ type: String }], // Array of URLs to files
+    comments: { type: String }, // Student comments on submission
+    grade: { type: Number, min: 0 },
     feedback: { type: String },
-    status: { type: String, enum: ['submitted', 'reviewed'], default: 'submitted' },
+    status: {
+        type: String,
+        enum: ['pending', 'submitted', 'under_review', 'graded'],
+        default: 'submitted',
+        index: true
+    },
+    xpEarned: { type: Number, default: 0 }
 }, { timestamps: true });
+// One submission per project per student (can be updated, but not duplicated unless we add attempt counter)
+projectSubmissionSchema.index({ student: 1, project: 1 }, { unique: true });
 exports.ProjectSubmission = mongoose_1.default.model('ProjectSubmission', projectSubmissionSchema);
 //# sourceMappingURL=projectModel.js.map

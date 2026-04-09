@@ -98,29 +98,23 @@ export const getUsers = asyncHandler(async (req: AuthRequest, res: Response) => 
   const pageSize = Number(req.query.limit) || 20;
   const page = Number(req.query.page) || 1;
 
-  const keyword = req.query.keyword
-    ? {
-        $or: [
-          { name: { $regex: req.query.keyword as string, $options: 'i' } },
-          { email: { $regex: req.query.keyword as string, $options: 'i' } },
-        ],
-      }
-    : {};
+  const keyword = typeof req.query.keyword === 'string' ? req.query.keyword : '';
+  const role = typeof req.query.role === 'string' ? req.query.role : '';
+  const isActiveQuery = typeof req.query.isActive === 'string' ? req.query.isActive : undefined;
 
-  const roleFilter = req.query.role && req.query.role !== 'all'
-    ? { role: req.query.role }
-    : {};
-
-  const statusFilter = req.query.isActive !== undefined
-    ? { isActive: String(req.query.isActive) === 'true' }
-    : {};
-
-  const filter = {
-    isDeleted: false,
-    ...keyword,
-    ...roleFilter,
-    ...statusFilter,
-  };
+  const filter: any = { isDeleted: false };
+  if (keyword) {
+    filter.$or = [
+      { name: { $regex: keyword, $options: 'i' } },
+      { email: { $regex: keyword, $options: 'i' } },
+    ];
+  }
+  if (role && role !== 'all') {
+    filter.role = role;
+  }
+  if (isActiveQuery !== undefined) {
+    filter.isActive = isActiveQuery === 'true';
+  }
 
   const total = await User.countDocuments(filter);
   const users = await User.find(filter)
@@ -218,7 +212,7 @@ export const getActivityLogs = asyncHandler(async (req: AuthRequest, res: Respon
     action: 'User registered',
     category: 'user',
     user: u.name,
-    timestamp: u.createdAt,
+    timestamp: (u as any).createdAt,
     details: `${u.email} joined as ${u.role}`,
     severity: 'success',
   }));

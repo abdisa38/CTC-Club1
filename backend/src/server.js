@@ -15,6 +15,9 @@ const lessonRoutes_1 = __importDefault(require("./routes/lessonRoutes"));
 const quizRoutes_1 = __importDefault(require("./routes/quizRoutes"));
 const projectRoutes_1 = __importDefault(require("./routes/projectRoutes"));
 const supportRoutes_1 = __importDefault(require("./routes/supportRoutes"));
+const dashboardRoutes_1 = __importDefault(require("./routes/dashboardRoutes"));
+const communityRoutes_1 = __importDefault(require("./routes/communityRoutes"));
+const notificationRoutes_1 = __importDefault(require("./routes/notificationRoutes"));
 // Load env vars
 dotenv_1.default.config();
 // Connect to database
@@ -26,7 +29,11 @@ app.use(express_1.default.json());
 app.use((0, cookie_parser_1.default)());
 // Enable CORS
 app.use((0, cors_1.default)({
-    origin: 'http://localhost:3000', // Assuming frontend will run on 3000
+    origin: [
+        'http://localhost:5173',
+        'http://localhost:3000',
+        process.env.CLIENT_URL || '',
+    ].filter(Boolean),
     credentials: true,
 }));
 // Basic Route for testing
@@ -39,6 +46,9 @@ app.use('/api/courses', courseRoutes_1.default);
 app.use('/api/quizzes', quizRoutes_1.default);
 app.use('/api/projects', projectRoutes_1.default);
 app.use('/api/support', supportRoutes_1.default);
+app.use('/api/dashboard', dashboardRoutes_1.default);
+app.use('/api/community', communityRoutes_1.default);
+app.use('/api/notifications', notificationRoutes_1.default);
 // For operations purely based on LessonId (Update, Delete a lesson)
 app.use('/api/lessons', lessonRoutes_1.default);
 // Error handling middleware

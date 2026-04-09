@@ -13,5 +13,10 @@ router.post('/register', (0, validateMiddleware_1.validateRequest)(authValidator
 router.post('/login', (0, validateMiddleware_1.validateRequest)(authValidator_1.loginSchema), authController_1.loginUser);
 router.post('/logout', authController_1.logoutUser);
 router.get('/profile', authMiddleware_1.protect, authController_1.getUserProfile);
+router.get('/users', authMiddleware_1.protect, (0, authMiddleware_1.authorizeRoles)('admin'), authController_1.getUsers);
+router.put('/users/:id/role', authMiddleware_1.protect, (0, authMiddleware_1.authorizeRoles)('admin'), authController_1.updateUserRole);
+router.put('/users/:id/status', authMiddleware_1.protect, (0, authMiddleware_1.authorizeRoles)('admin'), authController_1.updateUserStatus);
+router.delete('/users/:id', authMiddleware_1.protect, (0, authMiddleware_1.authorizeRoles)('admin'), authController_1.softDeleteUser);
+router.get('/activity-logs', authMiddleware_1.protect, (0, authMiddleware_1.authorizeRoles)('admin'), authController_1.getActivityLogs);
 exports.default = router;
 //# sourceMappingURL=authRoutes.js.map

@@ -10,7 +10,11 @@ import { sendSuccess } from '../utils/apiResponse';
 export const addLesson = async (req: AuthRequest, res: Response) => {
   try {
     const { title, content, videoUrl, order } = req.body;
-    const courseId = req.params.courseId;
+    const courseId = typeof req.params.courseId === 'string' ? req.params.courseId : '';
+
+    if (!courseId) {
+      return res.status(400).json({ message: 'Course ID is required' });
+    }
 
     // Verify course exists
     const course = await Course.findById(courseId);
@@ -42,8 +46,12 @@ export const addLesson = async (req: AuthRequest, res: Response) => {
 // @access  Private/Instructor
 export const updateLesson = async (req: AuthRequest, res: Response) => {
   try {
-    const lessonId = req.params.lessonId;
+    const lessonId = typeof req.params.lessonId === 'string' ? req.params.lessonId : '';
     const { title, content, videoUrl, order } = req.body;
+
+    if (!lessonId) {
+      return res.status(400).json({ message: 'Lesson ID is required' });
+    }
 
     const lesson = await Lesson.findById(lessonId).populate('course');
     if (!lesson) {
@@ -72,7 +80,11 @@ export const updateLesson = async (req: AuthRequest, res: Response) => {
 // @access  Private/Instructor
 export const deleteLesson = async (req: AuthRequest, res: Response) => {
   try {
-    const lessonId = req.params.lessonId;
+    const lessonId = typeof req.params.lessonId === 'string' ? req.params.lessonId : '';
+
+    if (!lessonId) {
+      return res.status(400).json({ message: 'Lesson ID is required' });
+    }
 
     const lesson = await Lesson.findById(lessonId).populate('course');
     if (!lesson) {
@@ -96,7 +108,12 @@ export const deleteLesson = async (req: AuthRequest, res: Response) => {
 // @access  Public or Student (depends on business logic, here we'll make it protected for enrolled students/instructor)
 export const getLessonsByCourse = async (req: AuthRequest, res: Response) => {
   try {
-    const courseId = req.params.courseId;
+    const courseId = typeof req.params.courseId === 'string' ? req.params.courseId : '';
+
+    if (!courseId) {
+      return res.status(400).json({ message: 'Course ID is required' });
+    }
+
     // For a fully secure app, check if user is enrolled. For now, just return them.
     const lessons = await Lesson.find({ course: courseId }).sort({ order: 1 });
     sendSuccess(res, lessons);

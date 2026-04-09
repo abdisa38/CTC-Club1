@@ -49,6 +49,7 @@ export const getCommunityPosts = asyncHandler(async (req: AuthRequest, res: Resp
 // @access  Private
 export const createCommunityPost = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { title, content, category, tags } = req.body;
+  const userId = req.user._id as any;
 
   if (!title || !content) {
     res.status(400);
@@ -56,15 +57,15 @@ export const createCommunityPost = asyncHandler(async (req: AuthRequest, res: Re
   }
 
   const post = await CommunityPost.create({
-    user: req.user._id,
+    user: userId,
     title,
     content,
     category: category || 'general',
     tags: Array.isArray(tags) ? tags : [],
   });
 
-  const populated = await post.populate('user', 'name avatar role');
-  sendSuccess(res, populated, { statusCode: 201, message: 'Post created successfully' });
+  const populated = await CommunityPost.findById(post._id).populate('user', 'name avatar role');
+  sendSuccess(res, populated || post, { statusCode: 201, message: 'Post created successfully' });
 });
 
 // @desc    Upvote/downvote a post
@@ -72,24 +73,42 @@ export const createCommunityPost = asyncHandler(async (req: AuthRequest, res: Re
 // @access  Private
 export const voteCommunityPost = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { vote } = req.body as { vote?: 'up' | 'down' };
+  const postId = typeof req.params.postId === 'string' ? req.params.postId : '';
+  const userId = req.user._id.toString();
+
+  if (!postId) {
+    res.status(400);
+    throw new Error('Post ID is required');
+  }
 
   if (!vote || (vote !== 'up' && vote !== 'down')) {
     res.status(400);
     throw new Error('Vote must be either up or down');
   }
 
-  const post = await CommunityPost.findById(req.params.postId);
+  const post = await CommunityPost.findById(postId);
   if (!post) {
     res.status(404);
     throw new Error('Post not found');
   }
 
+  const hasUpvote = post.upvotes.some((id) => id.toString() === userId);
+  const hasDownvote = post.downvotes.some((id) => id.toString() === userId);
+
   if (vote === 'up') {
-    post.upvotes = Array.from(new Set([...post.upvotes.map((id) => id.toString()), req.user._id.toString()])) as any;
-    post.downvotes = post.downvotes.filter((id) => id.toString() !== req.user._id.toString());
+    if (!hasUpvote) {
+      post.upvotes.push(req.user._id as any);
+    }
+    if (hasDownvote) {
+      post.downvotes = post.downvotes.filter((id) => id.toString() !== userId) as any;
+    }
   } else {
-    post.downvotes = Array.from(new Set([...post.downvotes.map((id) => id.toString()), req.user._id.toString()])) as any;
-    post.upvotes = post.upvotes.filter((id) => id.toString() !== req.user._id.toString());
+    if (!hasDownvote) {
+      post.downvotes.push(req.user._id as any);
+    }
+    if (hasUpvote) {
+      post.upvotes = post.upvotes.filter((id) => id.toString() !== userId) as any;
+    }
   }
 
   await post.save();
@@ -104,7 +123,13 @@ export const voteCommunityPost = asyncHandler(async (req: AuthRequest, res: Resp
 // @route   GET /api/community/posts/:postId/replies
 // @access  Private
 export const getCommunityReplies = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const replies = await CommunityReply.find({ post: req.params.postId, isDeleted: false })
+  const postId = typeof req.params.postId === 'string' ? req.params.postId : '';
+  if (!postId) {
+    res.status(400);
+    throw new Error('Post ID is required');
+  }
+
+  const replies = await CommunityReply.find({ post: postId, isDeleted: false })
     .populate('user', 'name avatar role')
     .sort({ createdAt: 1 });
 
@@ -116,27 +141,33 @@ export const getCommunityReplies = asyncHandler(async (req: AuthRequest, res: Re
 // @access  Private
 export const addCommunityReply = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { content } = req.body as { content?: string };
+  const postId = typeof req.params.postId === 'string' ? req.params.postId : '';
+
+  if (!postId) {
+    res.status(400);
+    throw new Error('Post ID is required');
+  }
 
   if (!content || !content.trim()) {
     res.status(400);
     throw new Error('Reply content is required');
   }
 
-  const post = await CommunityPost.findById(req.params.postId);
+  const post = await CommunityPost.findById(postId);
   if (!post) {
     res.status(404);
     throw new Error('Post not found');
   }
 
   const reply = await CommunityReply.create({
-    post: req.params.postId,
-    user: req.user._id,
+    post: postId,
+    user: req.user._id as any,
     content,
   });
 
   post.repliesCount = (post.repliesCount || 0) + 1;
   await post.save();
 
-  const populated = await reply.populate('user', 'name avatar role');
-  sendSuccess(res, populated, { statusCode: 201, message: 'Reply posted successfully' });
+  const populated = await CommunityReply.findById(reply._id).populate('user', 'name avatar role');
+  sendSuccess(res, populated || reply, { statusCode: 201, message: 'Reply posted successfully' });
 });

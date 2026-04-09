@@ -10,7 +10,7 @@ import { sendSuccess } from '../utils/apiResponse';
 // @route   GET /api/projects
 // @access  Private
 export const getProjects = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const courseId = req.query.courseId as string | undefined;
+  const courseId = typeof req.query.courseId === 'string' ? req.query.courseId : undefined;
 
   let filter: any = { isDeleted: false };
   if (courseId) {
@@ -46,7 +46,7 @@ export const getProjects = asyncHandler(async (req: AuthRequest, res: Response) 
 // @route   GET /api/projects/submissions
 // @access  Private
 export const getProjectSubmissions = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const projectId = req.query.projectId as string | undefined;
+  const projectId = typeof req.query.projectId === 'string' ? req.query.projectId : undefined;
   let filter: any = {};
 
   if (projectId) {
@@ -111,7 +111,12 @@ export const createProject = asyncHandler(async (req: AuthRequest, res: Response
 // @access  Private/Student
 export const submitProject = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { repoUrl, liveUrl, files, comments } = req.body;
-  const projectId = req.params.id;
+  const projectId = typeof req.params.id === 'string' ? req.params.id : '';
+
+  if (!projectId) {
+    res.status(400);
+    throw new Error('Project ID is required');
+  }
 
   const project = await Project.findById(projectId);
   if (!project) {
@@ -157,7 +162,12 @@ export const submitProject = asyncHandler(async (req: AuthRequest, res: Response
 // @access  Private/Instructor
 export const reviewProject = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { grade, feedback } = req.body;
-  const submissionId = req.params.submissionId;
+  const submissionId = typeof req.params.submissionId === 'string' ? req.params.submissionId : '';
+
+  if (!submissionId) {
+    res.status(400);
+    throw new Error('Submission ID is required');
+  }
 
   const submission = await ProjectSubmission.findById(submissionId).populate('project');
   if (!submission) {
