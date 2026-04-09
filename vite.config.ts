@@ -32,13 +32,50 @@ export default defineConfig({
             return;
           }
 
-          const modulePath = id.split('node_modules/')[1] || '';
-          const parts = modulePath.split('/');
-          const packageName = parts[0]?.startsWith('@')
-            ? `${parts[0]}-${parts[1] || 'pkg'}`
-            : parts[0] || 'pkg';
+          if (
+            id.includes('/react/') ||
+            id.includes('/react-dom/') ||
+            id.includes('/scheduler/')
+          ) {
+            return 'vendor-react';
+          }
 
-          return `vendor-${packageName.replace(/[@]/g, '')}`;
+          if (id.includes('react-router')) {
+            return 'vendor-router';
+          }
+
+          if (id.includes('lucide-react')) {
+            return 'vendor-icons';
+          }
+
+          if (id.includes('framer-motion') || id.includes('/motion/')) {
+            return 'vendor-motion';
+          }
+
+          if (
+            id.includes('recharts') ||
+            id.includes('/d3-') ||
+            id.includes('victory-vendor') ||
+            id.includes('/lodash/')
+          ) {
+            return 'vendor-charts';
+          }
+
+          if (id.includes('axios')) {
+            return 'vendor-network';
+          }
+
+          if (
+            id.includes('@radix-ui') ||
+            id.includes('sonner') ||
+            id.includes('class-variance-authority') ||
+            id.includes('clsx') ||
+            id.includes('tailwind-merge')
+          ) {
+            return 'vendor-ui';
+          }
+
+          return;
         },
       },
     },
