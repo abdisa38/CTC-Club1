@@ -7,7 +7,7 @@ import ctcLogo from "../../assets/f6c46c16a776a1f63a42e49b36947669f8dcc942.png";
 import { motion } from "motion/react";
 import { ArrowRight, Github, Mail } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import api from "../utils/api";
+import apiService from "../services/api";
 
 export function Auth() {
   const { pathname } = useLocation();
@@ -40,21 +40,17 @@ export function Auth() {
 
     try {
       if (isLogin) {
-        const { data } = await api.post("/auth/login", {
-          email: formData.email,
-          password: formData.password,
-        });
-        login(data);
-        redirectByRole(data.role);
+        const user = await apiService.loginUser(formData.email, formData.password);
+        login(user);
+        redirectByRole(user.role);
       } else {
-        const { data } = await api.post("/auth/register", {
+        const user = await apiService.registerUser({
           name: formData.name,
           email: formData.email,
           password: formData.password,
-          // Backend forces new accounts to 'student' for security
         });
-        login(data);
-        redirectByRole(data.role);
+        login(user);
+        redirectByRole(user.role);
       }
     } catch (error: any) {
       setErrorMsg(error.response?.data?.message || "Something went wrong. Please try again.");

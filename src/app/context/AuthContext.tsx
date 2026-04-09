@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import api from "../utils/api";
+import apiService from "../services/api";
 
 export type Role = "student" | "instructor" | "admin";
 
@@ -25,36 +25,44 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<Role | null>(null);
-  // Optional: keep `isLoading` to true during token-validation if you add a /me endpoint later
   const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize from LocalStorage
   useEffect(() => {
-    const userInfo = localStorage.getItem("userInfo");
-    if (userInfo) {
+    const bootstrapAuth = async () => {
       try {
-        const parsedUser = JSON.parse(userInfo);
-        setUser(parsedUser);
-        setRole(parsedUser.role || "student");
-      } catch (error) {
-        console.error("Failed to parse userInfo", error);
+        const currentUser = await apiService.getCurrentUser();
+        setUser(currentUser);
+        setRole(currentUser.role);
+        localStorage.setItem("userInfo", JSON.stringify(currentUser));
+      } catch {
+        const userInfo = localStorage.getItem("userInfo");
+        if (userInfo) {
+          try {
+            const parsedUser = JSON.parse(userInfo);
+            setUser(parsedUser);
+            setRole(parsedUser.role || "student");
+          } catch (error) {
+            console.error("Failed to parse userInfo", error);
+            localStorage.removeItem("userInfo");
+          }
+        }
+      } finally {
+        setIsLoading(false);
       }
-    }
-    setIsLoading(false);
+    };
+
+    void bootstrapAuth();
   }, []);
 
   const login = (userData: User) => {
     setUser(userData);
     setRole(userData.role);
-    // Store non-sensitive metadata in localStorage. 
-    // Actual Auth JWT is inside an HttpOnly cookie thanks to the backend.
     localStorage.setItem("userInfo", JSON.stringify(userData));
   };
 
   const logout = async () => {
     try {
-      // Hit backend logout point to clear the httpOnly cookie
-      await api.post("/auth/logout");
+      await apiService.logoutUser();
     } catch(err) {
       console.error(err);
     }
