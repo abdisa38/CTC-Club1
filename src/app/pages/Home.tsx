@@ -179,6 +179,11 @@ export function Home() {
     certificates: 2
   });
 
+  const toNumber = (value: unknown, fallback = 0) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  };
+
   useEffect(() => {
     const fetchHomeData = async () => {
       try {
@@ -186,17 +191,32 @@ export function Home() {
           api.get('/dashboard/public-stats'),
           api.get('/courses?limit=4')
         ]);
+
         if (statsRes.data) {
-          setStats(statsRes.data);
+          const payload = statsRes.data?.data ?? statsRes.data;
+          setStats((prev) => ({
+            activeStudents: toNumber(payload?.activeStudents, prev.activeStudents),
+            videoCourses: toNumber(payload?.videoCourses, prev.videoCourses),
+            instructors: toNumber(payload?.instructors, prev.instructors),
+            certificates: toNumber(payload?.certificates, prev.certificates),
+          }));
         }
-        if (coursesRes.data && coursesRes.data.courses && coursesRes.data.courses.length > 0) {
+
+        const coursesPayload = coursesRes.data?.data ?? coursesRes.data;
+        const rawCourses = Array.isArray(coursesPayload?.courses)
+          ? coursesPayload.courses
+          : Array.isArray(coursesPayload)
+            ? coursesPayload
+            : [];
+
+        if (rawCourses.length > 0) {
           // Map backend course data to featuredCourses format
-          const mappedCourses = coursesRes.data.courses.map((c: any) => ({
+          const mappedCourses = rawCourses.map((c: any) => ({
             id: c._id,
             title: c.title,
-            instructor: c.instructor?.name || 'Command Line ',
-            rating: c.rating || 4.5,
-            students: c.students?.length + 'k' || '1.1k',
+            instructor: c.instructor?.name || 'Instructor',
+            rating: toNumber(c.rating, 4.5),
+            students: `${Array.isArray(c.students) ? c.students.length : 0}`,
             category: c.category || 'Tech',
             image: c.coverImage || 'https://images.unsplash.com/photo-1637937459053-c788742455be?w=600&h=340&fit=crop'
           }));
