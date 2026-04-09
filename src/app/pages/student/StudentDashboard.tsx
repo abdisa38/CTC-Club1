@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
@@ -296,7 +296,7 @@ export function StudentDashboard({ metrics }: { metrics?: any }) {
   );
 }
 
-function MetricCard({ title, value, icon }: { title: string; value: string | number; icon: React.ReactNode }) {
+function MetricCard({ title, value, icon }: { title: string; value: string | number; icon: ReactNode }) {
   return (
     <Card>
       <CardContent className="p-5 flex items-center justify-between">
