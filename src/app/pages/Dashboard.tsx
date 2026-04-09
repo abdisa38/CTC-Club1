@@ -5,7 +5,7 @@ import { Badge } from "../components/ui/Badge";
 import { Loader2, TrendingUp, Users, BookOpen, DollarSign, FileText, MessageSquare } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { AdminDashboard } from "./admin/AdminDashboard";
-import { StudentDashboard } from "./student/StudentDashboard";
+import { StudentDashboard } from "./StudentDashboard";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
 import { useEffect, useMemo, useState } from "react";
 import apiService from "../services/api";
