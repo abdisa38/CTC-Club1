@@ -1,0 +1,273 @@
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Link } from "react-router";
+import { Button } from "../../components/ui/Button";
+import { Card, CardContent } from "../../components/ui/Card";
+import { Badge } from "../../components/ui/Badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/Tabs";
+import { Star, Clock, Users, PlayCircle, Heart, FileText, Bookmark, Loader2, Trash2 } from "lucide-react";
+import apiService from "../../services/api";
+
+type CourseItem = {
+  _id: string;
+  title: string;
+  coverImage?: string;
+  category?: string;
+  instructor?: { name?: string };
+  progressPercentage?: number;
+};
+
+type ResourceItem = {
+  id: string;
+  title: string;
+  type: string;
+  size?: string;
+  course?: string;
+  url?: string;
+  date?: string;
+};
+
+export function Favorites() {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const [courses, setCourses] = useState<CourseItem[]>([]);
+  const [resources, setResources] = useState<ResourceItem[]>([]);
+
+  const [hiddenCourseIds, setHiddenCourseIds] = useState<Set<string>>(new Set());
+  const [hiddenResourceIds, setHiddenResourceIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const loadFavorites = async () => {
+      try {
+        const [metrics, resourcesData] = await Promise.all([
+          apiService.getDashboardMetrics(),
+          apiService.getDashboardResources(),
+        ]);
+
+        const progressItems = Array.isArray(metrics?.activeCourses) ? metrics.activeCourses : [];
+        const mappedCourses: CourseItem[] = progressItems
+          .map((item: any) => {
+            const course = item?.course;
+            if (!course || typeof course === "string") return null;
+
+            return {
+              _id: String(course._id),
+              title: String(course.title || "Course"),
+              coverImage: course.coverImage,
+              category: course.category,
+              instructor: course.instructor,
+              progressPercentage: Number(item.progressPercentage || 0),
+            };
+          })
+          .filter(Boolean);
+
+        const mappedResources: ResourceItem[] = Array.isArray(resourcesData)
+          ? resourcesData.map((resource: any) => ({
+              id: String(resource.id),
+              title: String(resource.title || "Resource"),
+              type: String(resource.type || "file"),
+              size: resource.size,
+              course: resource.course,
+              url: resource.url,
+              date: resource.date,
+            }))
+          : [];
+
+        setCourses(mappedCourses);
+        setResources(mappedResources);
+      } catch (err: any) {
+        setError(err?.response?.data?.message || "Failed to load favorites");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void loadFavorites();
+  }, []);
+
+  const visibleCourses = useMemo(
+    () => courses.filter((course) => !hiddenCourseIds.has(course._id)),
+    [courses, hiddenCourseIds]
+  );
+
+  const visibleResources = useMemo(
+    () => resources.filter((resource) => !hiddenResourceIds.has(resource.id)),
+    [resources, hiddenResourceIds]
+  );
+
+  const removeCourse = (courseId: string) => {
+    setHiddenCourseIds((prev) => new Set(prev).add(courseId));
+  };
+
+  const removeResource = (resourceId: string) => {
+    setHiddenResourceIds((prev) => new Set(prev).add(resourceId));
+  };
+
+  if (loading) {
+    return (
+      <div className="flex h-[40vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">My Favorites</h1>
+        <p className="text-slate-500 dark:text-slate-400">Your saved learning content from live platform activity.</p>
+      </div>
+
+      {error ? (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
+          {error}
+        </div>
+      ) : null}
+
+      <Tabs defaultValue="courses">
+        <TabsList className="grid w-full sm:w-[420px] grid-cols-2">
+          <TabsTrigger value="courses">
+            <Bookmark className="h-4 w-4 mr-2" /> Courses ({visibleCourses.length})
+          </TabsTrigger>
+          <TabsTrigger value="resources">
+            <FileText className="h-4 w-4 mr-2" /> Resources ({visibleResources.length})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="courses" className="mt-6">
+          {visibleCourses.length === 0 ? (
+            <EmptyState
+              icon={<Heart className="mx-auto h-12 w-12 text-slate-400 mb-4" />}
+              title="No saved courses"
+              subtitle="Enroll in a course to see it here."
+              ctaHref="/app/courses"
+              ctaLabel="Browse Courses"
+            />
+          ) : (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {visibleCourses.map((course) => (
+                <Card key={course._id} className="overflow-hidden group flex flex-col hover:border-indigo-200 hover:shadow-md transition-all dark:hover:border-indigo-800">
+                  <div className="relative aspect-video w-full overflow-hidden">
+                    <img
+                      src={course.coverImage || "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80&w=800"}
+                      alt={course.title}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Button size="icon" className="rounded-full h-12 w-12 bg-indigo-600 hover:bg-indigo-700" asChild>
+                        <Link to={`/app/courses/${course._id}`}>
+                          <PlayCircle className="h-6 w-6 text-white" />
+                        </Link>
+                      </Button>
+                    </div>
+                    <Badge className="absolute top-3 left-3 bg-white/90 text-slate-900 hover:bg-white">{course.category || "Course"}</Badge>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-3 right-3 bg-white/90 hover:bg-red-50 h-8 w-8 rounded-full"
+                      onClick={() => removeCourse(course._id)}
+                    >
+                      <Heart className="h-4 w-4 text-red-500 fill-red-500" />
+                    </Button>
+                  </div>
+                  <CardContent className="p-5 flex-1 flex flex-col">
+                    <div className="flex items-center gap-1 text-sm text-amber-500 font-medium mb-2">
+                      <Star className="h-4 w-4 fill-amber-500" />
+                      <span>{((course.progressPercentage || 0) / 20).toFixed(1)}</span>
+                    </div>
+                    <Link to={`/app/courses/${course._id}`} className="block mb-2">
+                      <h3 className="font-bold text-lg leading-tight text-slate-900 dark:text-white hover:text-indigo-600 transition-colors line-clamp-2">
+                        {course.title}
+                      </h3>
+                    </Link>
+                    <p className="text-sm text-slate-500 mb-4">{course.instructor?.name || "Instructor"}</p>
+                    <div className="flex items-center justify-between text-sm text-slate-500 pt-4 mt-auto border-t border-slate-100 dark:border-slate-800">
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-4 w-4" /> {Math.max(1, Math.round((course.progressPercentage || 0) / 10))}h
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Users className="h-4 w-4" /> {course.progressPercentage || 0}%
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="resources" className="mt-6">
+          {visibleResources.length === 0 ? (
+            <EmptyState
+              icon={<FileText className="mx-auto h-12 w-12 text-slate-400 mb-4" />}
+              title="No saved resources"
+              subtitle="Resources from your lessons will appear here."
+              ctaHref="/app/resources"
+              ctaLabel="Browse Resources"
+            />
+          ) : (
+            <div className="space-y-3">
+              {visibleResources.map((resource) => (
+                <Card key={resource.id} className="hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors">
+                  <CardContent className="p-4 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-4 min-w-0">
+                      <div className="p-3 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 shrink-0">
+                        <FileText className="h-6 w-6" />
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-semibold text-slate-900 dark:text-white truncate">{resource.title}</h4>
+                        <p className="text-xs text-slate-500 mt-0.5 truncate">
+                          {resource.course || "General"} · {resource.size || "-"} · {resource.type}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {resource.url ? (
+                        <Button variant="outline" size="sm" asChild>
+                          <a href={resource.url} target="_blank" rel="noreferrer">Open</a>
+                        </Button>
+                      ) : null}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-slate-400 hover:text-red-500"
+                        onClick={() => removeResource(resource.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function EmptyState({
+  icon,
+  title,
+  subtitle,
+  ctaHref,
+  ctaLabel,
+}: {
+  icon: ReactNode;
+  title: string;
+  subtitle: string;
+  ctaHref: string;
+  ctaLabel: string;
+}) {
+  return (
+    <div className="text-center py-20 px-4 border border-dashed border-slate-300 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-900/50">
+      {icon}
+      <h3 className="text-lg font-medium text-slate-900 dark:text-white">{title}</h3>
+      <p className="text-sm text-slate-500 mt-1 mb-4">{subtitle}</p>
+      <Button asChild>
+        <Link to={ctaHref}>{ctaLabel}</Link>
+      </Button>
+    </div>
+  );
+}
