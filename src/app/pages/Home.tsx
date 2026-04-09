@@ -1,9 +1,9 @@
 import { Link, useLocation } from "react-router";
 import { useEffect, useState, useRef } from "react";
 import { motion, useInView } from "motion/react";
-import { Button } from "../components/ui/button";
-import { Badge } from "../components/ui/badge";
-import { Input } from "../components/ui/input";
+import { Button } from "../components/ui/Button";
+import { Badge } from "../components/ui/Badge";
+import { Input } from "../components/ui/Input";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import api from "../utils/api";
 import ctcLogo from "../../assets/f6c46c16a776a1f63a42e49b36947669f8dcc942.png";
