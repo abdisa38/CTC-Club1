@@ -212,6 +212,11 @@ export function CourseList() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
               >
+                {(() => {
+                  const hasRatings = Number(course.numReviews || 0) > 0;
+                  const ratingLabel = hasRatings ? Number(course.rating || 0).toFixed(1) : "N/A";
+
+                  return (
                 <Card className="overflow-hidden group flex flex-col hover:border-indigo-200 hover:shadow-md transition-all dark:hover:border-indigo-800">
                   <div className="relative aspect-video w-full overflow-hidden">
                     <img
@@ -239,7 +244,7 @@ export function CourseList() {
                   <CardContent className="p-5 flex-1 flex flex-col">
                     <div className="flex items-center gap-1 text-sm text-amber-500 font-medium mb-2">
                       <Star className="h-4 w-4 fill-amber-500" />
-                      <span>{4.5}</span>
+                      <span>{ratingLabel}</span>
                       <span className="text-slate-400 mx-1">·</span>
                       <span className="text-slate-500">({Array.isArray(course.students) ? course.students.length : 0})</span>
                     </div>
@@ -277,6 +282,8 @@ export function CourseList() {
                     </div>
                   </CardContent>
                 </Card>
+                  );
+                })()}
               </motion.div>
             ))}
           </div>
