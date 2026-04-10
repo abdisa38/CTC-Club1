@@ -111,6 +111,7 @@ const buildAdminMetrics = async () => {
         totals: { users: totalUsers, courses: totalCourses },
         openTickets,
         // Real collected revenue requires payment transaction tracking.
+        collectedRevenue: 0,
         totalRevenue: 0,
         estimatedRevenue: estimatedRevenueAgg[0]?.total || 0,
         recentUsers,

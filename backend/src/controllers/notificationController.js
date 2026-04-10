@@ -7,6 +7,7 @@ exports.broadcastNotification = exports.markAllNotificationsRead = exports.markN
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const notificationModel_1 = __importDefault(require("../models/notificationModel"));
 const userModel_1 = __importDefault(require("../models/userModel"));
+const communityModel_1 = require("../models/communityModel");
 const apiResponse_1 = require("../utils/apiResponse");
 // @desc    Get notifications for current user
 // @route   GET /api/notifications
@@ -78,6 +79,14 @@ exports.broadcastNotification = (0, express_async_handler_1.default)(async (req,
         type,
     }));
     await notificationModel_1.default.insertMany(documents);
+    // Keep admin broadcasts visible in the public/admin announcement feed.
+    await communityModel_1.CommunityPost.create({
+        user: req.user._id,
+        title,
+        content: message,
+        category: 'announcement',
+        tags: ['broadcast', type, role || 'all'],
+    });
     (0, apiResponse_1.sendSuccess)(res, { count: users.length }, { message: 'Broadcast sent successfully' });
 });
 //# sourceMappingURL=notificationController.js.map
