@@ -18,6 +18,8 @@ export const createCourse = asyncHandler(async (req: AuthRequest, res: Response)
     coverImage,
     category,
     price,
+    isPublished: true,
+    status: 'published',
   });
 
   sendSuccess(res, course, { statusCode: 201, message: 'Course created successfully' });
@@ -51,6 +53,7 @@ export const getCourses = asyncHandler(async (req: AuthRequest, res: Response) =
   const count = await Course.countDocuments(queryFilter);
   const courseQuery = Course.find(queryFilter)
     .populate('instructor', 'name email avatar')
+    .sort({ createdAt: -1 })
     .limit(pageSize)
     .skip(pageSize * (page - 1));
 
