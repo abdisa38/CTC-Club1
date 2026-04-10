@@ -27,16 +27,7 @@ type LessonForm = {
 };
 
 const MAX_ATTACHMENT_SIZE_BYTES = 5 * 1024 * 1024;
-const MAX_VIDEO_SIZE_BYTES = 50 * 1024 * 1024;
-
-const toDataUrl = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ""));
-    reader.onerror = () => reject(new Error("Failed to read selected file"));
-    reader.readAsDataURL(file);
-  });
-};
+const MAX_VIDEO_SIZE_BYTES = 2 * 1024 * 1024 * 1024;
 
 const formatDuration = (value?: number | string): string => {
   if (typeof value === "number" && Number.isFinite(value)) {
@@ -100,6 +91,8 @@ export function InstructorLessons() {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
+  const [isUploadingResources, setIsUploadingResources] = useState(false);
   const [error, setError] = useState("");
 
   const [isEditing, setIsEditing] = useState<string | null>(null);
@@ -200,6 +193,9 @@ export function InstructorLessons() {
     const files = Array.from(event.target.files || []);
     if (files.length === 0) return;
 
+    setIsUploadingResources(true);
+    setError("");
+
     const converted: LessonAttachment[] = [];
     for (const file of files) {
       if (file.size > MAX_ATTACHMENT_SIZE_BYTES) {
@@ -208,14 +204,14 @@ export function InstructorLessons() {
       }
 
       try {
-        const url = await toDataUrl(file);
+        const uploaded = await apiService.uploadLessonResource(file);
         converted.push({
-          title: file.name,
-          url,
-          fileType: file.type || "file",
+          title: uploaded.originalName || file.name,
+          url: uploaded.url,
+          fileType: uploaded.fileType || file.type || "file",
         });
-      } catch {
-        setError(`Failed to read ${file.name}`);
+      } catch (err: any) {
+        setError(err?.response?.data?.message || `Failed to upload ${file.name}`);
       }
     }
 
@@ -223,6 +219,7 @@ export function InstructorLessons() {
       setForm((prev) => ({ ...prev, attachments: [...prev.attachments, ...converted] }));
     }
 
+    setIsUploadingResources(false);
     event.target.value = "";
   };
 
@@ -231,18 +228,22 @@ export function InstructorLessons() {
     if (!file) return;
 
     if (file.size > MAX_VIDEO_SIZE_BYTES) {
-      setError("Video is too large for direct upload here. Please use a YouTube/Vimeo URL.");
+      setError("Video file is too large. Max size is 2GB.");
       event.target.value = "";
       return;
     }
 
+    setIsUploadingVideo(true);
+    setError("");
+
     try {
-      const dataUrl = await toDataUrl(file);
-      setForm((prev) => ({ ...prev, videoUrl: dataUrl, lessonType: "video" }));
-    } catch {
-      setError("Failed to load selected video file.");
+      const uploaded = await apiService.uploadLessonVideo(file);
+      setForm((prev) => ({ ...prev, videoUrl: uploaded.url, lessonType: "video" }));
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to upload selected video file.");
     }
 
+    setIsUploadingVideo(false);
     event.target.value = "";
   };
 
@@ -443,9 +444,10 @@ export function InstructorLessons() {
                 >
                   <Upload className="h-6 w-6 text-slate-400 mb-2" />
                   <p className="text-xs font-medium mb-1">Click to upload video</p>
-                    <p className="text-[10px] text-slate-500">MP4, WebM (Max 50MB)</p>
+                    <p className="text-[10px] text-slate-500">MP4, WebM (Max 2GB)</p>
                 </button>
                 <input ref={videoInputRef} type="file" accept="video/*" className="hidden" onChange={handleVideoUpload} />
+                  {isUploadingVideo ? <p className="text-xs text-emerald-600">Uploading video...</p> : null}
                 <div className="relative mt-2">
                   <div className="absolute inset-0 flex items-center">
                     <span className="w-full border-t border-slate-200 dark:border-slate-800" />
@@ -475,6 +477,7 @@ export function InstructorLessons() {
                 <label className="text-sm font-medium">Resources (Optional)</label>
                 <Button variant="outline" className="w-full border-dashed" onClick={() => resourceInputRef.current?.click()}><Plus className="h-4 w-4 mr-2" /> Attach File</Button>
                 <input ref={resourceInputRef} type="file" className="hidden" multiple onChange={handleAttachResources} />
+                {isUploadingResources ? <p className="text-xs text-emerald-600">Uploading resource files...</p> : null}
 
                 {form.attachments.length > 0 ? (
                   <div className="space-y-2">
@@ -492,7 +495,7 @@ export function InstructorLessons() {
 
               <div className="pt-4 flex gap-2">
                 <Button variant="outline" className="flex-1" onClick={() => setIsEditing(null)}>Cancel</Button>
-                <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => void handleSaveLesson()} disabled={isSaving}><Save className="h-4 w-4 mr-2"/> {isSaving ? "Saving..." : "Save"}</Button>
+                  <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => void handleSaveLesson()} disabled={isSaving || isUploadingVideo || isUploadingResources}><Save className="h-4 w-4 mr-2"/> {isSaving ? "Saving..." : "Save"}</Button>
               </div>
             </CardContent>
           </Card>
