@@ -12,7 +12,7 @@ const apiResponse_1 = require("../utils/apiResponse");
 // @access  Private/Instructor
 const addLesson = async (req, res) => {
     try {
-        const { title, content, videoUrl, order } = req.body;
+        const { title, content, videoUrl, order, duration, attachments, isPublished } = req.body;
         const courseId = typeof req.params.courseId === 'string' ? req.params.courseId : '';
         if (!courseId) {
             return res.status(400).json({ message: 'Course ID is required' });
@@ -28,9 +28,12 @@ const addLesson = async (req, res) => {
         }
         const lesson = await lessonModel_1.default.create({
             title,
-            content,
+            content: content || title,
             videoUrl,
             order,
+            duration: duration !== undefined ? Number(duration) : undefined,
+            attachments: Array.isArray(attachments) ? attachments : [],
+            isPublished: typeof isPublished === 'boolean' ? isPublished : undefined,
             course: courseId,
         });
         (0, apiResponse_1.sendSuccess)(res, lesson, { statusCode: 201, message: 'Lesson created successfully' });
@@ -46,7 +49,7 @@ exports.addLesson = addLesson;
 const updateLesson = async (req, res) => {
     try {
         const lessonId = typeof req.params.lessonId === 'string' ? req.params.lessonId : '';
-        const { title, content, videoUrl, order } = req.body;
+        const { title, content, videoUrl, order, duration, attachments, isPublished } = req.body;
         if (!lessonId) {
             return res.status(400).json({ message: 'Lesson ID is required' });
         }
@@ -62,6 +65,13 @@ const updateLesson = async (req, res) => {
         lesson.content = content || lesson.content;
         lesson.videoUrl = videoUrl || lesson.videoUrl;
         lesson.order = order !== undefined ? order : lesson.order;
+        lesson.duration = duration !== undefined ? Number(duration) : lesson.duration;
+        if (Array.isArray(attachments)) {
+            lesson.attachments = attachments;
+        }
+        if (typeof isPublished === 'boolean') {
+            lesson.isPublished = isPublished;
+        }
         const updatedLesson = await lesson.save();
         (0, apiResponse_1.sendSuccess)(res, updatedLesson, { message: 'Lesson updated successfully' });
     }
