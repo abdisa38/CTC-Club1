@@ -179,6 +179,14 @@ export interface Paginated<T> {
   total: number;
 }
 
+export interface UploadedFile {
+  url: string;
+  fileType?: string;
+  size: number;
+  originalName: string;
+  filename: string;
+}
+
 const asObject = (value: unknown): Record<string, any> => {
   if (value && typeof value === "object") {
     return value as Record<string, any>;
@@ -333,6 +341,22 @@ export const apiService = {
 
   async deleteLesson(courseId: string, lessonId: string): Promise<void> {
     await api.delete(`/courses/${courseId}/lessons/${lessonId}`);
+  },
+
+  async uploadLessonVideo(file: File): Promise<UploadedFile> {
+    const formData = new FormData();
+    formData.append("video", file);
+
+    const res = await api.post("/uploads/video", formData);
+    return pickData<UploadedFile>(res.data);
+  },
+
+  async uploadLessonResource(file: File): Promise<UploadedFile> {
+    const formData = new FormData();
+    formData.append("resource", file);
+
+    const res = await api.post("/uploads/resource", formData);
+    return pickData<UploadedFile>(res.data);
   },
 
   async getQuizzes(): Promise<any[]> {
