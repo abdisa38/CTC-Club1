@@ -65,7 +65,6 @@ const importData = async () => {
                 isPublished: true,
                 status: "published",
                 level: "beginner",
-                rating: 4.9,
             },
             {
                 title: "Graphic Design Fundamentals",
@@ -78,7 +77,6 @@ const importData = async () => {
                 isPublished: true,
                 status: "published",
                 level: "beginner",
-                rating: 4.8,
             },
             {
                 title: "Data Science & Machine Learning",
@@ -91,7 +89,6 @@ const importData = async () => {
                 isPublished: true,
                 status: "published",
                 level: "intermediate",
-                rating: 4.9,
             },
             {
                 title: "Mobile App Development with React Native",
@@ -104,7 +101,6 @@ const importData = async () => {
                 isPublished: true,
                 status: "published",
                 level: "intermediate",
-                rating: 4.7,
             }
         ];
         const insertedCourses = await courseModel_1.default.insertMany(courses);

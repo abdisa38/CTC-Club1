@@ -124,9 +124,9 @@ const courseSchema = new mongoose_1.Schema({
     },
     rating: {
         type: Number,
-        min: [1, 'Rating must be at least 1'],
+        min: [0, 'Rating must be at least 0'],
         max: [5, 'Rating cannot exceed 5'],
-        default: 1, // Start with something low if required, usually unrated or null is better, let's leave as 1 because of DB design currently
+        default: 0,
     },
     numReviews: {
         type: Number,

@@ -12,7 +12,7 @@ const lessonRoutes_1 = __importDefault(require("./lessonRoutes"));
 const router = express_1.default.Router();
 // Get all courses & Create a course (Instructors/Admins)
 router.route('/')
-    .get(courseController_1.getCourses)
+    .get(authMiddleware_1.optionalProtect, courseController_1.getCourses)
     .post(authMiddleware_1.protect, (0, authMiddleware_1.authorizeRoles)('instructor', 'admin'), (0, validateMiddleware_1.validateRequest)(courseValidator_1.createCourseSchema), courseController_1.createCourse);
 // ID operations: Get singular, Update, Delete
 router.route('/:id')

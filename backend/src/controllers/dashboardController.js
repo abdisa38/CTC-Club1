@@ -33,7 +33,7 @@ const buildAdminMetrics = async () => {
         ticketModel_1.default.countDocuments({ status: { $in: ['open', 'in_progress'] } }),
         userModel_1.default.find({ isDeleted: false }).sort({ createdAt: -1 }).limit(10).select('-password'),
     ]);
-    const revenueAgg = await courseModel_1.default.aggregate([
+    const estimatedRevenueAgg = await courseModel_1.default.aggregate([
         { $match: { isDeleted: false, status: 'published' } },
         {
             $project: {
@@ -110,7 +110,9 @@ const buildAdminMetrics = async () => {
     return {
         totals: { users: totalUsers, courses: totalCourses },
         openTickets,
-        totalRevenue: revenueAgg[0]?.total || 0,
+        // Real collected revenue requires payment transaction tracking.
+        totalRevenue: 0,
+        estimatedRevenue: estimatedRevenueAgg[0]?.total || 0,
         recentUsers,
         userActivityData,
         courseCompletionData,
