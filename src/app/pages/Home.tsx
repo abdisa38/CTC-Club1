@@ -170,13 +170,13 @@ export function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
 
-  const [realCourses, setRealCourses] = useState<any[]>(featuredCourses);
+  const [realCourses, setRealCourses] = useState<FeaturedCourse[]>([]);
   const [announcements, setAnnouncements] = useState<HomeAnnouncement[]>([]);
   const [stats, setStats] = useState({
-    activeStudents: 9,
-    videoCourses: 3,
-    instructors: 5,
-    certificates: 2
+    activeStudents: 0,
+    videoCourses: 0,
+    instructors: 0,
+    certificates: 0
   });
 
   const toNumber = (value: unknown, fallback = 0) => {
@@ -213,10 +213,11 @@ export function Home() {
         if (rawCourses.length > 0) {
           // Map backend course data to featuredCourses format
           const mappedCourses = rawCourses.map((c: any) => ({
-            id: c._id,
+            id: String(c._id),
             title: c.title,
             instructor: c.instructor?.name || 'Instructor',
-            rating: toNumber(c.rating, 4.5),
+            rating: toNumber(c.rating, 0),
+            numReviews: toNumber(c.numReviews, 0),
             students: `${Array.isArray(c.students) ? c.students.length : 0}`,
             category: c.category || 'Tech',
             image: c.coverImage || 'https://images.unsplash.com/photo-1637937459053-c788742455be?w=600&h=340&fit=crop',
@@ -525,13 +526,19 @@ export function Home() {
             </div>
           </AnimatedSection>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {realCourses.map((course, i) => (
-              <AnimatedSection key={course.id} delay={i * 0.08}>
-                <CourseCard course={course} />
-              </AnimatedSection>
-            ))}
-          </div>
+          {realCourses.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500 dark:border-slate-700">
+              No published courses available yet.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {realCourses.map((course, i) => (
+                <AnimatedSection key={course.id} delay={i * 0.08}>
+                  <CourseCard course={course} />
+                </AnimatedSection>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
