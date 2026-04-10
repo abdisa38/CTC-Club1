@@ -3,6 +3,7 @@ import asyncHandler from 'express-async-handler';
 import { AuthRequest } from '../middleware/authMiddleware';
 import Notification from '../models/notificationModel';
 import User from '../models/userModel';
+import { CommunityPost } from '../models/communityModel';
 import { sendSuccess } from '../utils/apiResponse';
 
 // @desc    Get notifications for current user
@@ -94,6 +95,15 @@ export const broadcastNotification = asyncHandler(async (req: AuthRequest, res: 
   }));
 
   await Notification.insertMany(documents);
+
+  // Keep admin broadcasts visible in the public/admin announcement feed.
+  await CommunityPost.create({
+    user: req.user._id,
+    title,
+    content: message,
+    category: 'announcement',
+    tags: ['broadcast', type, role || 'all'],
+  });
 
   sendSuccess(res, { count: users.length }, { message: 'Broadcast sent successfully' });
 });
