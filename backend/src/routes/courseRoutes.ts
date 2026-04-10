@@ -1,5 +1,5 @@
 import express from 'express';
-import { protect, authorizeRoles } from '../middleware/authMiddleware';
+import { protect, authorizeRoles, optionalProtect } from '../middleware/authMiddleware';
 import { validateRequest } from '../middleware/validateMiddleware';
 import { createCourseSchema, updateCourseSchema } from '../validators/courseValidator';
 import {
@@ -16,7 +16,7 @@ const router = express.Router();
 
 // Get all courses & Create a course (Instructors/Admins)
 router.route('/')
-  .get(getCourses as any)
+  .get(optionalProtect as any, getCourses as any)
   .post(protect as any, authorizeRoles('instructor', 'admin'), validateRequest(createCourseSchema), createCourse as any);
 
 // ID operations: Get singular, Update, Delete
