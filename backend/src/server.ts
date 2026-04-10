@@ -1,4 +1,5 @@
 import express, { type Application, type Request, type Response } from 'express';
+import path from 'path';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -13,6 +14,7 @@ import supportRoutes from './routes/supportRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
 import communityRoutes from './routes/communityRoutes';
 import notificationRoutes from './routes/notificationRoutes';
+import uploadRoutes from './routes/uploadRoutes';
 
 // Load env vars
 dotenv.config();
@@ -24,6 +26,9 @@ const app: Application = express();
 
 // Body parser
 app.use(express.json());
+
+// Serve uploaded lesson assets
+app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
 
 // Cookie parser
 app.use(cookieParser());
@@ -51,6 +56,7 @@ app.use('/api/support', supportRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/community', communityRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/uploads', uploadRoutes);
 // For operations purely based on LessonId (Update, Delete a lesson)
 app.use('/api/lessons', lessonRoutes);
 
