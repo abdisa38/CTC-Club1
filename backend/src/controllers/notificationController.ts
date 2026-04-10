@@ -96,14 +96,16 @@ export const broadcastNotification = asyncHandler(async (req: AuthRequest, res: 
 
   await Notification.insertMany(documents);
 
-  // Keep admin broadcasts visible in the public/admin announcement feed.
-  await CommunityPost.create({
-    user: req.user._id,
-    title,
-    content: message,
-    category: 'announcement',
-    tags: ['broadcast', type, role || 'all'],
-  });
+  // Keep user-facing broadcasts visible in the public/admin announcement feed.
+  if (!role || role === 'student' || role === 'instructor') {
+    await CommunityPost.create({
+      user: req.user._id,
+      title,
+      content: message,
+      category: 'announcement',
+      tags: ['broadcast', type, role || 'all'],
+    });
+  }
 
   sendSuccess(res, { count: users.length }, { message: 'Broadcast sent successfully' });
 });
