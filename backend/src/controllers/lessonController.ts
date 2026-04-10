@@ -9,7 +9,7 @@ import { sendSuccess } from '../utils/apiResponse';
 // @access  Private/Instructor
 export const addLesson = async (req: AuthRequest, res: Response) => {
   try {
-    const { title, content, videoUrl, order } = req.body;
+    const { title, content, videoUrl, order, duration, attachments, isPublished } = req.body;
     const courseId = typeof req.params.courseId === 'string' ? req.params.courseId : '';
 
     if (!courseId) {
@@ -29,9 +29,12 @@ export const addLesson = async (req: AuthRequest, res: Response) => {
 
     const lesson = await Lesson.create({
       title,
-      content,
+      content: content || title,
       videoUrl,
       order,
+      duration: duration !== undefined ? Number(duration) : undefined,
+      attachments: Array.isArray(attachments) ? attachments : [],
+      isPublished: typeof isPublished === 'boolean' ? isPublished : undefined,
       course: courseId,
     });
 
@@ -47,7 +50,7 @@ export const addLesson = async (req: AuthRequest, res: Response) => {
 export const updateLesson = async (req: AuthRequest, res: Response) => {
   try {
     const lessonId = typeof req.params.lessonId === 'string' ? req.params.lessonId : '';
-    const { title, content, videoUrl, order } = req.body;
+    const { title, content, videoUrl, order, duration, attachments, isPublished } = req.body;
 
     if (!lessonId) {
       return res.status(400).json({ message: 'Lesson ID is required' });
@@ -67,6 +70,15 @@ export const updateLesson = async (req: AuthRequest, res: Response) => {
     lesson.content = content || lesson.content;
     lesson.videoUrl = videoUrl || lesson.videoUrl;
     lesson.order = order !== undefined ? order : lesson.order;
+    lesson.duration = duration !== undefined ? Number(duration) : lesson.duration;
+
+    if (Array.isArray(attachments)) {
+      lesson.attachments = attachments;
+    }
+
+    if (typeof isPublished === 'boolean') {
+      lesson.isPublished = isPublished;
+    }
 
     const updatedLesson = await lesson.save();
     sendSuccess(res, updatedLesson, { message: 'Lesson updated successfully' });

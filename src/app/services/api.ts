@@ -42,7 +42,8 @@ export interface Lesson {
   videoUrl?: string;
   course?: string;
   order?: number;
-  duration?: string;
+  duration?: number | string;
+  isPublished?: boolean;
   attachments?: Array<{
     title?: string;
     url: string;
@@ -295,6 +296,43 @@ export const apiService = {
   async getLessons(courseId: string): Promise<Lesson[]> {
     const res = await api.get(`/courses/${courseId}/lessons`);
     return pickData<Lesson[]>(res.data);
+  },
+
+  async createLesson(
+    courseId: string,
+    input: {
+      title: string;
+      content: string;
+      videoUrl?: string;
+      order?: number;
+      duration?: number;
+      attachments?: Array<{ title?: string; url: string; fileType?: string }>;
+      isPublished?: boolean;
+    }
+  ): Promise<Lesson> {
+    const res = await api.post(`/courses/${courseId}/lessons`, input);
+    return pickData<Lesson>(res.data);
+  },
+
+  async updateLesson(
+    courseId: string,
+    lessonId: string,
+    input: Partial<{
+      title: string;
+      content: string;
+      videoUrl?: string;
+      order?: number;
+      duration?: number;
+      attachments?: Array<{ title?: string; url: string; fileType?: string }>;
+      isPublished?: boolean;
+    }>
+  ): Promise<Lesson> {
+    const res = await api.put(`/courses/${courseId}/lessons/${lessonId}`, input);
+    return pickData<Lesson>(res.data);
+  },
+
+  async deleteLesson(courseId: string, lessonId: string): Promise<void> {
+    await api.delete(`/courses/${courseId}/lessons/${lessonId}`);
   },
 
   async getQuizzes(): Promise<any[]> {
