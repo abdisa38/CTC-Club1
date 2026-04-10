@@ -118,6 +118,7 @@ export interface CommunityPost {
   _id: string;
   title: string;
   content: string;
+  course?: string;
   category: "general" | "qna" | "showcase" | "announcement";
   tags: string[];
   user?: { _id: string; name: string; avatar?: string; role?: Role };
@@ -509,12 +510,12 @@ export const apiService = {
     return pickData<Announcement[]>(res.data);
   },
 
-  async getCommunityPosts(params: { page?: number; limit?: number; keyword?: string; category?: string } = {}): Promise<Paginated<CommunityPost>> {
+  async getCommunityPosts(params: { page?: number; limit?: number; keyword?: string; category?: string; course?: string } = {}): Promise<Paginated<CommunityPost>> {
     const res = await api.get("/community/posts", { params });
     return pickPaginated<CommunityPost>(res.data, ["posts"]);
   },
 
-  async createCommunityPost(input: { title: string; content: string; category?: string; tags?: string[] }): Promise<CommunityPost> {
+  async createCommunityPost(input: { title: string; content: string; category?: string; tags?: string[]; course?: string }): Promise<CommunityPost> {
     const res = await api.post("/community/posts", input);
     return pickData<CommunityPost>(res.data);
   },

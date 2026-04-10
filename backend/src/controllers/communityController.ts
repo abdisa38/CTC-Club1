@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import asyncHandler from 'express-async-handler';
+import mongoose from 'mongoose';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { CommunityPost, CommunityReply } from '../models/communityModel';
 import { sendSuccess } from '../utils/apiResponse';
@@ -12,11 +13,21 @@ export const getCommunityPosts = asyncHandler(async (req: AuthRequest, res: Resp
   const page = Number(req.query.page) || 1;
   const keyword = req.query.keyword as string | undefined;
   const category = req.query.category as string | undefined;
+  const course = req.query.course as string | undefined;
 
   const filter: any = { isDeleted: false };
 
   if (category && category !== 'all') {
     filter.category = category;
+  }
+
+  if (course) {
+    if (!mongoose.Types.ObjectId.isValid(course)) {
+      res.status(400);
+      throw new Error('Invalid course ID');
+    }
+
+    filter.course = course;
   }
 
   if (keyword) {
@@ -48,7 +59,7 @@ export const getCommunityPosts = asyncHandler(async (req: AuthRequest, res: Resp
 // @route   POST /api/community/posts
 // @access  Private
 export const createCommunityPost = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { title, content, category, tags } = req.body;
+  const { title, content, category, tags, course } = req.body;
   const userId = req.user._id as any;
 
   if (!title || !content) {
@@ -56,13 +67,24 @@ export const createCommunityPost = asyncHandler(async (req: AuthRequest, res: Re
     throw new Error('Title and content are required');
   }
 
-  const post = await CommunityPost.create({
+  const postPayload: any = {
     user: userId,
     title,
     content,
     category: category || 'general',
     tags: Array.isArray(tags) ? tags : [],
-  });
+  };
+
+  if (course) {
+    if (!mongoose.Types.ObjectId.isValid(course)) {
+      res.status(400);
+      throw new Error('Invalid course ID');
+    }
+
+    postPayload.course = course;
+  }
+
+  const post = await CommunityPost.create(postPayload);
 
   const populated = await CommunityPost.findById(post._id).populate('user', 'name avatar role');
   sendSuccess(res, populated || post, { statusCode: 201, message: 'Post created successfully' });
