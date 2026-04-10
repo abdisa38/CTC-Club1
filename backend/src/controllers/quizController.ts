@@ -6,27 +6,109 @@ import Course from '../models/courseModel';
 import User from '../models/userModel';
 import { sendSuccess } from '../utils/apiResponse';
 
-export const createQuiz = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { title, description, courseId, lessonId, questions, passingScore, timeLimit, maxAttempts, xpReward, isPublished } = req.body;
-  
-  const course = await Course.findById(courseId);
+const assertQuizId = (value: unknown): string => {
+  return typeof value === 'string' ? value : '';
+};
+
+const assertQuestionId = (value: unknown): string => {
+  return typeof value === 'string' ? value : '';
+};
+
+const ensureCourseOwnership = async (courseId: string, user: any) => {
+  const course = await Course.findById(courseId).select('instructor');
   if (!course) {
-    res.status(404);
-    throw new Error('Course not found');
+    const error: any = new Error('Course not found');
+    error.statusCode = 404;
+    throw error;
   }
 
-  // Authorize instructor
-  if (course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
-    res.status(403);
-    throw new Error('Not authorized to add quiz to this course');
+  if (user.role !== 'admin' && course.instructor.toString() !== user._id.toString()) {
+    const error: any = new Error('Not authorized for this course');
+    error.statusCode = 403;
+    throw error;
   }
+};
+
+const ensureQuizOwnership = async (quiz: any, user: any) => {
+  const quizCourseId = typeof quiz.course === 'string' ? quiz.course : quiz.course?.toString();
+  await ensureCourseOwnership(quizCourseId, user);
+};
+
+const normalizeQuestionPayload = (payload: any) => {
+  const type = payload?.type || 'multiple-choice';
+  const questionText = String(payload?.questionText || '').trim();
+  const points = Number(payload?.points);
+  const normalizedPoints = Number.isFinite(points) && points > 0 ? points : 1;
+
+  if (!questionText) {
+    throw new Error('Question text is required');
+  }
+
+  if (type === 'short-answer') {
+    const correctAnswerText = String(payload?.correctAnswerText || '').trim();
+    if (!correctAnswerText) {
+      throw new Error('Short answer questions require a correct answer text');
+    }
+
+    return {
+      questionText,
+      type,
+      correctAnswerText,
+      points: normalizedPoints,
+      options: [],
+      correctAnswerIndex: undefined,
+    };
+  }
+
+  if (type === 'true-false') {
+    const correctAnswerIndex = Number(payload?.correctAnswerIndex);
+    if (![0, 1].includes(correctAnswerIndex)) {
+      throw new Error('True/false question requires correct answer index 0 or 1');
+    }
+
+    return {
+      questionText,
+      type,
+      options: ['True', 'False'],
+      correctAnswerIndex,
+      correctAnswerText: undefined,
+      points: normalizedPoints,
+    };
+  }
+
+  const options = Array.isArray(payload?.options)
+    ? payload.options.map((item: unknown) => String(item || '').trim()).filter(Boolean)
+    : [];
+
+  if (options.length < 2) {
+    throw new Error('Multiple-choice question requires at least 2 options');
+  }
+
+  const correctAnswerIndex = Number(payload?.correctAnswerIndex);
+  if (!Number.isInteger(correctAnswerIndex) || correctAnswerIndex < 0 || correctAnswerIndex >= options.length) {
+    throw new Error('Correct answer index is out of range');
+  }
+
+  return {
+    questionText,
+    type: 'multiple-choice',
+    options,
+    correctAnswerIndex,
+    correctAnswerText: undefined,
+    points: normalizedPoints,
+  };
+};
+
+export const createQuiz = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { title, description, courseId, lessonId, questions, passingScore, timeLimit, maxAttempts, xpReward, isPublished } = req.body;
+  await ensureCourseOwnership(String(courseId), req.user);
 
   const quiz = await Quiz.create({ 
     title, 
     description,
     course: courseId, 
     lesson: lessonId,
-    questions,
+    questions: Array.isArray(questions) ? questions : [],
     passingScore: passingScore || 70,
     timeLimit,
     maxAttempts: maxAttempts || 3,
@@ -37,8 +119,169 @@ export const createQuiz = asyncHandler(async (req: AuthRequest, res: Response) =
   sendSuccess(res, quiz, { statusCode: 201, message: 'Quiz created successfully' });
 });
 
+export const updateQuiz = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const quizId = assertQuizId(req.params.id);
+  if (!quizId) {
+    res.status(400);
+    throw new Error('Quiz ID is required');
+  }
+
+  const quiz = await Quiz.findById(quizId);
+  if (!quiz) {
+    res.status(404);
+    throw new Error('Quiz not found');
+  }
+
+  await ensureQuizOwnership(quiz, req.user);
+
+  const { title, description, courseId, lessonId, passingScore, timeLimit, maxAttempts, xpReward, isPublished } = req.body;
+
+  if (courseId && courseId.toString() !== quiz.course.toString()) {
+    await ensureCourseOwnership(String(courseId), req.user);
+    quiz.course = courseId;
+  }
+
+  if (title !== undefined) quiz.title = title;
+  if (description !== undefined) quiz.description = description;
+  if (lessonId !== undefined) (quiz as any).lesson = lessonId || undefined;
+  if (passingScore !== undefined) quiz.passingScore = Number(passingScore);
+  if (timeLimit !== undefined) (quiz as any).timeLimit = Number(timeLimit) || undefined;
+  if (maxAttempts !== undefined) quiz.maxAttempts = Number(maxAttempts);
+  if (xpReward !== undefined) quiz.xpReward = Number(xpReward);
+  if (typeof isPublished === 'boolean') quiz.isPublished = isPublished;
+
+  const updated = await quiz.save();
+  const populated = await Quiz.findById(updated._id).populate('course', 'title coverImage');
+  sendSuccess(res, populated || updated, { message: 'Quiz updated successfully' });
+});
+
+export const deleteQuiz = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const quizId = assertQuizId(req.params.id);
+  if (!quizId) {
+    res.status(400);
+    throw new Error('Quiz ID is required');
+  }
+
+  const quiz = await Quiz.findById(quizId);
+  if (!quiz) {
+    res.status(404);
+    throw new Error('Quiz not found');
+  }
+
+  await ensureQuizOwnership(quiz, req.user);
+
+  quiz.isDeleted = true;
+  await quiz.save();
+
+  sendSuccess(res, null, { message: 'Quiz deleted successfully' });
+});
+
+export const addQuizQuestion = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const quizId = assertQuizId(req.params.id);
+  if (!quizId) {
+    res.status(400);
+    throw new Error('Quiz ID is required');
+  }
+
+  const quiz = await Quiz.findById(quizId);
+  if (!quiz) {
+    res.status(404);
+    throw new Error('Quiz not found');
+  }
+
+  await ensureQuizOwnership(quiz, req.user);
+
+  let questionPayload: any;
+  try {
+    questionPayload = normalizeQuestionPayload(req.body);
+  } catch (error: any) {
+    res.status(400);
+    throw new Error(error.message || 'Invalid question payload');
+  }
+
+  (quiz.questions as any).push(questionPayload);
+  const updated = await quiz.save();
+  const populated = await Quiz.findById(updated._id).populate('course', 'title coverImage');
+  sendSuccess(res, populated || updated, { message: 'Question added successfully' });
+});
+
+export const updateQuizQuestion = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const quizId = assertQuizId(req.params.id);
+  const questionId = assertQuestionId(req.params.questionId);
+
+  if (!quizId || !questionId) {
+    res.status(400);
+    throw new Error('Quiz ID and question ID are required');
+  }
+
+  const quiz = await Quiz.findById(quizId);
+  if (!quiz) {
+    res.status(404);
+    throw new Error('Quiz not found');
+  }
+
+  await ensureQuizOwnership(quiz, req.user);
+
+  const question = (quiz.questions as any).id(questionId);
+  if (!question) {
+    res.status(404);
+    throw new Error('Question not found');
+  }
+
+  let questionPayload: any;
+  try {
+    questionPayload = normalizeQuestionPayload({
+      ...question.toObject(),
+      ...req.body,
+    });
+  } catch (error: any) {
+    res.status(400);
+    throw new Error(error.message || 'Invalid question payload');
+  }
+
+  question.questionText = questionPayload.questionText;
+  question.type = questionPayload.type;
+  question.options = questionPayload.options;
+  question.correctAnswerIndex = questionPayload.correctAnswerIndex;
+  question.correctAnswerText = questionPayload.correctAnswerText;
+  question.points = questionPayload.points;
+
+  const updated = await quiz.save();
+  const populated = await Quiz.findById(updated._id).populate('course', 'title coverImage');
+  sendSuccess(res, populated || updated, { message: 'Question updated successfully' });
+});
+
+export const deleteQuizQuestion = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const quizId = assertQuizId(req.params.id);
+  const questionId = assertQuestionId(req.params.questionId);
+
+  if (!quizId || !questionId) {
+    res.status(400);
+    throw new Error('Quiz ID and question ID are required');
+  }
+
+  const quiz = await Quiz.findById(quizId);
+  if (!quiz) {
+    res.status(404);
+    throw new Error('Quiz not found');
+  }
+
+  await ensureQuizOwnership(quiz, req.user);
+
+  const question = (quiz.questions as any).id(questionId);
+  if (!question) {
+    res.status(404);
+    throw new Error('Question not found');
+  }
+
+  question.deleteOne();
+  const updated = await quiz.save();
+  const populated = await Quiz.findById(updated._id).populate('course', 'title coverImage');
+  sendSuccess(res, populated || updated, { message: 'Question deleted successfully' });
+});
+
 export const submitQuiz = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const quizId = typeof req.params.id === 'string' ? req.params.id : '';
+  const quizId = assertQuizId(req.params.id);
   const { answers, timeSpent } = req.body; 
   // answers format: [{ questionId, userAnswerIndex, userAnswerText }]
 
@@ -132,7 +375,7 @@ export const submitQuiz = asyncHandler(async (req: AuthRequest, res: Response) =
 
 export const getQuizResults = asyncHandler(async (req: AuthRequest, res: Response) => {
   // Can be used by instructor to see all results for a quiz, or student to see their own
-  const quizId = typeof req.params.id === 'string' ? req.params.id : '';
+  const quizId = assertQuizId(req.params.id);
   if (!quizId) {
       res.status(400);
       throw new Error('Quiz ID is required');
@@ -164,7 +407,7 @@ export const getQuizzes = asyncHandler(async (req: AuthRequest, res: Response) =
 });
 
 export const getQuizById = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const quizId = typeof req.params.id === 'string' ? req.params.id : '';
+  const quizId = assertQuizId(req.params.id);
   if (!quizId) {
     res.status(400);
     throw new Error('Quiz ID is required');
