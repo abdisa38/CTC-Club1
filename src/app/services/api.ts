@@ -30,6 +30,7 @@ export interface Course {
   };
   students?: Array<string | { _id: string }>;
   rating?: number;
+  numReviews?: number;
   createdAt?: string;
   updatedAt?: string;
 }
