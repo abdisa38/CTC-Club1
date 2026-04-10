@@ -49,11 +49,16 @@ export const getCourses = asyncHandler(async (req: AuthRequest, res: Response) =
   } // Admins and Instructors can fetch without limit if specified (dashboard logic handled separate usually)
 
   const count = await Course.countDocuments(queryFilter);
-  const courses = await Course.find(queryFilter)
+  const courseQuery = Course.find(queryFilter)
     .populate('instructor', 'name email avatar')
-    .select('-students') // Exclude heavy students array by default
     .limit(pageSize)
     .skip(pageSize * (page - 1));
+
+  if (!req.user || req.user.role === 'student') {
+    courseQuery.select('-students'); // Keep public/student payload lightweight
+  }
+
+  const courses = await courseQuery;
 
   res.json({
     success: true,
