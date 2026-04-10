@@ -34,7 +34,7 @@ export function AdminSettings() {
         setUsers(Number(analytics?.totals?.users || 0));
         setCourses(Number(analytics?.totals?.courses || 0));
         setOpenTickets(Number(analytics?.openTickets || 0));
-        setRevenue(Number(analytics?.totalRevenue || 0));
+        setRevenue(Number(analytics?.collectedRevenue || 0));
       } catch (err: any) {
         setError(err?.response?.data?.message || "Failed to load system snapshot");
       } finally {

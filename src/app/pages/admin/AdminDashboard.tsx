@@ -61,6 +61,7 @@ export function AdminDashboard({ metrics }: { metrics?: any }) {
   const ticketBreakdown = useMemo(() => analytics?.ticketStatusData || [], [analytics]);
   const recentActivity = useMemo(() => analytics?.activityLogs || [], [analytics]);
   const completion = useMemo(() => analytics?.courseCompletionData || [], [analytics]);
+  const collectedRevenue = Number(analytics?.collectedRevenue || 0);
   const estimatedRevenue = Number(analytics?.estimatedRevenue || 0);
 
   const stats = [
@@ -84,7 +85,7 @@ export function AdminDashboard({ metrics }: { metrics?: any }) {
     },
     {
       title: "Revenue",
-      value: `$${Number(analytics?.totalRevenue || 0).toLocaleString()}`,
+      value: `$${collectedRevenue.toLocaleString()}`,
       icon: TrendingUp,
       sub: "Collected sales revenue",
     },

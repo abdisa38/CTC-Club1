@@ -83,7 +83,7 @@ export function AdminReports() {
     },
     {
       title: "Revenue",
-      value: `$${Number(analytics?.totalRevenue || 0).toLocaleString()}`,
+      value: `$${Number(analytics?.collectedRevenue || 0).toLocaleString()}`,
       icon: Users,
     },
   ];
