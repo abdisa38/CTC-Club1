@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
+const path_1 = __importDefault(require("path"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const cors_1 = __importDefault(require("cors"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
@@ -18,6 +19,7 @@ const supportRoutes_1 = __importDefault(require("./routes/supportRoutes"));
 const dashboardRoutes_1 = __importDefault(require("./routes/dashboardRoutes"));
 const communityRoutes_1 = __importDefault(require("./routes/communityRoutes"));
 const notificationRoutes_1 = __importDefault(require("./routes/notificationRoutes"));
+const uploadRoutes_1 = __importDefault(require("./routes/uploadRoutes"));
 // Load env vars
 dotenv_1.default.config();
 // Connect to database
@@ -25,6 +27,8 @@ dotenv_1.default.config();
 const app = (0, express_1.default)();
 // Body parser
 app.use(express_1.default.json());
+// Serve uploaded lesson assets
+app.use('/uploads', express_1.default.static(path_1.default.resolve(process.cwd(), 'uploads')));
 // Cookie parser
 app.use((0, cookie_parser_1.default)());
 // Enable CORS
@@ -49,6 +53,7 @@ app.use('/api/support', supportRoutes_1.default);
 app.use('/api/dashboard', dashboardRoutes_1.default);
 app.use('/api/community', communityRoutes_1.default);
 app.use('/api/notifications', notificationRoutes_1.default);
+app.use('/api/uploads', uploadRoutes_1.default);
 // For operations purely based on LessonId (Update, Delete a lesson)
 app.use('/api/lessons', lessonRoutes_1.default);
 // Error handling middleware
