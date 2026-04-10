@@ -33,7 +33,7 @@ const buildAdminMetrics = async () => {
         User.find({ isDeleted: false }).sort({ createdAt: -1 }).limit(10).select('-password'),
     ]);
 
-    const revenueAgg = await Course.aggregate([
+    const estimatedRevenueAgg = await Course.aggregate([
         { $match: { isDeleted: false, status: 'published' } },
         {
             $project: {
@@ -117,7 +117,9 @@ const buildAdminMetrics = async () => {
     return {
         totals: { users: totalUsers, courses: totalCourses },
         openTickets,
-        totalRevenue: revenueAgg[0]?.total || 0,
+        // Real collected revenue requires payment transaction tracking.
+        totalRevenue: 0,
+        estimatedRevenue: estimatedRevenueAgg[0]?.total || 0,
         recentUsers,
         userActivityData,
         courseCompletionData,
