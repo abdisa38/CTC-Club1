@@ -79,14 +79,16 @@ exports.broadcastNotification = (0, express_async_handler_1.default)(async (req,
         type,
     }));
     await notificationModel_1.default.insertMany(documents);
-    // Keep admin broadcasts visible in the public/admin announcement feed.
-    await communityModel_1.CommunityPost.create({
-        user: req.user._id,
-        title,
-        content: message,
-        category: 'announcement',
-        tags: ['broadcast', type, role || 'all'],
-    });
+    // Keep user-facing broadcasts visible in the public/admin announcement feed.
+    if (!role || role === 'student' || role === 'instructor') {
+        await communityModel_1.CommunityPost.create({
+            user: req.user._id,
+            title,
+            content: message,
+            category: 'announcement',
+            tags: ['broadcast', type, role || 'all'],
+        });
+    }
     (0, apiResponse_1.sendSuccess)(res, { count: users.length }, { message: 'Broadcast sent successfully' });
 });
 //# sourceMappingURL=notificationController.js.map
