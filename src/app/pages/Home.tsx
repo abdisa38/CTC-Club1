@@ -95,7 +95,21 @@ function PremiumCard({ children, className = "", hover = true }: { children: Rea
 }
 
 // ─── Course Card ───
-function CourseCard({ course }: { course: typeof featuredCourses[0] }) {
+type FeaturedCourse = {
+  id: string;
+  title: string;
+  instructor: string;
+  rating: number;
+  numReviews: number;
+  students: string;
+  category: string;
+  image: string;
+  description?: string;
+};
+
+function CourseCard({ course }: { course: FeaturedCourse }) {
+  const hasRatings = Number(course.numReviews || 0) > 0;
+
   return (
     <PremiumCard className="group overflow-hidden">
       <div className="relative overflow-hidden aspect-video">
@@ -111,7 +125,9 @@ function CourseCard({ course }: { course: typeof featuredCourses[0] }) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-            <span className="text-[13px] font-semibold text-slate-700 dark:text-slate-300">{course.rating}</span>
+            <span className="text-[13px] font-semibold text-slate-700 dark:text-slate-300">
+              {hasRatings ? Number(course.rating || 0).toFixed(1) : "N/A"}
+            </span>
             <span className="text-[11px] text-slate-400">({course.students})</span>
           </div>
           <Button size="sm" className="text-[11px] h-8 px-3.5 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white shadow-sm shadow-indigo-500/20" asChild>
@@ -122,14 +138,6 @@ function CourseCard({ course }: { course: typeof featuredCourses[0] }) {
     </PremiumCard>
   );
 }
-
-// ─── Data ───
-const featuredCourses = [
-  { id: 1, title: "Complete Web Development Bootcamp", instructor: "Dr. Sarah Chen", rating: 4.9, students: "2.4k", category: "Web Dev", image: "https://images.unsplash.com/photo-1637937459053-c788742455be?w=600&h=340&fit=crop" },
-  { id: 2, title: "Graphic Design Fundamentals", instructor: "Prof. Alex Rivera", rating: 4.8, students: "1.8k", category: "Design", image: "https://images.unsplash.com/photo-1512645592367-97ba8a9d4035?w=600&h=340&fit=crop" },
-  { id: 3, title: "Data Science & Machine Learning", instructor: "Dr. James Park", rating: 4.9, students: "3.1k", category: "Data Science", image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&h=340&fit=crop" },
-  { id: 4, title: "Mobile App Development with React Native", instructor: "Eng. Maria Lopez", rating: 4.7, students: "1.5k", category: "Mobile", image: "https://images.unsplash.com/photo-1760531932521-8eb5a064dbca?w=600&h=340&fit=crop" },
-];
 
 type HomeAnnouncement = {
   id: string;
