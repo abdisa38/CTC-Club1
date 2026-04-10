@@ -27,16 +27,33 @@ export const addLesson = async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ message: 'Not authorized to add lessons to this course' });
     }
 
-    const lesson = await Lesson.create({
+    const lessonPayload: any = {
       title,
       content: content || title,
-      videoUrl,
-      order,
-      duration: duration !== undefined ? Number(duration) : undefined,
-      attachments: Array.isArray(attachments) ? attachments : [],
-      isPublished: typeof isPublished === 'boolean' ? isPublished : undefined,
       course: courseId,
-    });
+      attachments: Array.isArray(attachments) ? attachments : [],
+    };
+
+    if (videoUrl) {
+      lessonPayload.videoUrl = videoUrl;
+    }
+
+    if (order !== undefined) {
+      lessonPayload.order = order;
+    }
+
+    if (duration !== undefined) {
+      const parsedDuration = Number(duration);
+      if (Number.isFinite(parsedDuration)) {
+        lessonPayload.duration = parsedDuration;
+      }
+    }
+
+    if (typeof isPublished === 'boolean') {
+      lessonPayload.isPublished = isPublished;
+    }
+
+    const lesson = await Lesson.create(lessonPayload);
 
     sendSuccess(res, lesson, { statusCode: 201, message: 'Lesson created successfully' });
   } catch (error: any) {
@@ -70,7 +87,12 @@ export const updateLesson = async (req: AuthRequest, res: Response) => {
     lesson.content = content || lesson.content;
     lesson.videoUrl = videoUrl || lesson.videoUrl;
     lesson.order = order !== undefined ? order : lesson.order;
-    lesson.duration = duration !== undefined ? Number(duration) : lesson.duration;
+    if (duration !== undefined) {
+      const parsedDuration = Number(duration);
+      if (Number.isFinite(parsedDuration)) {
+        lesson.duration = parsedDuration;
+      }
+    }
 
     if (Array.isArray(attachments)) {
       lesson.attachments = attachments;
