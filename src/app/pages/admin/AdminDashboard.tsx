@@ -61,6 +61,7 @@ export function AdminDashboard({ metrics }: { metrics?: any }) {
   const ticketBreakdown = useMemo(() => analytics?.ticketStatusData || [], [analytics]);
   const recentActivity = useMemo(() => analytics?.activityLogs || [], [analytics]);
   const completion = useMemo(() => analytics?.courseCompletionData || [], [analytics]);
+  const estimatedRevenue = Number(analytics?.estimatedRevenue || 0);
 
   const stats = [
     {
@@ -85,7 +86,7 @@ export function AdminDashboard({ metrics }: { metrics?: any }) {
       title: "Revenue",
       value: `$${Number(analytics?.totalRevenue || 0).toLocaleString()}`,
       icon: TrendingUp,
-      sub: "Course sales estimate",
+      sub: "Collected sales revenue",
     },
   ];
 
@@ -138,6 +139,10 @@ export function AdminDashboard({ metrics }: { metrics?: any }) {
           </Card>
         ))}
       </div>
+
+      <p className="text-xs text-slate-500 dark:text-slate-400">
+        Estimated enrollment value: ${estimatedRevenue.toLocaleString()}
+      </p>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
