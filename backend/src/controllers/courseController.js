@@ -20,6 +20,8 @@ exports.createCourse = (0, express_async_handler_1.default)(async (req, res) => 
         coverImage,
         category,
         price,
+        isPublished: true,
+        status: 'published',
     });
     (0, apiResponse_1.sendSuccess)(res, course, { statusCode: 201, message: 'Course created successfully' });
 });
@@ -48,6 +50,7 @@ exports.getCourses = (0, express_async_handler_1.default)(async (req, res) => {
     const count = await courseModel_1.default.countDocuments(queryFilter);
     const courseQuery = courseModel_1.default.find(queryFilter)
         .populate('instructor', 'name email avatar')
+        .sort({ createdAt: -1 })
         .limit(pageSize)
         .skip(pageSize * (page - 1));
     if (!req.user || req.user.role === 'student') {
