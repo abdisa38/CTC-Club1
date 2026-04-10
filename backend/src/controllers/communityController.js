@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.addCommunityReply = exports.getCommunityReplies = exports.voteCommunityPost = exports.createCommunityPost = exports.getCommunityPosts = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
+const mongoose_1 = __importDefault(require("mongoose"));
 const communityModel_1 = require("../models/communityModel");
 const apiResponse_1 = require("../utils/apiResponse");
 // @desc    Get community posts
@@ -15,9 +16,17 @@ exports.getCommunityPosts = (0, express_async_handler_1.default)(async (req, res
     const page = Number(req.query.page) || 1;
     const keyword = req.query.keyword;
     const category = req.query.category;
+    const course = req.query.course;
     const filter = { isDeleted: false };
     if (category && category !== 'all') {
         filter.category = category;
+    }
+    if (course) {
+        if (!mongoose_1.default.Types.ObjectId.isValid(course)) {
+            res.status(400);
+            throw new Error('Invalid course ID');
+        }
+        filter.course = course;
     }
     if (keyword) {
         filter.$or = [
@@ -45,19 +54,27 @@ exports.getCommunityPosts = (0, express_async_handler_1.default)(async (req, res
 // @route   POST /api/community/posts
 // @access  Private
 exports.createCommunityPost = (0, express_async_handler_1.default)(async (req, res) => {
-    const { title, content, category, tags } = req.body;
+    const { title, content, category, tags, course } = req.body;
     const userId = req.user._id;
     if (!title || !content) {
         res.status(400);
         throw new Error('Title and content are required');
     }
-    const post = await communityModel_1.CommunityPost.create({
+    const postPayload = {
         user: userId,
         title,
         content,
         category: category || 'general',
         tags: Array.isArray(tags) ? tags : [],
-    });
+    };
+    if (course) {
+        if (!mongoose_1.default.Types.ObjectId.isValid(course)) {
+            res.status(400);
+            throw new Error('Invalid course ID');
+        }
+        postPayload.course = course;
+    }
+    const post = await communityModel_1.CommunityPost.create(postPayload);
     const populated = await communityModel_1.CommunityPost.findById(post._id).populate('user', 'name avatar role');
     (0, apiResponse_1.sendSuccess)(res, populated || post, { statusCode: 201, message: 'Post created successfully' });
 });
