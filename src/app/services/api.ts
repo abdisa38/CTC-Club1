@@ -188,6 +188,49 @@ export interface UploadedFile {
   filename: string;
 }
 
+export type QuizQuestionType = "multiple-choice" | "true-false" | "short-answer";
+
+export interface QuizQuestion {
+  _id?: string;
+  questionText: string;
+  type: QuizQuestionType;
+  options?: string[];
+  correctAnswerIndex?: number;
+  correctAnswerText?: string;
+  points: number;
+}
+
+export interface Quiz {
+  _id: string;
+  title: string;
+  description?: string;
+  course?: { _id: string; title: string; coverImage?: string } | string;
+  lesson?: string;
+  questions: QuizQuestion[];
+  passingScore: number;
+  timeLimit?: number;
+  maxAttempts?: number;
+  xpReward?: number;
+  isPublished: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface QuizResultItem {
+  _id: string;
+  user?: { _id: string; name: string; email?: string; avatar?: string };
+  quiz?: string;
+  course?: string;
+  attemptNumber: number;
+  score: number;
+  totalPoints: number;
+  percentage: number;
+  isPassed: boolean;
+  timeSpent: number;
+  xpEarned: number;
+  createdAt?: string;
+}
+
 const asObject = (value: unknown): Record<string, any> => {
   if (value && typeof value === "object") {
     return value as Record<string, any>;
@@ -360,22 +403,101 @@ export const apiService = {
     return pickData<UploadedFile>(res.data);
   },
 
-  async getQuizzes(): Promise<any[]> {
+  async getQuizzes(): Promise<Quiz[]> {
     const res = await api.get("/quizzes");
-    return pickData<any[]>(res.data);
+    return pickData<Quiz[]>(res.data);
   },
 
-  async getQuizById(quizId: string): Promise<any> {
+  async getQuizById(quizId: string): Promise<Quiz> {
     const res = await api.get(`/quizzes/${quizId}`);
-    return pickData<any>(res.data);
+    return pickData<Quiz>(res.data);
+  },
+
+  async createQuiz(input: {
+    title: string;
+    description?: string;
+    courseId: string;
+    lessonId?: string;
+    questions?: QuizQuestion[];
+    passingScore?: number;
+    timeLimit?: number;
+    maxAttempts?: number;
+    xpReward?: number;
+    isPublished?: boolean;
+  }): Promise<Quiz> {
+    const res = await api.post("/quizzes", input);
+    return pickData<Quiz>(res.data);
+  },
+
+  async updateQuiz(
+    quizId: string,
+    input: Partial<{
+      title: string;
+      description?: string;
+      courseId: string;
+      lessonId?: string;
+      passingScore?: number;
+      timeLimit?: number;
+      maxAttempts?: number;
+      xpReward?: number;
+      isPublished?: boolean;
+    }>
+  ): Promise<Quiz> {
+    const res = await api.put(`/quizzes/${quizId}`, input);
+    return pickData<Quiz>(res.data);
+  },
+
+  async deleteQuiz(quizId: string): Promise<void> {
+    await api.delete(`/quizzes/${quizId}`);
+  },
+
+  async addQuizQuestion(
+    quizId: string,
+    input: {
+      questionText: string;
+      type: QuizQuestionType;
+      options?: string[];
+      correctAnswerIndex?: number;
+      correctAnswerText?: string;
+      points?: number;
+    }
+  ): Promise<Quiz> {
+    const res = await api.post(`/quizzes/${quizId}/questions`, input);
+    return pickData<Quiz>(res.data);
+  },
+
+  async updateQuizQuestion(
+    quizId: string,
+    questionId: string,
+    input: Partial<{
+      questionText: string;
+      type: QuizQuestionType;
+      options?: string[];
+      correctAnswerIndex?: number;
+      correctAnswerText?: string;
+      points?: number;
+    }>
+  ): Promise<Quiz> {
+    const res = await api.put(`/quizzes/${quizId}/questions/${questionId}`, input);
+    return pickData<Quiz>(res.data);
+  },
+
+  async deleteQuizQuestion(quizId: string, questionId: string): Promise<Quiz> {
+    const res = await api.delete(`/quizzes/${quizId}/questions/${questionId}`);
+    return pickData<Quiz>(res.data);
+  },
+
+  async getQuizResults(quizId: string): Promise<QuizResultItem[]> {
+    const res = await api.get(`/quizzes/${quizId}/results`);
+    return pickData<QuizResultItem[]>(res.data);
   },
 
   async submitQuiz(
     quizId: string,
     payload: { answers: Array<{ questionId?: string; userAnswerIndex?: number; userAnswerText?: string }>; timeSpent?: number }
-  ): Promise<any> {
+  ): Promise<QuizResultItem> {
     const res = await api.post(`/quizzes/${quizId}/submit`, payload);
-    return pickData<any>(res.data);
+    return pickData<QuizResultItem>(res.data);
   },
 
   async getProjects(courseId?: string): Promise<Project[]> {
