@@ -436,14 +436,14 @@ export function InstructorLessons() {
 
               <div className="space-y-2 pt-2">
                 <label className="text-sm font-medium">Video URL / Upload</label>
-                <button
+                  <button
                   type="button"
                   className="w-full border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg p-6 flex flex-col items-center text-center hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors"
                   onClick={() => videoInputRef.current?.click()}
                 >
                   <Upload className="h-6 w-6 text-slate-400 mb-2" />
                   <p className="text-xs font-medium mb-1">Click to upload video</p>
-                  <p className="text-[10px] text-slate-500">MP4, WebM (Max 2GB)</p>
+                    <p className="text-[10px] text-slate-500">MP4, WebM (Max 50MB)</p>
                 </button>
                 <input ref={videoInputRef} type="file" accept="video/*" className="hidden" onChange={handleVideoUpload} />
                 <div className="relative mt-2">
