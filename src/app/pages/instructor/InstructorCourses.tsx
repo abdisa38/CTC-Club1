@@ -118,6 +118,8 @@ export function InstructorCourses() {
             const students = Array.isArray(course.students) ? course.students.length : 0;
             const revenue = Number(course.price || 0) * students;
             const status = course.status || "draft";
+            const hasRatings = Number(course.numReviews || 0) > 0;
+            const ratingText = hasRatings ? Number(course.rating || 0).toFixed(1) : "N/A";
 
             return (
               <Card key={course._id} className="overflow-hidden group hover:border-emerald-200 dark:hover:border-emerald-800 transition-all">
@@ -190,7 +192,7 @@ export function InstructorCourses() {
                       </div>
                       <div>
                         <p className="text-xs text-slate-500 mb-1">Rating</p>
-                        <p className="font-semibold text-slate-900 dark:text-white">{Number(course.rating || 0).toFixed(1)}</p>
+                        <p className="font-semibold text-slate-900 dark:text-white">{ratingText}</p>
                       </div>
                       <div className="flex items-end justify-end">
                         <Button variant="outline" asChild>
