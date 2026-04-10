@@ -52,8 +52,8 @@ export function CourseEditor() {
       issues.push("Course title is required");
     }
 
-    if (!description.trim() || description.trim().length < 30) {
-      issues.push("Course description must be at least 30 characters");
+    if (!description.trim() || description.trim().length < 10) {
+      issues.push("Course description must be at least 10 characters");
     }
 
     const priceNum = Number(price);
@@ -141,7 +141,9 @@ export function CourseEditor() {
               rows={8}
               placeholder="Describe what students will learn, who the course is for, and expected outcomes..."
             />
-            <p className="text-xs text-slate-500">Minimum 30 characters</p>
+            <p className="text-xs text-slate-500">
+              Minimum 10 characters ({description.trim().length}/10)
+            </p>
           </div>
 
           <div className="grid sm:grid-cols-2 gap-4">
@@ -175,7 +177,7 @@ export function CourseEditor() {
 
       <div className="flex justify-end gap-3">
         <Button variant="outline" onClick={() => navigate("/app/instructor/courses")}>Cancel</Button>
-        <Button onClick={handleSave} disabled={isSaving || formErrors.length > 0} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+        <Button onClick={handleSave} disabled={isSaving} className="bg-emerald-600 hover:bg-emerald-700 text-white">
           {isSaving ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -189,6 +191,8 @@ export function CourseEditor() {
           )}
         </Button>
       </div>
+
+      {formErrors.length > 0 ? <HintBanner message={formErrors[0]} /> : null}
     </div>
   );
 }
@@ -196,6 +200,14 @@ export function CourseEditor() {
 function ErrorBanner({ message }: { message: string }) {
   return (
     <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
+      {message}
+    </div>
+  );
+}
+
+function HintBanner({ message }: { message: string }) {
+  return (
+    <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
       {message}
     </div>
   );
