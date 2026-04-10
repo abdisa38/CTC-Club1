@@ -33,7 +33,7 @@ type CourseResource = {
   lessonTitle: string;
 };
 
-const getYoutubeEmbedUrl = (url: string): string | null => {
+const getEmbedVideoUrl = (url: string): string | null => {
   try {
     const parsed = new URL(url);
 
@@ -44,7 +44,24 @@ const getYoutubeEmbedUrl = (url: string): string | null => {
 
     if (parsed.hostname.includes("youtube.com")) {
       const id = parsed.searchParams.get("v");
-      return id ? `https://www.youtube.com/embed/${id}` : null;
+      if (id) {
+        return `https://www.youtube.com/embed/${id}`;
+      }
+
+      const pathParts = parsed.pathname.split("/").filter(Boolean);
+      if (pathParts[0] === "shorts" && pathParts[1]) {
+        return `https://www.youtube.com/embed/${pathParts[1]}`;
+      }
+
+      if (pathParts[0] === "embed" && pathParts[1]) {
+        return `https://www.youtube.com/embed/${pathParts[1]}`;
+      }
+    }
+
+    if (parsed.hostname.includes("vimeo.com")) {
+      const pathParts = parsed.pathname.split("/").filter(Boolean);
+      const id = pathParts[pathParts.length - 1];
+      return id ? `https://player.vimeo.com/video/${id}` : null;
     }
 
     return null;
@@ -217,7 +234,7 @@ export function CourseDetail() {
   const completedCount = canAccessLessons && selectedLessonIndex >= 0 ? selectedLessonIndex + 1 : 0;
   const progress = visibleLessons.length > 0 ? Math.round((completedCount / visibleLessons.length) * 100) : 0;
 
-  const youtubeEmbedUrl = selectedLesson?.videoUrl ? getYoutubeEmbedUrl(selectedLesson.videoUrl) : null;
+  const embedVideoUrl = selectedLesson?.videoUrl ? getEmbedVideoUrl(selectedLesson.videoUrl) : null;
 
   const courseResources = useMemo(() => {
     const resources: CourseResource[] = [];
@@ -336,10 +353,10 @@ export function CourseDetail() {
               </div>
             </>
           ) : selectedLesson?.videoUrl ? (
-            youtubeEmbedUrl ? (
+            embedVideoUrl ? (
               <iframe
                 title={selectedLesson.title}
-                src={youtubeEmbedUrl}
+                src={embedVideoUrl}
                 className="w-full h-full"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
