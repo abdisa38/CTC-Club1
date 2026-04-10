@@ -27,6 +27,24 @@ export const protect = expressAsyncHandler(async (req: AuthRequest, res: Respons
   }
 });
 
+export const optionalProtect = expressAsyncHandler(async (req: AuthRequest, _res: Response, next: NextFunction) => {
+  const token = req.cookies.jwt;
+
+  if (!token) {
+    next();
+    return;
+  }
+
+  try {
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+    req.user = await User.findById(decoded.id).select('-password');
+  } catch {
+    // Ignore invalid/expired tokens for optional auth routes.
+  }
+
+  next();
+});
+
 export const authorizeRoles = (...roles: string[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
