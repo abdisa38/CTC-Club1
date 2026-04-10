@@ -14,24 +14,22 @@ const assertQuestionId = (value: unknown): string => {
   return typeof value === 'string' ? value : '';
 };
 
-const ensureCourseOwnership = async (courseId: string, user: any) => {
+const ensureCourseOwnership = async (courseId: string, user: any, res: Response) => {
   const course = await Course.findById(courseId).select('instructor');
   if (!course) {
-    const error: any = new Error('Course not found');
-    error.statusCode = 404;
-    throw error;
+    res.status(404);
+    throw new Error('Course not found');
   }
 
   if (user.role !== 'admin' && course.instructor.toString() !== user._id.toString()) {
-    const error: any = new Error('Not authorized for this course');
-    error.statusCode = 403;
-    throw error;
+    res.status(403);
+    throw new Error('Not authorized for this course');
   }
 };
 
-const ensureQuizOwnership = async (quiz: any, user: any) => {
+const ensureQuizOwnership = async (quiz: any, user: any, res: Response) => {
   const quizCourseId = typeof quiz.course === 'string' ? quiz.course : quiz.course?.toString();
-  await ensureCourseOwnership(quizCourseId, user);
+  await ensureCourseOwnership(quizCourseId, user, res);
 };
 
 const normalizeQuestionPayload = (payload: any) => {
@@ -101,7 +99,7 @@ const normalizeQuestionPayload = (payload: any) => {
 
 export const createQuiz = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { title, description, courseId, lessonId, questions, passingScore, timeLimit, maxAttempts, xpReward, isPublished } = req.body;
-  await ensureCourseOwnership(String(courseId), req.user);
+  await ensureCourseOwnership(String(courseId), req.user, res);
 
   const quiz = await Quiz.create({ 
     title, 
@@ -132,12 +130,12 @@ export const updateQuiz = asyncHandler(async (req: AuthRequest, res: Response) =
     throw new Error('Quiz not found');
   }
 
-  await ensureQuizOwnership(quiz, req.user);
+  await ensureQuizOwnership(quiz, req.user, res);
 
   const { title, description, courseId, lessonId, passingScore, timeLimit, maxAttempts, xpReward, isPublished } = req.body;
 
   if (courseId && courseId.toString() !== quiz.course.toString()) {
-    await ensureCourseOwnership(String(courseId), req.user);
+    await ensureCourseOwnership(String(courseId), req.user, res);
     quiz.course = courseId;
   }
 
@@ -168,7 +166,7 @@ export const deleteQuiz = asyncHandler(async (req: AuthRequest, res: Response) =
     throw new Error('Quiz not found');
   }
 
-  await ensureQuizOwnership(quiz, req.user);
+  await ensureQuizOwnership(quiz, req.user, res);
 
   quiz.isDeleted = true;
   await quiz.save();
@@ -189,7 +187,7 @@ export const addQuizQuestion = asyncHandler(async (req: AuthRequest, res: Respon
     throw new Error('Quiz not found');
   }
 
-  await ensureQuizOwnership(quiz, req.user);
+  await ensureQuizOwnership(quiz, req.user, res);
 
   let questionPayload: any;
   try {
@@ -220,7 +218,7 @@ export const updateQuizQuestion = asyncHandler(async (req: AuthRequest, res: Res
     throw new Error('Quiz not found');
   }
 
-  await ensureQuizOwnership(quiz, req.user);
+  await ensureQuizOwnership(quiz, req.user, res);
 
   const question = (quiz.questions as any).id(questionId);
   if (!question) {
@@ -266,7 +264,7 @@ export const deleteQuizQuestion = asyncHandler(async (req: AuthRequest, res: Res
     throw new Error('Quiz not found');
   }
 
-  await ensureQuizOwnership(quiz, req.user);
+  await ensureQuizOwnership(quiz, req.user, res);
 
   const question = (quiz.questions as any).id(questionId);
   if (!question) {
