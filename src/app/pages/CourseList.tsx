@@ -205,19 +205,18 @@ export function CourseList() {
         <>
           <p className="text-sm text-slate-500">{filteredCourses.length} course{filteredCourses.length !== 1 ? "s" : ""} found</p>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredCourses.map((course, i) => (
-              <motion.div
-                key={course._id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-              >
-                {(() => {
-                  const hasRatings = Number(course.numReviews || 0) > 0;
-                  const ratingLabel = hasRatings ? Number(course.rating || 0).toFixed(1) : "N/A";
+            {filteredCourses.map((course, i) => {
+              const hasRatings = Number(course.numReviews || 0) > 0;
+              const ratingLabel = hasRatings ? Number(course.rating || 0).toFixed(1) : "N/A";
 
-                  return (
-                <Card className="overflow-hidden group flex flex-col hover:border-indigo-200 hover:shadow-md transition-all dark:hover:border-indigo-800">
+              return (
+                <motion.div
+                  key={course._id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                >
+                  <Card className="overflow-hidden group flex flex-col hover:border-indigo-200 hover:shadow-md transition-all dark:hover:border-indigo-800">
                   <div className="relative aspect-video w-full overflow-hidden">
                     <img
                       src={course.coverImage || 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80&w=800'}
@@ -281,11 +280,10 @@ export function CourseList() {
                       ) : null}
                     </div>
                   </CardContent>
-                </Card>
-                  );
-                })()}
-              </motion.div>
-            ))}
+                  </Card>
+                </motion.div>
+              );
+            })}
           </div>
         </>
       )}
