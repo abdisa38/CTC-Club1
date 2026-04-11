@@ -5,7 +5,7 @@ import {
   Users, BarChart3, HelpCircle, Shield, PlusCircle, Star,
   Megaphone, CalendarDays, Activity, Flag, Database, Heart, Award, GraduationCap, X, LogOut, ChevronRight
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/Avatar";
 import { cn } from "../../utils/cn";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/DropdownMenu";
 import { useAuth } from "../../context/AuthContext";
+import apiService, { AdminSearchData, AdminSearchItem, NotificationItem } from "../../services/api";
 import ctcLogo from "../../../assets/f6c46c16a776a1f63a42e49b36947669f8dcc942.png";
 
 export function AppLayout() {
