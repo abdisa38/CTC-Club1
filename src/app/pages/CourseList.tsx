@@ -116,7 +116,8 @@ export function CourseList() {
 
     return course.students.some((student: any) => {
       if (typeof student === "string") return student === user._id;
-      return student?._id === user._id;
+      if (student && typeof student === "object" && student._id) return student._id === user._id;
+      return String(student) === user._id;
     });
   };
 
