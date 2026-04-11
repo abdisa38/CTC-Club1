@@ -125,7 +125,7 @@ export function CourseDetail() {
   const isInstructor = role === "instructor" || role === "admin";
   const isAdmin = role === "admin";
 
-  const [activeTab, setActiveTab] = useState("content");
+  const [activeTab, setActiveTab] = useState(isInstructor ? "overview" : "content");
   const [course, setCourse] = useState<Course | null>(null);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [selectedLessonId, setSelectedLessonId] = useState("");
@@ -238,12 +238,18 @@ export function CourseDetail() {
   const embedVideoUrl = selectedLesson?.videoUrl ? getEmbedVideoUrl(selectedLesson.videoUrl) : null;
 
   useEffect(() => {
-    if (activeTab !== "content") {
-      return;
-    }
-
     scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   }, [activeTab, selectedLessonId]);
+
+  useEffect(() => {
+    const availableTabs = isInstructor
+      ? ["overview", "resources", "discussion"]
+      : ["content", "overview", "resources", "discussion"];
+
+    if (!availableTabs.includes(activeTab)) {
+      setActiveTab(availableTabs[0]);
+    }
+  }, [isInstructor, activeTab]);
 
   const courseResources = useMemo(() => {
     const resources: CourseResource[] = [];
@@ -455,7 +461,7 @@ export function CourseDetail() {
 
           <div className="border-b border-slate-200 dark:border-slate-800 mb-6">
             <nav className="flex gap-6">
-              {["content", "overview", "resources", "discussion"].map((tab) => (
+              {(isInstructor ? ["overview", "resources", "discussion"] : ["content", "overview", "resources", "discussion"]).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -561,7 +567,7 @@ export function CourseDetail() {
               </div>
             ) : null}
 
-            {activeTab === "content" ? (
+            {!isInstructor && activeTab === "content" ? (
               <div className="space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
