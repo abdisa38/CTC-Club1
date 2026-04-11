@@ -10,6 +10,20 @@ import { Github, UploadCloud, Link as LinkIcon, CheckCircle2, Loader2, User, Clo
 import { useAuth } from "../context/AuthContext";
 import apiService, { Course, Project, ProjectSubmission } from "../services/api";
 
+const toDateTimeLocal = (value?: string) => {
+  if (!value) return "";
+
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "";
+
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mm = String(date.getMinutes()).padStart(2, "0");
+  return `${y}-${m}-${d}T${hh}:${mm}`;
+};
+
 export function Projects() {
   const { role, user } = useAuth();
   const isInstructor = role === "instructor" || role === "admin";
@@ -24,6 +38,8 @@ export function Projects() {
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [creatingProject, setCreatingProject] = useState(false);
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
   const [createTitle, setCreateTitle] = useState("");
   const [createDescription, setCreateDescription] = useState("");
   const [createCourseId, setCreateCourseId] = useState("");
@@ -132,6 +148,7 @@ export function Projects() {
   };
 
   const resetCreateForm = () => {
+    setEditingProjectId(null);
     setCreateTitle("");
     setCreateDescription("");
     setCreateInstructions("");
@@ -142,7 +159,31 @@ export function Projects() {
     setCreatePublished(true);
   };
 
-  const handleCreateProject = async () => {
+  const openCreateProjectDialog = () => {
+    resetCreateForm();
+    if (courses.length > 0) {
+      setCreateCourseId(courses[0]._id);
+    }
+    setCreateDialogOpen(true);
+  };
+
+  const openEditProjectDialog = (project: Project) => {
+    setEditingProjectId(project._id);
+    setCreateTitle(project.title || "");
+    setCreateDescription(project.description || "");
+    setCreateInstructions(project.instructions || "");
+    setCreateRequirements(Array.isArray(project.requirements) ? project.requirements.join("\n") : "");
+    setCreateXpReward(String(project.xpReward ?? 50));
+    setCreateMaxPoints(String(project.maxPoints ?? 100));
+    setCreateDeadline(toDateTimeLocal(project.deadline));
+    setCreatePublished(Boolean(project.isPublished));
+
+    const projectCourseId = typeof project.course === "string" ? project.course : project.course?._id;
+    setCreateCourseId(projectCourseId || courses[0]?._id || "");
+    setCreateDialogOpen(true);
+  };
+
+  const handleSaveProject = async () => {
     if (!createTitle.trim() || !createDescription.trim() || !createCourseId) {
       setError("Project title, description, and course are required");
       return;
@@ -165,7 +206,7 @@ export function Projects() {
     setError("");
 
     try {
-      const created = await apiService.createProject({
+      const payload = {
         title: createTitle.trim(),
         description: createDescription.trim(),
         courseId: createCourseId,
@@ -178,23 +219,51 @@ export function Projects() {
         maxPoints,
         deadline: createDeadline ? new Date(createDeadline).toISOString() : undefined,
         isPublished: createPublished,
-      });
+      };
+
+      const saved = editingProjectId
+        ? await apiService.updateProject(editingProjectId, payload)
+        : await apiService.createProject(payload);
 
       const selectedCourse = courses.find((course) => course._id === createCourseId);
       const normalized: Project = {
-        ...created,
+        ...saved,
         course: selectedCourse
           ? { _id: selectedCourse._id, title: selectedCourse.title }
-          : created.course,
+          : saved.course,
       };
 
-      setProjects((prev) => [normalized, ...prev]);
+      setProjects((prev) => (
+        editingProjectId
+          ? prev.map((project) => (project._id === editingProjectId ? normalized : project))
+          : [normalized, ...prev]
+      ));
+
       setCreateDialogOpen(false);
       resetCreateForm();
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Failed to create project");
+      setError(err?.response?.data?.message || "Failed to save project");
     } finally {
       setCreatingProject(false);
+    }
+  };
+
+  const handleDeleteProject = async (projectId: string) => {
+    if (!confirm("Delete this project assignment?")) {
+      return;
+    }
+
+    setDeletingProjectId(projectId);
+    setError("");
+
+    try {
+      await apiService.deleteProject(projectId);
+      setProjects((prev) => prev.filter((project) => project._id !== projectId));
+      setSubmissions((prev) => prev.filter((submission) => submission.project?._id !== projectId));
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to delete project");
+    } finally {
+      setDeletingProjectId(null);
     }
   };
 
@@ -271,16 +340,18 @@ export function Projects() {
 
           <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-indigo-600 hover:bg-indigo-700">
+              <Button className="bg-indigo-600 hover:bg-indigo-700" onClick={openCreateProjectDialog}>
                 <PlusCircle className="h-4 w-4 mr-2" />
                 Create Project
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[620px] max-h-[85vh] overflow-hidden">
               <DialogHeader>
-                <DialogTitle>Create Project Assignment</DialogTitle>
+                <DialogTitle>{editingProjectId ? "Edit Project Assignment" : "Create Project Assignment"}</DialogTitle>
                 <DialogDescription>
-                  This publishes a project students can submit from their Projects page.
+                  {editingProjectId
+                    ? "Update this project assignment. Students will see the latest details."
+                    : "This publishes a project students can submit from their Projects page."}
                 </DialogDescription>
               </DialogHeader>
 
@@ -353,13 +424,23 @@ export function Projects() {
               </div>
 
               <DialogFooter className="border-t border-slate-200 pt-3 dark:border-slate-800">
-                <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setCreateDialogOpen(false);
+                    resetCreateForm();
+                  }}
+                >
+                  Cancel
+                </Button>
                 <Button
                   className="bg-indigo-600 hover:bg-indigo-700"
-                  onClick={() => void handleCreateProject()}
+                  onClick={() => void handleSaveProject()}
                   disabled={creatingProject || courses.length === 0}
                 >
-                  {creatingProject ? "Creating..." : "Post Project"}
+                  {creatingProject
+                    ? (editingProjectId ? "Saving..." : "Creating...")
+                    : (editingProjectId ? "Save Changes" : "Post Project")}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -416,9 +497,25 @@ export function Projects() {
                 return (
                   <Card key={project._id}>
                     <CardHeader className="pb-2">
-                      <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <Badge variant={project.isPublished ? "success" : "secondary"}>{project.isPublished ? "published" : "draft"}</Badge>
-                        <Badge variant="outline">{courseTitle}</Badge>
+                      <div className="flex flex-wrap items-center justify-between gap-3 mb-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant={project.isPublished ? "success" : "secondary"}>{project.isPublished ? "published" : "draft"}</Badge>
+                          <Badge variant="outline">{courseTitle}</Badge>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button variant="outline" size="sm" onClick={() => openEditProjectDialog(project)}>
+                            Edit
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 border-red-200 hover:bg-red-50"
+                            onClick={() => void handleDeleteProject(project._id)}
+                            disabled={deletingProjectId === project._id}
+                          >
+                            Delete
+                          </Button>
+                        </div>
                       </div>
                       <CardTitle className="text-xl">{project.title}</CardTitle>
                       <CardDescription className="line-clamp-2">{project.description}</CardDescription>
