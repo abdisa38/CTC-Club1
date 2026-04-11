@@ -271,8 +271,12 @@ exports.startGoogleOAuth = (0, express_async_handler_1.default)(async (_req, res
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
     if (!clientId || !clientSecret) {
-        res.status(500);
-        throw new Error('Google OAuth is not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.');
+        res.redirect(buildClientAuthRedirectUrl({
+            status: 'error',
+            message: 'Google login is not configured yet. Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in backend .env.',
+            provider: 'google',
+        }));
+        return;
     }
     const callbackUrl = `${getServerUrl()}/api/auth/oauth/google/callback`;
     const state = createOAuthState();
@@ -334,8 +338,12 @@ exports.startGitHubOAuth = (0, express_async_handler_1.default)(async (_req, res
     const clientId = process.env.GITHUB_CLIENT_ID;
     const clientSecret = process.env.GITHUB_CLIENT_SECRET;
     if (!clientId || !clientSecret) {
-        res.status(500);
-        throw new Error('GitHub OAuth is not configured. Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET.');
+        res.redirect(buildClientAuthRedirectUrl({
+            status: 'error',
+            message: 'GitHub login is not configured yet. Add GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET in backend .env.',
+            provider: 'github',
+        }));
+        return;
     }
     const callbackUrl = `${getServerUrl()}/api/auth/oauth/github/callback`;
     const state = createOAuthState();
