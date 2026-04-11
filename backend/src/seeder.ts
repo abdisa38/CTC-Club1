@@ -17,6 +17,12 @@ const importData = async () => {
 
     const users = [
       {
+        name: 'CTC Platform Admin',
+        email: 'admin@ctc.com',
+        password: 'admin123',
+        role: 'admin',
+      },
+      {
         name: 'Amira Hassan',
         email: 'amira@ctc.com',
         password: 'password123',
