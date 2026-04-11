@@ -36,8 +36,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getActivityLogs = exports.softDeleteUser = exports.updateUserStatus = exports.updateUserRole = exports.getUsers = exports.getUserProfile = exports.logoutUser = exports.loginUser = exports.registerUser = void 0;
+exports.getActivityLogs = exports.softDeleteUser = exports.updateUserStatus = exports.updateUserRole = exports.getUsers = exports.removeFavoriteCourse = exports.addFavoriteCourse = exports.getFavoriteCourses = exports.getUserProfile = exports.logoutUser = exports.loginUser = exports.registerUser = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
+const mongoose_1 = __importDefault(require("mongoose"));
 const userModel_1 = __importDefault(require("../models/userModel"));
 const courseModel_1 = __importDefault(require("../models/courseModel"));
 const ticketModel_1 = __importDefault(require("../models/ticketModel"));
@@ -117,6 +118,70 @@ exports.getUserProfile = (0, express_async_handler_1.default)(async (req, res) =
         res.status(404);
         throw new Error('User not found');
     }
+});
+// @desc    Get current user's favorite courses
+// @route   GET /api/auth/favorites/courses
+// @access  Private
+exports.getFavoriteCourses = (0, express_async_handler_1.default)(async (req, res) => {
+    const user = await userModel_1.default.findById(req.user._id)
+        .select('favoriteCourses')
+        .populate({
+        path: 'favoriteCourses',
+        match: { isDeleted: false, status: 'published' },
+        options: { sort: { createdAt: -1 } },
+        populate: { path: 'instructor', select: 'name email avatar' },
+    });
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found');
+    }
+    const favorites = Array.isArray(user.favoriteCourses)
+        ? user.favoriteCourses.filter(Boolean)
+        : [];
+    (0, apiResponse_1.sendSuccess)(res, favorites);
+});
+// @desc    Add course to favorites
+// @route   POST /api/auth/favorites/courses/:courseId
+// @access  Private
+exports.addFavoriteCourse = (0, express_async_handler_1.default)(async (req, res) => {
+    const { courseId } = req.params;
+    if (!mongoose_1.default.Types.ObjectId.isValid(courseId)) {
+        res.status(400);
+        throw new Error('Invalid course id');
+    }
+    const course = await courseModel_1.default.findOne({ _id: courseId, isDeleted: false });
+    if (!course) {
+        res.status(404);
+        throw new Error('Course not found');
+    }
+    const user = await userModel_1.default.findByIdAndUpdate(req.user._id, { $addToSet: { favoriteCourses: course._id } }, { new: true }).select('_id');
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found');
+    }
+    (0, apiResponse_1.sendSuccess)(res, {
+        courseId: course._id.toString(),
+        isFavorite: true,
+    }, { message: 'Course added to favorites' });
+});
+// @desc    Remove course from favorites
+// @route   DELETE /api/auth/favorites/courses/:courseId
+// @access  Private
+exports.removeFavoriteCourse = (0, express_async_handler_1.default)(async (req, res) => {
+    const { courseId } = req.params;
+    if (!mongoose_1.default.Types.ObjectId.isValid(courseId)) {
+        res.status(400);
+        throw new Error('Invalid course id');
+    }
+    const user = await userModel_1.default.findByIdAndUpdate(req.user._id, { $pull: { favoriteCourses: courseId } }, { new: true }).select('_id');
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found');
+    }
+    (0, apiResponse_1.sendSuccess)(res, {
+        courseId,
+        isFavorite: false,
+    }, { message: 'Course removed from favorites' });
 });
 // @desc    Get users for admin table
 // @route   GET /api/auth/users

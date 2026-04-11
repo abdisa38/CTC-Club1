@@ -121,12 +121,14 @@ export const getFavoriteCourses = asyncHandler(async (req: AuthRequest, res: Res
 // @route   POST /api/auth/favorites/courses/:courseId
 // @access  Private
 export const addFavoriteCourse = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { courseId } = req.params;
+  const courseIdParam = req.params.courseId;
 
-  if (!mongoose.Types.ObjectId.isValid(courseId)) {
+  if (typeof courseIdParam !== 'string' || !mongoose.Types.ObjectId.isValid(courseIdParam)) {
     res.status(400);
     throw new Error('Invalid course id');
   }
+
+  const courseId = courseIdParam;
 
   const course = await Course.findOne({ _id: courseId, isDeleted: false });
   if (!course) {
@@ -155,12 +157,14 @@ export const addFavoriteCourse = asyncHandler(async (req: AuthRequest, res: Resp
 // @route   DELETE /api/auth/favorites/courses/:courseId
 // @access  Private
 export const removeFavoriteCourse = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { courseId } = req.params;
+  const courseIdParam = req.params.courseId;
 
-  if (!mongoose.Types.ObjectId.isValid(courseId)) {
+  if (typeof courseIdParam !== 'string' || !mongoose.Types.ObjectId.isValid(courseIdParam)) {
     res.status(400);
     throw new Error('Invalid course id');
   }
+
+  const courseId = courseIdParam;
 
   const user = await User.findByIdAndUpdate(
     req.user._id,

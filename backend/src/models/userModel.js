@@ -101,6 +101,11 @@ const userSchema = new mongoose_1.Schema({
             type: mongoose_1.Schema.Types.ObjectId,
             ref: 'Course',
         }],
+    favoriteCourses: [{
+            type: mongoose_1.Schema.Types.ObjectId,
+            ref: 'Course',
+            index: true,
+        }],
 }, {
     timestamps: true, // adds createdAt and updatedAt
 });
