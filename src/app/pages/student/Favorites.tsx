@@ -36,13 +36,14 @@ export function Favorites() {
   const [resources, setResources] = useState<ResourceItem[]>([]);
 
   const [removingCourseIds, setRemovingCourseIds] = useState<Set<string>>(new Set());
-  const [hiddenResourceIds, setHiddenResourceIds] = useState<Set<string>>(new Set());
+  const [removingResourceIds, setRemovingResourceIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const loadFavorites = async () => {
       try {
-        const [favoriteCourses, resourcesData] = await Promise.all([
+        const [favoriteCourses, favoriteResourceIds, resourcesData] = await Promise.all([
           apiService.getFavoriteCourses(),
+          apiService.getFavoriteResources(),
           apiService.getDashboardResources(),
         ]);
 
@@ -59,6 +60,8 @@ export function Favorites() {
             }))
           : [];
 
+        const favoriteResourceSet = new Set(Array.isArray(favoriteResourceIds) ? favoriteResourceIds : []);
+
         const mappedResources: ResourceItem[] = Array.isArray(resourcesData)
           ? resourcesData.map((resource: any) => ({
               id: String(resource.id),
@@ -68,7 +71,7 @@ export function Favorites() {
               course: resource.course,
               url: resource.url,
               date: resource.date,
-            }))
+            })).filter((resource) => favoriteResourceSet.has(resource.id))
           : [];
 
         setCourses(mappedCourses);
@@ -85,10 +88,7 @@ export function Favorites() {
 
   const visibleCourses = courses;
 
-  const visibleResources = useMemo(
-    () => resources.filter((resource) => !hiddenResourceIds.has(resource.id)),
-    [resources, hiddenResourceIds]
-  );
+  const visibleResources = useMemo(() => resources, [resources]);
 
   const removeCourse = async (courseId: string) => {
     if (removingCourseIds.has(courseId)) {
@@ -115,8 +115,29 @@ export function Favorites() {
     }
   };
 
-  const removeResource = (resourceId: string) => {
-    setHiddenResourceIds((prev) => new Set(prev).add(resourceId));
+  const removeResource = async (resourceId: string) => {
+    if (removingResourceIds.has(resourceId)) {
+      return;
+    }
+
+    setRemovingResourceIds((prev) => {
+      const next = new Set(prev);
+      next.add(resourceId);
+      return next;
+    });
+
+    try {
+      await apiService.removeFavoriteResource(resourceId);
+      setResources((prev) => prev.filter((resource) => resource.id !== resourceId));
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to remove favorite resource");
+    } finally {
+      setRemovingResourceIds((prev) => {
+        const next = new Set(prev);
+        next.delete(resourceId);
+        return next;
+      });
+    }
   };
 
   if (loading) {
@@ -257,7 +278,8 @@ export function Favorites() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-slate-400 hover:text-red-500"
-                        onClick={() => removeResource(resource.id)}
+                        onClick={() => { void removeResource(resource.id); }}
+                        disabled={removingResourceIds.has(resource.id)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
