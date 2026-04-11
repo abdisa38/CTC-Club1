@@ -314,9 +314,46 @@ export function AppLayout() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
                 type="search"
-                placeholder="Search anything..."
+                placeholder={role === "admin" ? "Search users, courses, tickets, announcements, events..." : "Search anything..."}
                 className="pl-9 bg-slate-50/80 border-slate-200/60 focus-visible:bg-white focus-visible:ring-indigo-500/20 focus-visible:border-indigo-400 transition-all rounded-xl h-10 text-sm dark:bg-white/5 dark:border-white/10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
+
+              {role === "admin" && searchQuery.trim().length >= 2 ? (
+                <div className="absolute left-0 right-0 top-full mt-2 rounded-xl border border-slate-200/80 bg-white shadow-lg dark:border-white/10 dark:bg-[#131827] z-50 overflow-hidden">
+                  {searchLoading ? (
+                    <div className="p-3 text-xs text-slate-500 dark:text-slate-400">Searching...</div>
+                  ) : searchError ? (
+                    <div className="p-3 text-xs text-red-600 dark:text-red-300">{searchError}</div>
+                  ) : (searchResult?.items || []).length === 0 ? (
+                    <div className="p-3 text-xs text-slate-500 dark:text-slate-400">No matching records found.</div>
+                  ) : (
+                    <div className="max-h-80 overflow-y-auto">
+                      {(searchResult?.items || []).slice(0, 12).map((item) => {
+                        const Icon = searchTypeIcon(item);
+
+                        return (
+                          <Link
+                            key={`${item.type}-${item.id}`}
+                            to={item.href}
+                            onClick={() => setSearchQuery("")}
+                            className="flex items-start gap-3 px-3 py-2.5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+                          >
+                            <div className="mt-0.5 rounded-md bg-slate-100 p-1.5 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                              <Icon className="h-3.5 w-3.5" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{item.title}</p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{item.subtitle || item.type}</p>
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -339,28 +376,49 @@ export function AppLayout() {
             </DropdownMenu>
 
             {/* Notifications */}
-            <DropdownMenu>
+            <DropdownMenu onOpenChange={(open) => {
+              if (open) {
+                void fetchNotifications();
+              }
+            }}>
               <DropdownMenuTrigger asChild>
                 <button className="relative p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                   <Bell className="h-[18px] w-[18px] text-slate-500 dark:text-slate-400" />
-                  <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-[#0c0f1a]" />
+                  {unreadNotificationCount > 0 ? (
+                    <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-[#0c0f1a]" />
+                  ) : null}
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-80 rounded-xl shadow-lg border-slate-200/60 dark:border-white/10">
-                <DropdownMenuLabel className="text-sm">Notifications</DropdownMenuLabel>
+                <DropdownMenuLabel className="text-sm flex items-center justify-between">
+                  <span>Notifications</span>
+                  <span className="text-xs text-slate-500">{unreadNotificationCount} unread</span>
+                </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <div className="max-h-80 overflow-y-auto">
-                  {[
-                    { title: "Assignment Graded", desc: "Your React project got 95/100!", time: "2m ago" },
-                    { title: "New Course Available", desc: "Advanced TypeScript is now live", time: "1h ago" },
-                    { title: "Community Reply", desc: "Sarah replied to your question", time: "3h ago" },
-                  ].map((n, i) => (
-                    <DropdownMenuItem key={i} className="flex flex-col items-start gap-1 p-3 cursor-pointer rounded-lg mx-1">
-                      <span className="text-sm font-medium text-slate-900 dark:text-white">{n.title}</span>
-                      <span className="text-xs text-slate-500">{n.desc}</span>
-                      <span className="text-[10px] text-slate-400 mt-0.5">{n.time}</span>
-                    </DropdownMenuItem>
-                  ))}
+                  {notificationsLoading ? (
+                    <div className="p-3 text-xs text-slate-500">Loading notifications...</div>
+                  ) : notificationsError ? (
+                    <div className="p-3 text-xs text-red-600 dark:text-red-300">{notificationsError}</div>
+                  ) : notifications.length === 0 ? (
+                    <div className="p-3 text-xs text-slate-500">No notifications yet.</div>
+                  ) : (
+                    notifications.map((notification) => (
+                      <DropdownMenuItem key={notification._id} className="p-0 mx-1 rounded-lg">
+                        <Link
+                          to={notification.link || "/app/notifications"}
+                          onClick={() => {
+                            void markNotificationRead(notification);
+                          }}
+                          className={`flex w-full flex-col items-start gap-1 p-3 cursor-pointer rounded-lg ${!notification.isRead ? "bg-indigo-50/70 dark:bg-indigo-900/20" : ""}`}
+                        >
+                          <span className="text-sm font-medium text-slate-900 dark:text-white">{notification.title}</span>
+                          <span className="text-xs text-slate-500 line-clamp-2">{notification.message}</span>
+                          <span className="text-[10px] text-slate-400 mt-0.5">{formatRelativeTime(notification.createdAt)}</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    ))
+                  )}
                 </div>
               </DropdownMenuContent>
             </DropdownMenu>
