@@ -15,15 +15,27 @@ import {
 	getFavoriteResources,
 	addFavoriteResource,
 	removeFavoriteResource,
+	startGoogleOAuth,
+	googleOAuthCallback,
+	startGitHubOAuth,
+	githubOAuthCallback,
+	requestPasswordResetCode,
+	resetPasswordWithCode,
 } from '../controllers/authController';
 import { protect, authorizeRoles } from '../middleware/authMiddleware';
 import { validateRequest } from '../middleware/validateMiddleware';
-import { registerSchema, loginSchema } from '../validators/authValidator';
+import { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } from '../validators/authValidator';
 
 const router = express.Router();
 
 router.post('/register', validateRequest(registerSchema), registerUser);
 router.post('/login', validateRequest(loginSchema), loginUser);
+router.post('/password/forgot', validateRequest(forgotPasswordSchema), requestPasswordResetCode);
+router.post('/password/reset', validateRequest(resetPasswordSchema), resetPasswordWithCode);
+router.get('/oauth/google', startGoogleOAuth);
+router.get('/oauth/google/callback', googleOAuthCallback);
+router.get('/oauth/github', startGitHubOAuth);
+router.get('/oauth/github/callback', githubOAuthCallback);
 router.post('/logout', logoutUser);
 router.get('/profile', protect as any, getUserProfile as any);
 router.get('/favorites/courses', protect as any, getFavoriteCourses as any);

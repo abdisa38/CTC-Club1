@@ -233,6 +233,10 @@ export interface FavoriteResourceMutationResult {
   isFavorite: boolean;
 }
 
+export interface PasswordResetRequestResult {
+  sent: boolean;
+}
+
 export interface Announcement {
   id: string;
   title: string;
@@ -442,6 +446,10 @@ export interface GetUsersParams {
 }
 
 export const apiService = {
+  getOAuthLoginUrl(provider: "google" | "github"): string {
+    return `/api/auth/oauth/${provider}`;
+  },
+
   async loginUser(email: string, password: string): Promise<AuthUser> {
     const res = await api.post("/auth/login", { email, password });
     return pickData<AuthUser>(res.data);
@@ -458,6 +466,16 @@ export const apiService = {
 
   async getCurrentUser(): Promise<AuthUser> {
     const res = await api.get("/auth/profile");
+    return pickData<AuthUser>(res.data);
+  },
+
+  async requestPasswordResetCode(email: string): Promise<PasswordResetRequestResult> {
+    const res = await api.post('/auth/password/forgot', { email });
+    return pickData<PasswordResetRequestResult>(res.data);
+  },
+
+  async resetPasswordWithCode(input: { email: string; code: string; newPassword: string }): Promise<AuthUser> {
+    const res = await api.post('/auth/password/reset', input);
     return pickData<AuthUser>(res.data);
   },
 
