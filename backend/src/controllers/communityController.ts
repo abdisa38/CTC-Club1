@@ -3,7 +3,27 @@ import asyncHandler from 'express-async-handler';
 import mongoose from 'mongoose';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { CommunityPost, CommunityReply } from '../models/communityModel';
+import Course from '../models/courseModel';
 import { sendSuccess } from '../utils/apiResponse';
+
+const canManagePost = async (post: any, user: any): Promise<boolean> => {
+  if (user.role === 'admin') {
+    return true;
+  }
+
+  if (post.user?.toString() === user._id.toString()) {
+    return true;
+  }
+
+  if (user.role === 'instructor' && post.course) {
+    const course = await Course.findById(post.course).select('instructor');
+    if (course && course.instructor.toString() === user._id.toString()) {
+      return true;
+    }
+  }
+
+  return false;
+};
 
 // @desc    Get community posts
 // @route   GET /api/community/posts
@@ -14,6 +34,7 @@ export const getCommunityPosts = asyncHandler(async (req: AuthRequest, res: Resp
   const keyword = req.query.keyword as string | undefined;
   const category = req.query.category as string | undefined;
   const course = req.query.course as string | undefined;
+  const managed = req.query.managed === 'true';
 
   const filter: any = { isDeleted: false };
 
@@ -30,6 +51,20 @@ export const getCommunityPosts = asyncHandler(async (req: AuthRequest, res: Resp
     filter.course = course;
   }
 
+  if (managed && req.user.role === 'instructor') {
+    const instructorCourses = await Course.find({ instructor: req.user._id, isDeleted: false }).select('_id');
+    const courseIds = instructorCourses.map((item) => item._id);
+
+    if (course) {
+      const allowed = courseIds.some((id) => id.toString() === course.toString());
+      if (!allowed) {
+        filter.course = null;
+      }
+    } else {
+      filter.course = { $in: courseIds };
+    }
+  }
+
   if (keyword) {
     filter.$or = [
       { title: { $regex: keyword, $options: 'i' } },
@@ -41,6 +76,7 @@ export const getCommunityPosts = asyncHandler(async (req: AuthRequest, res: Resp
   const total = await CommunityPost.countDocuments(filter);
   const posts = await CommunityPost.find(filter)
     .populate('user', 'name avatar role')
+    .populate('course', 'title')
     .sort({ isPinned: -1, createdAt: -1 })
     .limit(pageSize)
     .skip(pageSize * (page - 1));
@@ -192,4 +228,67 @@ export const addCommunityReply = asyncHandler(async (req: AuthRequest, res: Resp
 
   const populated = await CommunityReply.findById(reply._id).populate('user', 'name avatar role');
   sendSuccess(res, populated || reply, { statusCode: 201, message: 'Reply posted successfully' });
+});
+
+// @desc    Pin/unpin a community post
+// @route   PATCH /api/community/posts/:postId/pin
+// @access  Private
+export const pinCommunityPost = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const postId = typeof req.params.postId === 'string' ? req.params.postId : '';
+  const isPinned = typeof req.body?.isPinned === 'boolean' ? req.body.isPinned : undefined;
+
+  if (!postId) {
+    res.status(400);
+    throw new Error('Post ID is required');
+  }
+
+  const post = await CommunityPost.findById(postId);
+  if (!post) {
+    res.status(404);
+    throw new Error('Post not found');
+  }
+
+  const allowed = await canManagePost(post, req.user);
+  if (!allowed) {
+    res.status(403);
+    throw new Error('Not authorized to pin this post');
+  }
+
+  post.isPinned = typeof isPinned === 'boolean' ? isPinned : !post.isPinned;
+  await post.save();
+
+  const populated = await CommunityPost.findById(post._id)
+    .populate('user', 'name avatar role')
+    .populate('course', 'title');
+
+  sendSuccess(res, populated || post, { message: 'Post pin state updated' });
+});
+
+// @desc    Soft delete a community post
+// @route   DELETE /api/community/posts/:postId
+// @access  Private
+export const deleteCommunityPost = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const postId = typeof req.params.postId === 'string' ? req.params.postId : '';
+
+  if (!postId) {
+    res.status(400);
+    throw new Error('Post ID is required');
+  }
+
+  const post = await CommunityPost.findById(postId);
+  if (!post) {
+    res.status(404);
+    throw new Error('Post not found');
+  }
+
+  const allowed = await canManagePost(post, req.user);
+  if (!allowed) {
+    res.status(403);
+    throw new Error('Not authorized to delete this post');
+  }
+
+  post.isDeleted = true;
+  await post.save();
+
+  sendSuccess(res, null, { message: 'Post deleted successfully' });
 });

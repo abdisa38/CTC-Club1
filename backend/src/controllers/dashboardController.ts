@@ -361,3 +361,147 @@ export const getPublicStats = asyncHandler(async (req: Request, res: Response): 
         certificates: totalCompleted,
     });
 });
+
+// @desc    Get instructor students with aggregate stats
+// @route   GET /api/dashboard/instructor/students
+// @access  Private/Instructor/Admin
+export const getInstructorStudents = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+    const role = req.user.role;
+    if (role !== 'instructor' && role !== 'admin') {
+        res.status(403);
+        throw new Error('Only instructors and admins can access instructor students');
+    }
+
+    const keyword = typeof req.query.keyword === 'string' ? req.query.keyword.trim().toLowerCase() : '';
+    const courseId = typeof req.query.courseId === 'string' ? req.query.courseId : '';
+    const instructorId = role === 'admin' && typeof req.query.instructorId === 'string'
+        ? req.query.instructorId
+        : req.user._id.toString();
+
+    const courseFilter: any = { isDeleted: false };
+    if (role === 'instructor' || instructorId) {
+        courseFilter.instructor = instructorId;
+    }
+    if (courseId) {
+        courseFilter._id = courseId;
+    }
+
+    const instructorCourses = await Course.find(courseFilter)
+        .select('_id title students instructor')
+        .lean();
+
+    const courseSummaries = instructorCourses.map((course: any) => ({
+        _id: course._id.toString(),
+        title: course.title,
+    }));
+
+    const uniqueStudentIds = new Set<string>();
+    instructorCourses.forEach((course: any) => {
+        const students = Array.isArray(course.students) ? course.students : [];
+        students.forEach((studentId: any) => {
+            uniqueStudentIds.add(studentId.toString());
+        });
+    });
+
+    const studentIds = Array.from(uniqueStudentIds);
+
+    if (studentIds.length === 0) {
+        sendSuccess(res, {
+            summary: {
+                totalEnrolled: 0,
+                avgCompletionRate: 0,
+                activeThisWeek: 0,
+            },
+            courses: courseSummaries,
+            students: [],
+        });
+        return;
+    }
+
+    const [students, progresses] = await Promise.all([
+        User.find({ _id: { $in: studentIds }, isDeleted: false })
+            .select('name email avatar isActive lastLogin createdAt updatedAt')
+            .lean(),
+        Progress.find({
+            user: { $in: studentIds },
+            course: { $in: instructorCourses.map((c: any) => c._id) },
+        })
+            .select('user course progressPercentage isCompleted updatedAt')
+            .lean(),
+    ]);
+
+    const now = Date.now();
+    const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
+
+    const studentRecords = students
+        .map((student: any) => {
+            const studentId = student._id.toString();
+
+            const enrolledCourses = instructorCourses
+                .filter((course: any) => (Array.isArray(course.students) ? course.students : []).some((id: any) => id.toString() === studentId))
+                .map((course: any) => ({ _id: course._id.toString(), title: course.title }));
+
+            const studentProgress = progresses.filter((progress: any) => progress.user.toString() === studentId);
+
+            const avgProgress = studentProgress.length > 0
+                ? Math.round(studentProgress.reduce((sum: number, item: any) => sum + (item.progressPercentage || 0), 0) / studentProgress.length)
+                : 0;
+
+            const allCompleted = studentProgress.length > 0 && studentProgress.every((progress: any) => progress.isCompleted);
+
+            const candidateTimestamps = [
+                ...(studentProgress.map((progress: any) => new Date(progress.updatedAt).getTime()).filter((value: number) => Number.isFinite(value))),
+                student.lastLogin ? new Date(student.lastLogin).getTime() : 0,
+                student.updatedAt ? new Date(student.updatedAt).getTime() : 0,
+                student.createdAt ? new Date(student.createdAt).getTime() : 0,
+            ].filter((value: number) => value > 0);
+
+            const lastActiveAtMs = candidateTimestamps.length > 0 ? Math.max(...candidateTimestamps) : 0;
+            const isActiveThisWeek = lastActiveAtMs > 0 && (now - lastActiveAtMs) <= oneWeekMs;
+
+            const status = allCompleted
+                ? 'completed'
+                : (student.isActive !== false && isActiveThisWeek ? 'active' : 'inactive');
+
+            return {
+                id: studentId,
+                name: student.name,
+                email: student.email,
+                avatar: student.avatar,
+                enrolledAt: student.createdAt,
+                lastActiveAt: lastActiveAtMs > 0 ? new Date(lastActiveAtMs).toISOString() : null,
+                isActive: student.isActive !== false,
+                progress: avgProgress,
+                status,
+                courses: enrolledCourses,
+            };
+        })
+        .filter((student: any) => {
+            if (!keyword) return true;
+            return (
+                student.name.toLowerCase().includes(keyword)
+                || student.email.toLowerCase().includes(keyword)
+                || student.courses.some((course: any) => course.title.toLowerCase().includes(keyword))
+            );
+        });
+
+    const avgCompletionRate = studentRecords.length > 0
+        ? Math.round(studentRecords.reduce((sum: number, student: any) => sum + (student.progress || 0), 0) / studentRecords.length)
+        : 0;
+
+    const activeThisWeek = studentRecords.filter((student: any) => {
+        if (!student.lastActiveAt) return false;
+        const ts = new Date(student.lastActiveAt).getTime();
+        return Number.isFinite(ts) && (now - ts) <= oneWeekMs;
+    }).length;
+
+    sendSuccess(res, {
+        summary: {
+            totalEnrolled: studentRecords.length,
+            avgCompletionRate,
+            activeThisWeek,
+        },
+        courses: courseSummaries,
+        students: studentRecords,
+    });
+});

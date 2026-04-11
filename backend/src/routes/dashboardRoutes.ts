@@ -7,6 +7,7 @@ import {
 	getLeaderboard,
 	getDashboardResources,
 	getDashboardAnnouncements,
+	getInstructorStudents,
 } from '../controllers/dashboardController';
 
 const router = express.Router();
@@ -17,5 +18,6 @@ router.get('/metrics', protect as any, getDashboardMetrics as any);
 router.get('/analytics', protect as any, getAdminAnalytics as any);
 router.get('/leaderboard', protect as any, getLeaderboard as any);
 router.get('/resources', protect as any, getDashboardResources as any);
+router.get('/instructor/students', protect as any, getInstructorStudents as any);
 
 export default router;
