@@ -78,11 +78,11 @@ export interface ProjectSubmission {
     title: string;
     maxPoints?: number;
     xpReward?: number;
-  };
+  } | string;
   course?: {
     _id: string;
     title: string;
-  };
+  } | string;
   repoUrl?: string;
   liveUrl?: string;
   comments?: string;
@@ -225,6 +225,11 @@ export interface DashboardPublicStats {
 
 export interface FavoriteCourseMutationResult {
   courseId: string;
+  isFavorite: boolean;
+}
+
+export interface FavoriteResourceMutationResult {
+  resourceId: string;
   isFavorite: boolean;
 }
 
@@ -469,6 +474,21 @@ export const apiService = {
   async removeFavoriteCourse(courseId: string): Promise<FavoriteCourseMutationResult> {
     const res = await api.delete(`/auth/favorites/courses/${courseId}`);
     return pickData<FavoriteCourseMutationResult>(res.data);
+  },
+
+  async getFavoriteResources(): Promise<string[]> {
+    const res = await api.get('/auth/favorites/resources');
+    return pickData<string[]>(res.data);
+  },
+
+  async addFavoriteResource(resourceId: string): Promise<FavoriteResourceMutationResult> {
+    const res = await api.post(`/auth/favorites/resources/${encodeURIComponent(resourceId)}`);
+    return pickData<FavoriteResourceMutationResult>(res.data);
+  },
+
+  async removeFavoriteResource(resourceId: string): Promise<FavoriteResourceMutationResult> {
+    const res = await api.delete(`/auth/favorites/resources/${encodeURIComponent(resourceId)}`);
+    return pickData<FavoriteResourceMutationResult>(res.data);
   },
 
   async getCourses(params: GetCoursesParams = {}): Promise<Paginated<Course>> {
