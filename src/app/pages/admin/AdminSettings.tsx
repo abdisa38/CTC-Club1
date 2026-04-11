@@ -105,7 +105,7 @@ export function AdminSettings() {
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Broadcast Notification</CardTitle>
-          <CardDescription>Send a platform message to all users or a specific role.</CardDescription>
+          <CardDescription>Send an in-app notification to user inboxes. This does not create an announcement or an event.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -179,7 +179,9 @@ export function AdminSettings() {
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Configuration Status</CardTitle>
-          <CardDescription>This environment currently exposes analytics and broadcast APIs for admin operations.</CardDescription>
+          <CardDescription>
+            Announcement posts, scheduled events, and broadcast notifications are now treated as separate features.
+          </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
           <Badge variant="success">Analytics Connected</Badge>
