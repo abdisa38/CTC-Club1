@@ -865,9 +865,16 @@ export const getInstructorGlobalSearch = asyncHandler(async (req: AuthRequest, r
     }
 
     const query = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+    const projectVisibility = req.query.projectVisibility === 'published'
+        ? 'published'
+        : req.query.projectVisibility === 'draft'
+            ? 'draft'
+            : 'all';
+
     if (query.length < 2) {
         sendSuccess(res, {
             query,
+            projectVisibility,
             items: [],
             counts: {
                 courses: 0,
@@ -893,6 +900,7 @@ export const getInstructorGlobalSearch = asyncHandler(async (req: AuthRequest, r
     if (courseIds.length === 0) {
         sendSuccess(res, {
             query,
+            projectVisibility,
             items: [],
             counts: {
                 courses: 0,
@@ -943,6 +951,8 @@ export const getInstructorGlobalSearch = asyncHandler(async (req: AuthRequest, r
         Project.find({
             course: { $in: courseIds },
             isDeleted: false,
+            ...(projectVisibility === 'published' ? { isPublished: true } : {}),
+            ...(projectVisibility === 'draft' ? { isPublished: false } : {}),
             $or: [
                 { title: { $regex: regex } },
                 { description: { $regex: regex } },
@@ -1035,6 +1045,7 @@ export const getInstructorGlobalSearch = asyncHandler(async (req: AuthRequest, r
 
     sendSuccess(res, {
         query,
+        projectVisibility,
         items,
         counts: {
             courses: courses.length,
