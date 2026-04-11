@@ -3,13 +3,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getInstructorAnalytics = exports.getInstructorStudents = exports.getPublicStats = exports.getDashboardAnnouncements = exports.getDashboardResources = exports.getLeaderboard = exports.getAdminAnalytics = exports.getDashboardMetrics = void 0;
+exports.getAdminGlobalSearch = exports.getInstructorAnalytics = exports.getInstructorStudents = exports.getPublicStats = exports.getDashboardAnnouncements = exports.getDashboardResources = exports.getLeaderboard = exports.getAdminAnalytics = exports.getDashboardMetrics = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const userModel_1 = __importDefault(require("../models/userModel"));
 const courseModel_1 = __importDefault(require("../models/courseModel"));
 const progressModel_1 = __importDefault(require("../models/progressModel"));
 const ticketModel_1 = __importDefault(require("../models/ticketModel"));
 const lessonModel_1 = __importDefault(require("../models/lessonModel"));
+const eventModel_1 = __importDefault(require("../models/eventModel"));
 const projectModel_1 = require("../models/projectModel");
 const quizModel_1 = require("../models/quizModel");
 const notificationModel_1 = __importDefault(require("../models/notificationModel"));
@@ -616,6 +617,139 @@ exports.getInstructorAnalytics = (0, express_async_handler_1.default)(async (req
         ],
         coursePerformance,
         generatedAt: new Date().toISOString(),
+    });
+});
+// @desc    Global admin search
+// @route   GET /api/dashboard/admin/search
+// @access  Private/Admin
+exports.getAdminGlobalSearch = (0, express_async_handler_1.default)(async (req, res) => {
+    if (req.user.role !== 'admin') {
+        res.status(403);
+        throw new Error('Only admins can search platform data');
+    }
+    const query = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+    if (query.length < 2) {
+        (0, apiResponse_1.sendSuccess)(res, {
+            query,
+            items: [],
+            counts: {
+                users: 0,
+                courses: 0,
+                tickets: 0,
+                announcements: 0,
+                events: 0,
+            },
+        });
+        return;
+    }
+    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(escaped, 'i');
+    const [users, courses, tickets, announcements, events] = await Promise.all([
+        userModel_1.default.find({
+            isDeleted: false,
+            $or: [
+                { name: { $regex: regex } },
+                { email: { $regex: regex } },
+            ],
+        })
+            .select('name email role')
+            .sort({ createdAt: -1 })
+            .limit(6)
+            .lean(),
+        courseModel_1.default.find({
+            isDeleted: false,
+            $or: [
+                { title: { $regex: regex } },
+                { description: { $regex: regex } },
+            ],
+        })
+            .select('_id title category status')
+            .sort({ createdAt: -1 })
+            .limit(6)
+            .lean(),
+        ticketModel_1.default.find({
+            isDeleted: false,
+            $or: [
+                { subject: { $regex: regex } },
+                { category: { $regex: regex } },
+            ],
+        })
+            .select('_id subject status priority')
+            .sort({ createdAt: -1 })
+            .limit(6)
+            .lean(),
+        communityModel_1.CommunityPost.find({
+            isDeleted: false,
+            category: 'announcement',
+            $or: [
+                { title: { $regex: regex } },
+                { content: { $regex: regex } },
+            ],
+        })
+            .select('_id title createdAt')
+            .sort({ createdAt: -1 })
+            .limit(6)
+            .lean(),
+        eventModel_1.default.find({
+            isDeleted: false,
+            $or: [
+                { title: { $regex: regex } },
+                { description: { $regex: regex } },
+                { location: { $regex: regex } },
+            ],
+        })
+            .select('_id title startsAt isPublished')
+            .sort({ startsAt: 1 })
+            .limit(6)
+            .lean(),
+    ]);
+    const items = [
+        ...users.map((item) => ({
+            id: item._id.toString(),
+            type: 'user',
+            title: item.name,
+            subtitle: `${item.email} • ${item.role}`,
+            href: '/app/admin/users',
+        })),
+        ...courses.map((item) => ({
+            id: item._id.toString(),
+            type: 'course',
+            title: item.title,
+            subtitle: `${item.category || 'Course'} • ${item.status || 'draft'}`,
+            href: `/app/instructor/courses/${item._id}/edit`,
+        })),
+        ...tickets.map((item) => ({
+            id: item._id.toString(),
+            type: 'ticket',
+            title: item.subject,
+            subtitle: `${item.status} • ${item.priority}`,
+            href: '/app/admin/tickets',
+        })),
+        ...announcements.map((item) => ({
+            id: item._id.toString(),
+            type: 'announcement',
+            title: item.title,
+            subtitle: `Announcement • ${new Date(item.createdAt).toLocaleDateString()}`,
+            href: '/app/admin/announcements',
+        })),
+        ...events.map((item) => ({
+            id: item._id.toString(),
+            type: 'event',
+            title: item.title,
+            subtitle: `${item.isPublished ? 'Published' : 'Draft'} • ${new Date(item.startsAt).toLocaleString()}`,
+            href: '/app/admin/events',
+        })),
+    ];
+    (0, apiResponse_1.sendSuccess)(res, {
+        query,
+        items,
+        counts: {
+            users: users.length,
+            courses: courses.length,
+            tickets: tickets.length,
+            announcements: announcements.length,
+            events: events.length,
+        },
     });
 });
 //# sourceMappingURL=dashboardController.js.map
