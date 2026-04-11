@@ -588,6 +588,36 @@ export function CourseDetail() {
                       )}
                     </div>
 
+                    <div className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Selected Lesson Video</p>
+                      {!canAccessLessons ? (
+                        <p className="text-sm text-slate-500">Enroll in this course to view the lesson video.</p>
+                      ) : selectedLesson.videoUrl ? (
+                        embedVideoUrl ? (
+                          <div className="aspect-video overflow-hidden rounded-lg bg-slate-900">
+                            <iframe
+                              title={`content-preview-${selectedLesson._id}`}
+                              src={embedVideoUrl}
+                              className="h-full w-full"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                              allowFullScreen
+                            />
+                          </div>
+                        ) : (
+                          <video
+                            className="w-full rounded-lg bg-slate-900"
+                            controls
+                            src={selectedLesson.videoUrl}
+                            poster={course.coverImage || FALLBACK_COVER_IMAGE}
+                          >
+                            Your browser does not support video playback.
+                          </video>
+                        )
+                      ) : (
+                        <p className="text-sm text-slate-500">No video URL attached to this lesson.</p>
+                      )}
+                    </div>
+
                     <div className="rounded-lg bg-slate-50 p-4 dark:bg-slate-900/60">
                       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Video Source</p>
                       {selectedLesson.videoUrl ? (

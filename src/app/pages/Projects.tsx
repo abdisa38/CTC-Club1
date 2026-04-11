@@ -276,7 +276,7 @@ export function Projects() {
                 Create Project
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[620px]">
+            <DialogContent className="sm:max-w-[620px] max-h-[85vh] overflow-hidden">
               <DialogHeader>
                 <DialogTitle>Create Project Assignment</DialogTitle>
                 <DialogDescription>
@@ -284,7 +284,7 @@ export function Projects() {
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="space-y-4 py-2">
+              <div className="space-y-4 py-2 max-h-[60vh] overflow-y-auto pr-1">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Title *</label>
                   <Input value={createTitle} onChange={(e) => setCreateTitle(e.target.value)} placeholder="Build a responsive portfolio website" />
@@ -352,7 +352,7 @@ export function Projects() {
                 ) : null}
               </div>
 
-              <DialogFooter>
+              <DialogFooter className="border-t border-slate-200 pt-3 dark:border-slate-800">
                 <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
                 <Button
                   className="bg-indigo-600 hover:bg-indigo-700"
