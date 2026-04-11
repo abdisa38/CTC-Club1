@@ -237,6 +237,43 @@ export interface Announcement {
   category: string;
 }
 
+export interface EventItem {
+  _id: string;
+  title: string;
+  description: string;
+  location?: string;
+  startsAt: string;
+  endsAt?: string;
+  isPublished: boolean;
+  createdBy?: {
+    _id: string;
+    name: string;
+    email?: string;
+  };
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AdminSearchItem {
+  id: string;
+  type: "user" | "course" | "ticket" | "announcement" | "event";
+  title: string;
+  subtitle?: string;
+  href: string;
+}
+
+export interface AdminSearchData {
+  query: string;
+  items: AdminSearchItem[];
+  counts: {
+    users: number;
+    courses: number;
+    tickets: number;
+    announcements: number;
+    events: number;
+  };
+}
+
 export interface Paginated<T> {
   items: T[];
   page: number;
@@ -686,6 +723,11 @@ export const apiService = {
     return pickData<any>(res.data);
   },
 
+  async adminGlobalSearch(query: string): Promise<AdminSearchData> {
+    const res = await api.get("/dashboard/admin/search", { params: { q: query } });
+    return pickData<AdminSearchData>(res.data);
+  },
+
   async getInstructorStudents(params: { keyword?: string; courseId?: string; instructorId?: string } = {}): Promise<InstructorStudentsData> {
     const res = await api.get("/dashboard/instructor/students", { params });
     return pickData<InstructorStudentsData>(res.data);
@@ -719,6 +761,56 @@ export const apiService = {
   async getAnnouncements(): Promise<Announcement[]> {
     const res = await api.get("/dashboard/announcements");
     return pickData<Announcement[]>(res.data);
+  },
+
+  async createAnnouncement(input: { title: string; content: string }): Promise<CommunityPost> {
+    const res = await api.post("/community/posts", {
+      title: input.title,
+      content: input.content,
+      category: "announcement",
+      tags: ["announcement", "admin"],
+    });
+    return pickData<CommunityPost>(res.data);
+  },
+
+  async deleteAnnouncement(postId: string): Promise<void> {
+    await api.delete(`/community/posts/${postId}`);
+  },
+
+  async getEvents(params: { keyword?: string; upcoming?: boolean; includeUnpublished?: boolean } = {}): Promise<EventItem[]> {
+    const res = await api.get("/events", { params });
+    return pickData<EventItem[]>(res.data);
+  },
+
+  async createEvent(input: {
+    title: string;
+    description: string;
+    location?: string;
+    startsAt: string;
+    endsAt?: string;
+    isPublished?: boolean;
+  }): Promise<EventItem> {
+    const res = await api.post("/events", input);
+    return pickData<EventItem>(res.data);
+  },
+
+  async updateEvent(
+    eventId: string,
+    input: Partial<{
+      title: string;
+      description: string;
+      location?: string;
+      startsAt: string;
+      endsAt?: string;
+      isPublished?: boolean;
+    }>
+  ): Promise<EventItem> {
+    const res = await api.put(`/events/${eventId}`, input);
+    return pickData<EventItem>(res.data);
+  },
+
+  async deleteEvent(eventId: string): Promise<void> {
+    await api.delete(`/events/${eventId}`);
   },
 
   async getCommunityPosts(params: { page?: number; limit?: number; keyword?: string; category?: string; course?: string; managed?: boolean } = {}): Promise<Paginated<CommunityPost>> {
