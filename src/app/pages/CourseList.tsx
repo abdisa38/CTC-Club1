@@ -24,6 +24,7 @@ export function CourseList() {
   const [selectedDuration, setSelectedDuration] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [favoritingIds, setFavoritingIds] = useState<Set<string>>(new Set());
   const [enrollingId, setEnrollingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -40,6 +41,24 @@ export function CourseList() {
     fetchCourses();
   }, []);
 
+  useEffect(() => {
+    const fetchFavorites = async () => {
+      if (!user || role !== 'student') {
+        setFavorites(new Set());
+        return;
+      }
+
+      try {
+        const favoriteCourses = await apiService.getFavoriteCourses();
+        setFavorites(new Set(favoriteCourses.map((course) => course._id)));
+      } catch (error) {
+        console.error("Failed to fetch favorite courses:", error);
+      }
+    };
+
+    void fetchFavorites();
+  }, [role, user?._id]);
+
   const filteredCourses = courses.filter(c => {
     if (searchQuery && !c.title.toLowerCase().includes(searchQuery.toLowerCase()) && !c.instructor?.name?.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     if (selectedCategory && c.category !== selectedCategory) return false;
@@ -48,12 +67,48 @@ export function CourseList() {
 
   const activeFilters = [selectedCategory, selectedLevel, selectedDuration].filter(Boolean).length;
 
-  const toggleFavorite = (id: string) => {
-    setFavorites(prev => {
+  const toggleFavorite = async (id: string) => {
+    if (!user || role !== 'student') {
+      return;
+    }
+
+    if (favoritingIds.has(id)) {
+      return;
+    }
+
+    const isFavorite = favorites.has(id);
+
+    setFavoritingIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      next.add(id);
       return next;
     });
+
+    try {
+      if (isFavorite) {
+        await apiService.removeFavoriteCourse(id);
+        setFavorites((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+      } else {
+        await apiService.addFavoriteCourse(id);
+        setFavorites((prev) => {
+          const next = new Set(prev);
+          next.add(id);
+          return next;
+        });
+      }
+    } catch (error) {
+      console.error("Failed to update favorite:", error);
+    } finally {
+      setFavoritingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
   };
 
   const isUserEnrolled = (course: CourseType) => {
@@ -230,8 +285,10 @@ export function CourseList() {
                     </div>
                     <Badge className="absolute top-3 left-3 bg-white/90 text-slate-900 hover:bg-white">{course.category}</Badge>
                     <button
-                      onClick={(e) => { e.preventDefault(); toggleFavorite(course._id); }}
-                      className="absolute top-3 right-3 h-8 w-8 bg-white/90 hover:bg-white rounded-full flex items-center justify-center transition-colors"
+                      onClick={(e) => { e.preventDefault(); void toggleFavorite(course._id); }}
+                      disabled={role !== 'student' || favoritingIds.has(course._id)}
+                      className="absolute top-3 right-3 h-8 w-8 bg-white/90 hover:bg-white rounded-full flex items-center justify-center transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                      title={role === 'student' ? (favorites.has(course._id) ? 'Remove from favorites' : 'Add to favorites') : 'Favorites are available for students'}
                     >
                       <Heart className={`h-4 w-4 ${favorites.has(course._id) ? "text-red-500 fill-red-500" : "text-slate-600"}`} />
                     </button>

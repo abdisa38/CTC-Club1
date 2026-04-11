@@ -223,6 +223,11 @@ export interface DashboardPublicStats {
   certificates: number;
 }
 
+export interface FavoriteCourseMutationResult {
+  courseId: string;
+  isFavorite: boolean;
+}
+
 export interface Announcement {
   id: string;
   title: string;
@@ -358,6 +363,21 @@ export const apiService = {
   async getCurrentUser(): Promise<AuthUser> {
     const res = await api.get("/auth/profile");
     return pickData<AuthUser>(res.data);
+  },
+
+  async getFavoriteCourses(): Promise<Course[]> {
+    const res = await api.get("/auth/favorites/courses");
+    return pickData<Course[]>(res.data);
+  },
+
+  async addFavoriteCourse(courseId: string): Promise<FavoriteCourseMutationResult> {
+    const res = await api.post(`/auth/favorites/courses/${courseId}`);
+    return pickData<FavoriteCourseMutationResult>(res.data);
+  },
+
+  async removeFavoriteCourse(courseId: string): Promise<FavoriteCourseMutationResult> {
+    const res = await api.delete(`/auth/favorites/courses/${courseId}`);
+    return pickData<FavoriteCourseMutationResult>(res.data);
   },
 
   async getCourses(params: GetCoursesParams = {}): Promise<Paginated<Course>> {

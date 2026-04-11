@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import asyncHandler from 'express-async-handler';
+import mongoose from 'mongoose';
 import User from '../models/userModel';
 import Course from '../models/courseModel';
 import Ticket from '../models/ticketModel';
@@ -89,6 +90,93 @@ export const getUserProfile = asyncHandler(async (req: AuthRequest, res: Respons
     res.status(404);
     throw new Error('User not found');
   }
+});
+
+// @desc    Get current user's favorite courses
+// @route   GET /api/auth/favorites/courses
+// @access  Private
+export const getFavoriteCourses = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const user = await User.findById(req.user._id)
+    .select('favoriteCourses')
+    .populate({
+      path: 'favoriteCourses',
+      match: { isDeleted: false, status: 'published' },
+      options: { sort: { createdAt: -1 } },
+      populate: { path: 'instructor', select: 'name email avatar' },
+    });
+
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  const favorites = Array.isArray((user as any).favoriteCourses)
+    ? (user as any).favoriteCourses.filter(Boolean)
+    : [];
+
+  sendSuccess(res, favorites);
+});
+
+// @desc    Add course to favorites
+// @route   POST /api/auth/favorites/courses/:courseId
+// @access  Private
+export const addFavoriteCourse = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { courseId } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(courseId)) {
+    res.status(400);
+    throw new Error('Invalid course id');
+  }
+
+  const course = await Course.findOne({ _id: courseId, isDeleted: false });
+  if (!course) {
+    res.status(404);
+    throw new Error('Course not found');
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    { $addToSet: { favoriteCourses: course._id } },
+    { new: true }
+  ).select('_id');
+
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  sendSuccess(res, {
+    courseId: course._id.toString(),
+    isFavorite: true,
+  }, { message: 'Course added to favorites' });
+});
+
+// @desc    Remove course from favorites
+// @route   DELETE /api/auth/favorites/courses/:courseId
+// @access  Private
+export const removeFavoriteCourse = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { courseId } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(courseId)) {
+    res.status(400);
+    throw new Error('Invalid course id');
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    { $pull: { favoriteCourses: courseId } },
+    { new: true }
+  ).select('_id');
+
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  sendSuccess(res, {
+    courseId,
+    isFavorite: false,
+  }, { message: 'Course removed from favorites' });
 });
 
 // @desc    Get users for admin table

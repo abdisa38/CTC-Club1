@@ -16,6 +16,7 @@ export interface IUser extends Document {
   lastLogin?: Date;
   enrolledCourses: mongoose.Types.ObjectId[];
   createdCourses: mongoose.Types.ObjectId[];
+  favoriteCourses: mongoose.Types.ObjectId[];
   matchPassword(enteredPassword: string): Promise<boolean>;
 }
 
@@ -82,6 +83,11 @@ const userSchema = new Schema<IUser>(
     createdCourses: [{
       type: Schema.Types.ObjectId,
       ref: 'Course',
+    }],
+    favoriteCourses: [{
+      type: Schema.Types.ObjectId,
+      ref: 'Course',
+      index: true,
     }],
   },
   {

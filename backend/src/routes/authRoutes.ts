@@ -9,6 +9,9 @@ import {
 	updateUserStatus,
 	softDeleteUser,
 	getActivityLogs,
+	getFavoriteCourses,
+	addFavoriteCourse,
+	removeFavoriteCourse,
 } from '../controllers/authController';
 import { protect, authorizeRoles } from '../middleware/authMiddleware';
 import { validateRequest } from '../middleware/validateMiddleware';
@@ -20,6 +23,9 @@ router.post('/register', validateRequest(registerSchema), registerUser);
 router.post('/login', validateRequest(loginSchema), loginUser);
 router.post('/logout', logoutUser);
 router.get('/profile', protect as any, getUserProfile as any);
+router.get('/favorites/courses', protect as any, getFavoriteCourses as any);
+router.post('/favorites/courses/:courseId', protect as any, addFavoriteCourse as any);
+router.delete('/favorites/courses/:courseId', protect as any, removeFavoriteCourse as any);
 
 router.get('/users', protect as any, authorizeRoles('admin'), getUsers as any);
 router.put('/users/:id/role', protect as any, authorizeRoles('admin'), updateUserRole as any);
