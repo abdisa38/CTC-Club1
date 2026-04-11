@@ -13,7 +13,9 @@ type CourseItem = {
   coverImage?: string;
   category?: string;
   instructor?: { name?: string };
-  progressPercentage?: number;
+  students?: Array<string | { _id: string }>;
+  rating?: number;
+  numReviews?: number;
 };
 
 type ResourceItem = {
@@ -33,33 +35,29 @@ export function Favorites() {
   const [courses, setCourses] = useState<CourseItem[]>([]);
   const [resources, setResources] = useState<ResourceItem[]>([]);
 
-  const [hiddenCourseIds, setHiddenCourseIds] = useState<Set<string>>(new Set());
+  const [removingCourseIds, setRemovingCourseIds] = useState<Set<string>>(new Set());
   const [hiddenResourceIds, setHiddenResourceIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const loadFavorites = async () => {
       try {
-        const [metrics, resourcesData] = await Promise.all([
-          apiService.getDashboardMetrics(),
+        const [favoriteCourses, resourcesData] = await Promise.all([
+          apiService.getFavoriteCourses(),
           apiService.getDashboardResources(),
         ]);
 
-        const progressItems = Array.isArray(metrics?.activeCourses) ? metrics.activeCourses : [];
-        const mappedCourses: CourseItem[] = progressItems
-          .map((item: any) => {
-            const course = item?.course;
-            if (!course || typeof course === "string") return null;
-
-            return {
+        const mappedCourses: CourseItem[] = Array.isArray(favoriteCourses)
+          ? favoriteCourses.map((course: any) => ({
               _id: String(course._id),
               title: String(course.title || "Course"),
               coverImage: course.coverImage,
               category: course.category,
               instructor: course.instructor,
-              progressPercentage: Number(item.progressPercentage || 0),
-            };
-          })
-          .filter(Boolean);
+              students: Array.isArray(course.students) ? course.students : [],
+              rating: Number(course.rating || 0),
+              numReviews: Number(course.numReviews || 0),
+            }))
+          : [];
 
         const mappedResources: ResourceItem[] = Array.isArray(resourcesData)
           ? resourcesData.map((resource: any) => ({
@@ -85,18 +83,36 @@ export function Favorites() {
     void loadFavorites();
   }, []);
 
-  const visibleCourses = useMemo(
-    () => courses.filter((course) => !hiddenCourseIds.has(course._id)),
-    [courses, hiddenCourseIds]
-  );
+  const visibleCourses = courses;
 
   const visibleResources = useMemo(
     () => resources.filter((resource) => !hiddenResourceIds.has(resource.id)),
     [resources, hiddenResourceIds]
   );
 
-  const removeCourse = (courseId: string) => {
-    setHiddenCourseIds((prev) => new Set(prev).add(courseId));
+  const removeCourse = async (courseId: string) => {
+    if (removingCourseIds.has(courseId)) {
+      return;
+    }
+
+    setRemovingCourseIds((prev) => {
+      const next = new Set(prev);
+      next.add(courseId);
+      return next;
+    });
+
+    try {
+      await apiService.removeFavoriteCourse(courseId);
+      setCourses((prev) => prev.filter((course) => course._id !== courseId));
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to remove favorite");
+    } finally {
+      setRemovingCourseIds((prev) => {
+        const next = new Set(prev);
+        next.delete(courseId);
+        return next;
+      });
+    }
   };
 
   const removeResource = (resourceId: string) => {
@@ -165,16 +181,26 @@ export function Favorites() {
                       variant="ghost"
                       size="icon"
                       className="absolute top-3 right-3 bg-white/90 hover:bg-red-50 h-8 w-8 rounded-full"
-                      onClick={() => removeCourse(course._id)}
+                      onClick={() => { void removeCourse(course._id); }}
+                      disabled={removingCourseIds.has(course._id)}
                     >
                       <Heart className="h-4 w-4 text-red-500 fill-red-500" />
                     </Button>
                   </div>
                   <CardContent className="p-5 flex-1 flex flex-col">
-                    <div className="flex items-center gap-1 text-sm text-amber-500 font-medium mb-2">
-                      <Star className="h-4 w-4 fill-amber-500" />
-                      <span>{((course.progressPercentage || 0) / 20).toFixed(1)}</span>
-                    </div>
+                    {Number(course.numReviews || 0) > 0 ? (
+                      <div className="flex items-center gap-1 text-sm text-amber-500 font-medium mb-2">
+                        <Star className="h-4 w-4 fill-amber-500" />
+                        <span>{Number(course.rating || 0).toFixed(1)}</span>
+                        <span className="text-slate-400 mx-1">·</span>
+                        <span className="text-slate-500">({course.numReviews || 0})</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 text-sm text-slate-400 font-medium mb-2">
+                        <Star className="h-4 w-4" />
+                        <span>N/A</span>
+                      </div>
+                    )}
                     <Link to={`/app/courses/${course._id}`} className="block mb-2">
                       <h3 className="font-bold text-lg leading-tight text-slate-900 dark:text-white hover:text-indigo-600 transition-colors line-clamp-2">
                         {course.title}
@@ -183,10 +209,10 @@ export function Favorites() {
                     <p className="text-sm text-slate-500 mb-4">{course.instructor?.name || "Instructor"}</p>
                     <div className="flex items-center justify-between text-sm text-slate-500 pt-4 mt-auto border-t border-slate-100 dark:border-slate-800">
                       <span className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" /> {Math.max(1, Math.round((course.progressPercentage || 0) / 10))}h
+                        <Clock className="h-4 w-4" /> On demand
                       </span>
                       <span className="flex items-center gap-1">
-                        <Users className="h-4 w-4" /> {course.progressPercentage || 0}%
+                        <Users className="h-4 w-4" /> {Array.isArray(course.students) ? course.students.length : 0}
                       </span>
                     </div>
                   </CardContent>
