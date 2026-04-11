@@ -65,6 +65,11 @@ const userSchema = new mongoose_1.Schema({
         default: 'student',
         index: true,
     },
+    oauthProvider: {
+        type: String,
+        enum: ['google', 'github'],
+        index: true,
+    },
     avatar: {
         type: String,
         default: 'https://icon-library.com/images/anonymous-avatar-icon/anonymous-avatar-icon-25.jpg',
@@ -111,6 +116,14 @@ const userSchema = new mongoose_1.Schema({
             trim: true,
             index: true,
         }],
+    passwordResetCodeHash: {
+        type: String,
+        select: false,
+    },
+    passwordResetCodeExpiresAt: {
+        type: Date,
+        select: false,
+    },
 }, {
     timestamps: true, // adds createdAt and updatedAt
 });

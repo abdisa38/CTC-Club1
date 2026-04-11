@@ -36,21 +36,181 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getActivityLogs = exports.softDeleteUser = exports.updateUserStatus = exports.updateUserRole = exports.getUsers = exports.removeFavoriteResource = exports.addFavoriteResource = exports.getFavoriteResources = exports.removeFavoriteCourse = exports.addFavoriteCourse = exports.getFavoriteCourses = exports.getUserProfile = exports.logoutUser = exports.loginUser = exports.registerUser = void 0;
+exports.getActivityLogs = exports.softDeleteUser = exports.updateUserStatus = exports.updateUserRole = exports.getUsers = exports.removeFavoriteResource = exports.addFavoriteResource = exports.getFavoriteResources = exports.removeFavoriteCourse = exports.addFavoriteCourse = exports.getFavoriteCourses = exports.getUserProfile = exports.logoutUser = exports.resetPasswordWithCode = exports.requestPasswordResetCode = exports.githubOAuthCallback = exports.startGitHubOAuth = exports.googleOAuthCallback = exports.startGoogleOAuth = exports.loginUser = exports.registerUser = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const mongoose_1 = __importDefault(require("mongoose"));
+const crypto_1 = __importDefault(require("crypto"));
 const userModel_1 = __importDefault(require("../models/userModel"));
 const courseModel_1 = __importDefault(require("../models/courseModel"));
 const lessonModel_1 = __importDefault(require("../models/lessonModel"));
 const ticketModel_1 = __importDefault(require("../models/ticketModel"));
 const generateToken_1 = __importStar(require("../utils/generateToken"));
 const apiResponse_1 = require("../utils/apiResponse");
+const email_1 = require("../utils/email");
+const getServerUrl = () => process.env.SERVER_URL || `http://localhost:${process.env.PORT || 5000}`;
+const getClientUrl = () => process.env.CLIENT_URL || 'http://localhost:5173';
+const normalizeEmail = (value) => String(value || '').trim().toLowerCase();
+const buildClientAuthRedirectUrl = (params) => {
+    const { status, message, email, provider } = params;
+    const redirectUrl = new URL('/login', getClientUrl());
+    redirectUrl.searchParams.set('oauth', status);
+    if (message) {
+        redirectUrl.searchParams.set('message', message);
+    }
+    if (email) {
+        redirectUrl.searchParams.set('email', email);
+    }
+    if (provider) {
+        redirectUrl.searchParams.set('provider', provider);
+    }
+    return redirectUrl.toString();
+};
+const oauthStateCookieName = (provider) => `oauth_state_${provider}`;
+const setOAuthStateCookie = (res, provider, state) => {
+    res.cookie(oauthStateCookieName(provider), state, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 10 * 60 * 1000,
+    });
+};
+const clearOAuthStateCookie = (res, provider) => {
+    res.cookie(oauthStateCookieName(provider), '', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        expires: new Date(0),
+    });
+};
+const createOAuthState = () => crypto_1.default.randomBytes(24).toString('hex');
+const createRandomPassword = () => crypto_1.default.randomBytes(24).toString('hex');
+const hashResetCode = (code) => crypto_1.default.createHash('sha256').update(code).digest('hex');
+const PASSWORD_RESET_CODE_TTL_MINUTES = (() => {
+    const value = Number(process.env.PASSWORD_RESET_CODE_TTL_MINUTES || 10);
+    if (!Number.isFinite(value) || value <= 0) {
+        return 10;
+    }
+    return Math.floor(value);
+})();
+const upsertOAuthUser = async (input) => {
+    const email = normalizeEmail(input.email);
+    const displayName = (input.name || email.split('@')[0] || 'Student').trim();
+    let user = await userModel_1.default.findOne({ email });
+    if (!user) {
+        user = await userModel_1.default.create({
+            name: displayName,
+            email,
+            password: createRandomPassword(),
+            role: 'student',
+            avatar: input.avatar,
+            oauthProvider: input.provider,
+        });
+        return user;
+    }
+    if (!user.oauthProvider) {
+        user.oauthProvider = input.provider;
+    }
+    if (input.avatar) {
+        user.avatar = input.avatar;
+    }
+    if (!user.name && displayName) {
+        user.name = displayName;
+    }
+    await user.save();
+    return user;
+};
+const fetchGoogleProfile = async (code) => {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    if (!clientId || !clientSecret) {
+        throw new Error('Google OAuth is not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.');
+    }
+    const callbackUrl = `${getServerUrl()}/api/auth/oauth/google/callback`;
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+            code,
+            client_id: clientId,
+            client_secret: clientSecret,
+            redirect_uri: callbackUrl,
+            grant_type: 'authorization_code',
+        }),
+    });
+    const tokenPayload = await tokenResponse.json().catch(() => ({}));
+    if (!tokenResponse.ok || !tokenPayload?.access_token) {
+        throw new Error('Google sign-in failed while exchanging authorization code.');
+    }
+    const profileResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+        headers: {
+            Authorization: `Bearer ${tokenPayload.access_token}`,
+        },
+    });
+    const profile = await profileResponse.json().catch(() => ({}));
+    if (!profileResponse.ok || !profile?.email) {
+        throw new Error('Google profile fetch failed.');
+    }
+    return {
+        email: normalizeEmail(profile.email),
+        name: String(profile.name || profile.email || '').trim(),
+        avatar: String(profile.picture || ''),
+    };
+};
+const fetchGitHubProfile = async (code) => {
+    const clientId = process.env.GITHUB_CLIENT_ID;
+    const clientSecret = process.env.GITHUB_CLIENT_SECRET;
+    if (!clientId || !clientSecret) {
+        throw new Error('GitHub OAuth is not configured. Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET.');
+    }
+    const callbackUrl = `${getServerUrl()}/api/auth/oauth/github/callback`;
+    const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
+        method: 'POST',
+        headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+            client_id: clientId,
+            client_secret: clientSecret,
+            code,
+            redirect_uri: callbackUrl,
+        }),
+    });
+    const tokenPayload = await tokenResponse.json().catch(() => ({}));
+    if (!tokenResponse.ok || !tokenPayload?.access_token) {
+        throw new Error('GitHub sign-in failed while exchanging authorization code.');
+    }
+    const headers = {
+        Accept: 'application/vnd.github+json',
+        Authorization: `Bearer ${tokenPayload.access_token}`,
+        'X-GitHub-Api-Version': '2022-11-28',
+    };
+    const [userResponse, emailsResponse] = await Promise.all([
+        fetch('https://api.github.com/user', { headers }),
+        fetch('https://api.github.com/user/emails', { headers }),
+    ]);
+    const userPayload = await userResponse.json().catch(() => ({}));
+    const emailPayload = await emailsResponse.json().catch(() => []);
+    const emails = Array.isArray(emailPayload) ? emailPayload : [];
+    const primaryEmail = emails.find((item) => item?.primary && item?.verified)?.email;
+    const fallbackVerified = emails.find((item) => item?.verified)?.email;
+    const email = normalizeEmail(primaryEmail || fallbackVerified || userPayload?.email);
+    if (!userResponse.ok || !email) {
+        throw new Error('GitHub profile fetch failed. Ensure your GitHub account has a verified email.');
+    }
+    return {
+        email,
+        name: String(userPayload?.name || userPayload?.login || email).trim(),
+        avatar: String(userPayload?.avatar_url || ''),
+    };
+};
 // @desc    Register a new user
 // @route   POST /api/auth/register
 // @access  Public
 exports.registerUser = (0, express_async_handler_1.default)(async (req, res) => {
     const { name, email, password } = req.body;
-    const userExists = await userModel_1.default.findOne({ email });
+    const normalizedEmail = normalizeEmail(email);
+    const userExists = await userModel_1.default.findOne({ email: normalizedEmail });
     if (userExists) {
         res.status(400);
         throw new Error('User already exists');
@@ -58,7 +218,7 @@ exports.registerUser = (0, express_async_handler_1.default)(async (req, res) => 
     // Hardcode "student" so anonymous public API cannot create admin
     const user = await userModel_1.default.create({
         name,
-        email,
+        email: normalizedEmail,
         password,
         role: 'student',
     });
@@ -82,7 +242,8 @@ exports.registerUser = (0, express_async_handler_1.default)(async (req, res) => 
 // @access  Public
 exports.loginUser = (0, express_async_handler_1.default)(async (req, res) => {
     const { email, password } = req.body;
-    const user = await userModel_1.default.findOne({ email });
+    const normalizedEmail = normalizeEmail(email);
+    const user = await userModel_1.default.findOne({ email: normalizedEmail });
     if (user && (await user.matchPassword(password))) {
         (0, generateToken_1.default)(res, user._id.toString(), user.role);
         user.lastLogin = new Date();
@@ -99,6 +260,206 @@ exports.loginUser = (0, express_async_handler_1.default)(async (req, res) => {
         res.status(401);
         throw new Error('Invalid email or password');
     }
+});
+// @desc    Start Google OAuth login
+// @route   GET /api/auth/oauth/google
+// @access  Public
+exports.startGoogleOAuth = (0, express_async_handler_1.default)(async (_req, res) => {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    if (!clientId || !clientSecret) {
+        res.status(500);
+        throw new Error('Google OAuth is not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.');
+    }
+    const callbackUrl = `${getServerUrl()}/api/auth/oauth/google/callback`;
+    const state = createOAuthState();
+    setOAuthStateCookie(res, 'google', state);
+    const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+    authUrl.searchParams.set('client_id', clientId);
+    authUrl.searchParams.set('redirect_uri', callbackUrl);
+    authUrl.searchParams.set('response_type', 'code');
+    authUrl.searchParams.set('scope', 'openid email profile');
+    authUrl.searchParams.set('state', state);
+    authUrl.searchParams.set('prompt', 'select_account');
+    res.redirect(authUrl.toString());
+});
+// @desc    Google OAuth callback
+// @route   GET /api/auth/oauth/google/callback
+// @access  Public
+exports.googleOAuthCallback = (0, express_async_handler_1.default)(async (req, res) => {
+    const code = typeof req.query.code === 'string' ? req.query.code : '';
+    const state = typeof req.query.state === 'string' ? req.query.state : '';
+    const expectedState = req.cookies?.[oauthStateCookieName('google')];
+    clearOAuthStateCookie(res, 'google');
+    if (!code || !state || !expectedState || state !== expectedState) {
+        res.redirect(buildClientAuthRedirectUrl({
+            status: 'error',
+            message: 'Google sign-in validation failed.',
+            provider: 'google',
+        }));
+        return;
+    }
+    try {
+        const profile = await fetchGoogleProfile(code);
+        const user = await upsertOAuthUser({
+            provider: 'google',
+            email: profile.email,
+            name: profile.name,
+            avatar: profile.avatar,
+        });
+        user.lastLogin = new Date();
+        await user.save();
+        (0, generateToken_1.default)(res, user._id.toString(), user.role);
+        res.redirect(buildClientAuthRedirectUrl({
+            status: 'success',
+            email: user.email,
+            provider: 'google',
+        }));
+    }
+    catch (error) {
+        res.redirect(buildClientAuthRedirectUrl({
+            status: 'error',
+            message: 'Google sign-in failed. Please try again.',
+            provider: 'google',
+        }));
+    }
+});
+// @desc    Start GitHub OAuth login
+// @route   GET /api/auth/oauth/github
+// @access  Public
+exports.startGitHubOAuth = (0, express_async_handler_1.default)(async (_req, res) => {
+    const clientId = process.env.GITHUB_CLIENT_ID;
+    const clientSecret = process.env.GITHUB_CLIENT_SECRET;
+    if (!clientId || !clientSecret) {
+        res.status(500);
+        throw new Error('GitHub OAuth is not configured. Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET.');
+    }
+    const callbackUrl = `${getServerUrl()}/api/auth/oauth/github/callback`;
+    const state = createOAuthState();
+    setOAuthStateCookie(res, 'github', state);
+    const authUrl = new URL('https://github.com/login/oauth/authorize');
+    authUrl.searchParams.set('client_id', clientId);
+    authUrl.searchParams.set('redirect_uri', callbackUrl);
+    authUrl.searchParams.set('scope', 'read:user user:email');
+    authUrl.searchParams.set('state', state);
+    res.redirect(authUrl.toString());
+});
+// @desc    GitHub OAuth callback
+// @route   GET /api/auth/oauth/github/callback
+// @access  Public
+exports.githubOAuthCallback = (0, express_async_handler_1.default)(async (req, res) => {
+    const code = typeof req.query.code === 'string' ? req.query.code : '';
+    const state = typeof req.query.state === 'string' ? req.query.state : '';
+    const expectedState = req.cookies?.[oauthStateCookieName('github')];
+    clearOAuthStateCookie(res, 'github');
+    if (!code || !state || !expectedState || state !== expectedState) {
+        res.redirect(buildClientAuthRedirectUrl({
+            status: 'error',
+            message: 'GitHub sign-in validation failed.',
+            provider: 'github',
+        }));
+        return;
+    }
+    try {
+        const profile = await fetchGitHubProfile(code);
+        const user = await upsertOAuthUser({
+            provider: 'github',
+            email: profile.email,
+            name: profile.name,
+            avatar: profile.avatar,
+        });
+        user.lastLogin = new Date();
+        await user.save();
+        (0, generateToken_1.default)(res, user._id.toString(), user.role);
+        res.redirect(buildClientAuthRedirectUrl({
+            status: 'success',
+            email: user.email,
+            provider: 'github',
+        }));
+    }
+    catch (error) {
+        res.redirect(buildClientAuthRedirectUrl({
+            status: 'error',
+            message: 'GitHub sign-in failed. Please try again.',
+            provider: 'github',
+        }));
+    }
+});
+// @desc    Send reset code to email
+// @route   POST /api/auth/password/forgot
+// @access  Public
+exports.requestPasswordResetCode = (0, express_async_handler_1.default)(async (req, res) => {
+    const email = normalizeEmail(req.body?.email);
+    if (!email) {
+        res.status(400);
+        throw new Error('Email is required');
+    }
+    const user = await userModel_1.default.findOne({ email }).select('+passwordResetCodeHash +passwordResetCodeExpiresAt');
+    if (!user) {
+        (0, apiResponse_1.sendSuccess)(res, { sent: true }, { message: 'If that email is registered, a reset code has been sent.' });
+        return;
+    }
+    const resetCode = String(Math.floor(100000 + Math.random() * 900000));
+    user.passwordResetCodeHash = hashResetCode(resetCode);
+    user.passwordResetCodeExpiresAt = new Date(Date.now() + PASSWORD_RESET_CODE_TTL_MINUTES * 60 * 1000);
+    await user.save();
+    try {
+        await (0, email_1.sendPasswordResetCodeEmail)({
+            to: user.email,
+            name: user.name,
+            code: resetCode,
+            expiresInMinutes: PASSWORD_RESET_CODE_TTL_MINUTES,
+        });
+    }
+    catch (error) {
+        user.set('passwordResetCodeHash', undefined);
+        user.set('passwordResetCodeExpiresAt', undefined);
+        await user.save();
+        res.status(500);
+        throw new Error(error?.message || 'Failed to send password reset email');
+    }
+    (0, apiResponse_1.sendSuccess)(res, { sent: true }, { message: 'Password reset code sent successfully.' });
+});
+// @desc    Reset password with code
+// @route   POST /api/auth/password/reset
+// @access  Public
+exports.resetPasswordWithCode = (0, express_async_handler_1.default)(async (req, res) => {
+    const email = normalizeEmail(req.body?.email);
+    const code = String(req.body?.code || '').trim();
+    const newPassword = String(req.body?.newPassword || '');
+    if (!email || !code || !newPassword) {
+        res.status(400);
+        throw new Error('Email, code, and new password are required');
+    }
+    const user = await userModel_1.default.findOne({ email }).select('+password +passwordResetCodeHash +passwordResetCodeExpiresAt');
+    if (!user || !user.passwordResetCodeHash || !user.passwordResetCodeExpiresAt) {
+        res.status(400);
+        throw new Error('Invalid or expired reset code');
+    }
+    if (user.passwordResetCodeExpiresAt.getTime() < Date.now()) {
+        user.set('passwordResetCodeHash', undefined);
+        user.set('passwordResetCodeExpiresAt', undefined);
+        await user.save();
+        res.status(400);
+        throw new Error('Reset code has expired');
+    }
+    if (hashResetCode(code) !== user.passwordResetCodeHash) {
+        res.status(400);
+        throw new Error('Invalid reset code');
+    }
+    user.password = newPassword;
+    user.lastLogin = new Date();
+    user.set('passwordResetCodeHash', undefined);
+    user.set('passwordResetCodeExpiresAt', undefined);
+    await user.save();
+    (0, generateToken_1.default)(res, user._id.toString(), user.role);
+    (0, apiResponse_1.sendSuccess)(res, {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar,
+    }, { message: 'Password reset successful' });
 });
 // @desc    Logout user & clear cookie
 // @route   POST /api/auth/logout

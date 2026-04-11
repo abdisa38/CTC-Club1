@@ -4,6 +4,7 @@ export interface IUser extends Document {
     email: string;
     password?: string;
     role: 'student' | 'instructor' | 'admin';
+    oauthProvider?: 'google' | 'github';
     avatar?: string;
     xp: number;
     level: number;
@@ -15,6 +16,8 @@ export interface IUser extends Document {
     createdCourses: mongoose.Types.ObjectId[];
     favoriteCourses: mongoose.Types.ObjectId[];
     favoriteResources: string[];
+    passwordResetCodeHash?: string;
+    passwordResetCodeExpiresAt?: Date;
     matchPassword(enteredPassword: string): Promise<boolean>;
 }
 declare const User: mongoose.Model<IUser, {}, {}, {}, mongoose.Document<unknown, {}, IUser, {}, mongoose.DefaultSchemaOptions> & IUser & Required<{
