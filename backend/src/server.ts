@@ -15,6 +15,7 @@ import dashboardRoutes from './routes/dashboardRoutes';
 import communityRoutes from './routes/communityRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import uploadRoutes from './routes/uploadRoutes';
+import eventRoutes from './routes/eventRoutes';
 
 // Load env vars
 dotenv.config();
@@ -57,6 +58,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/community', communityRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/uploads', uploadRoutes);
+app.use('/api/events', eventRoutes);
 // For operations purely based on LessonId (Update, Delete a lesson)
 app.use('/api/lessons', lessonRoutes);
 
