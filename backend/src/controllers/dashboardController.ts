@@ -662,7 +662,15 @@ export const getInstructorAnalytics = asyncHandler(async (req: AuthRequest, res:
         }
     });
 
-    const trends = trendTimeline.map((month) => trendMap.get(month.key));
+    const trends = trendTimeline.map((month) => (
+        trendMap.get(month.key) || {
+            month: month.label,
+            date: month.date,
+            revenue: 0,
+            enrollments: 0,
+            completions: 0,
+        }
+    ));
 
     const coursePerformance = instructorCourses
         .map((course: any) => {
