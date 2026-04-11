@@ -12,6 +12,9 @@ import {
 	getFavoriteCourses,
 	addFavoriteCourse,
 	removeFavoriteCourse,
+	getFavoriteResources,
+	addFavoriteResource,
+	removeFavoriteResource,
 } from '../controllers/authController';
 import { protect, authorizeRoles } from '../middleware/authMiddleware';
 import { validateRequest } from '../middleware/validateMiddleware';
@@ -26,6 +29,9 @@ router.get('/profile', protect as any, getUserProfile as any);
 router.get('/favorites/courses', protect as any, getFavoriteCourses as any);
 router.post('/favorites/courses/:courseId', protect as any, addFavoriteCourse as any);
 router.delete('/favorites/courses/:courseId', protect as any, removeFavoriteCourse as any);
+router.get('/favorites/resources', protect as any, getFavoriteResources as any);
+router.post('/favorites/resources/:resourceId', protect as any, addFavoriteResource as any);
+router.delete('/favorites/resources/:resourceId', protect as any, removeFavoriteResource as any);
 
 router.get('/users', protect as any, authorizeRoles('admin'), getUsers as any);
 router.put('/users/:id/role', protect as any, authorizeRoles('admin'), updateUserRole as any);

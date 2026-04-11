@@ -3,6 +3,7 @@ import asyncHandler from 'express-async-handler';
 import mongoose from 'mongoose';
 import User from '../models/userModel';
 import Course from '../models/courseModel';
+import Lesson from '../models/lessonModel';
 import Ticket from '../models/ticketModel';
 import { AuthRequest } from '../middleware/authMiddleware';
 import generateToken, { clearToken } from '../utils/generateToken';
@@ -181,6 +182,159 @@ export const removeFavoriteCourse = asyncHandler(async (req: AuthRequest, res: R
     courseId,
     isFavorite: false,
   }, { message: 'Course removed from favorites' });
+});
+
+const resourceIdPattern = /^attachment-([a-fA-F0-9]{24})-(\d+)$/;
+
+const parseResourceReference = (resourceId: string) => {
+  const match = resourceIdPattern.exec(resourceId);
+  if (!match) {
+    return null;
+  }
+
+  const lessonId = match[1];
+  const attachmentIndex = Number(match[2]);
+  if (!Number.isInteger(attachmentIndex) || attachmentIndex < 0) {
+    return null;
+  }
+
+  return { lessonId, attachmentIndex };
+};
+
+const isVideoAttachment = (fileType?: string, url?: string) => {
+  const type = String(fileType || '').toLowerCase();
+  const safeUrl = String(url || '');
+  return type.includes('video') || /(\.mp4|\.mov|\.avi|\.mkv|\.webm)(\?|$)/i.test(safeUrl);
+};
+
+const resolveResourceId = async (resourceId: string, userRole: string) => {
+  const parsed = parseResourceReference(resourceId);
+  if (!parsed) {
+    return null;
+  }
+
+  const lesson = await Lesson.findById(parsed.lessonId).select('attachments isPublished');
+  if (!lesson) {
+    return null;
+  }
+
+  if (userRole === 'student' && lesson.isPublished !== true) {
+    return null;
+  }
+
+  const attachments = Array.isArray(lesson.attachments) ? lesson.attachments : [];
+  const attachment = attachments[parsed.attachmentIndex];
+  if (!attachment?.url) {
+    return null;
+  }
+
+  if (isVideoAttachment(attachment.fileType, attachment.url)) {
+    return null;
+  }
+
+  return resourceId;
+};
+
+// @desc    Get current user's favorite resource IDs
+// @route   GET /api/auth/favorites/resources
+// @access  Private
+export const getFavoriteResources = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const user = await User.findById(req.user._id).select('favoriteResources');
+
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  const favorites = Array.isArray((user as any).favoriteResources)
+    ? ((user as any).favoriteResources as string[])
+    : [];
+
+  if (favorites.length === 0) {
+    sendSuccess(res, []);
+    return;
+  }
+
+  const validated = await Promise.all(
+    favorites.map((resourceId) => resolveResourceId(resourceId, req.user.role))
+  );
+
+  const validResourceIds = validated.filter((resourceId): resourceId is string => Boolean(resourceId));
+  const invalidResourceIds = favorites.filter((resourceId) => !validResourceIds.includes(resourceId));
+
+  if (invalidResourceIds.length > 0) {
+    await User.findByIdAndUpdate(req.user._id, {
+      $pull: { favoriteResources: { $in: invalidResourceIds } },
+    });
+  }
+
+  sendSuccess(res, validResourceIds);
+});
+
+// @desc    Add resource to favorites
+// @route   POST /api/auth/favorites/resources/:resourceId
+// @access  Private
+export const addFavoriteResource = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const rawResourceId = typeof req.params.resourceId === 'string'
+    ? decodeURIComponent(req.params.resourceId)
+    : '';
+
+  if (!rawResourceId) {
+    res.status(400);
+    throw new Error('Resource id is required');
+  }
+
+  const resourceId = await resolveResourceId(rawResourceId, req.user.role);
+  if (!resourceId) {
+    res.status(404);
+    throw new Error('Resource not found');
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    { $addToSet: { favoriteResources: resourceId } },
+    { new: true }
+  ).select('_id');
+
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  sendSuccess(res, {
+    resourceId,
+    isFavorite: true,
+  }, { message: 'Resource added to favorites' });
+});
+
+// @desc    Remove resource from favorites
+// @route   DELETE /api/auth/favorites/resources/:resourceId
+// @access  Private
+export const removeFavoriteResource = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const rawResourceId = typeof req.params.resourceId === 'string'
+    ? decodeURIComponent(req.params.resourceId)
+    : '';
+
+  if (!rawResourceId) {
+    res.status(400);
+    throw new Error('Resource id is required');
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    { $pull: { favoriteResources: rawResourceId } },
+    { new: true }
+  ).select('_id');
+
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  sendSuccess(res, {
+    resourceId: rawResourceId,
+    isFavorite: false,
+  }, { message: 'Resource removed from favorites' });
 });
 
 // @desc    Get users for admin table
