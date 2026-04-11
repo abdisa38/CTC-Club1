@@ -274,6 +274,26 @@ export interface AdminSearchData {
   };
 }
 
+export interface InstructorSearchItem {
+  id: string;
+  type: "course" | "student" | "project" | "submission" | "discussion";
+  title: string;
+  subtitle?: string;
+  href: string;
+}
+
+export interface InstructorSearchData {
+  query: string;
+  items: InstructorSearchItem[];
+  counts: {
+    courses: number;
+    students: number;
+    projects: number;
+    submissions: number;
+    discussions: number;
+  };
+}
+
 export interface Paginated<T> {
   items: T[];
   page: number;
@@ -726,6 +746,11 @@ export const apiService = {
   async adminGlobalSearch(query: string): Promise<AdminSearchData> {
     const res = await api.get("/dashboard/admin/search", { params: { q: query } });
     return pickData<AdminSearchData>(res.data);
+  },
+
+  async instructorGlobalSearch(query: string): Promise<InstructorSearchData> {
+    const res = await api.get("/dashboard/instructor/search", { params: { q: query } });
+    return pickData<InstructorSearchData>(res.data);
   },
 
   async getInstructorStudents(params: { keyword?: string; courseId?: string; instructorId?: string } = {}): Promise<InstructorStudentsData> {
