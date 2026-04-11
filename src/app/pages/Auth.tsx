@@ -338,8 +338,12 @@ export function Auth() {
                       Remember me
                     </label>
                   </div>
-                  <a href="#" className="text-[13px] font-medium text-indigo-600 hover:text-indigo-500 transition-colors">
-                    Forgot password?
+                  <button
+                    type="button"
+                    className="text-[13px] font-medium text-indigo-600 hover:text-indigo-500 transition-colors"
+                    onClick={toggleForgotPassword}
+                  >
+                    {forgotOpen ? "Close reset" : "Forgot password?"}
                   </button>
                 </div>
               )}
