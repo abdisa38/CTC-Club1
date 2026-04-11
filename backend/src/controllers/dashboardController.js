@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getInstructorStudents = exports.getPublicStats = exports.getDashboardAnnouncements = exports.getDashboardResources = exports.getLeaderboard = exports.getAdminAnalytics = exports.getDashboardMetrics = void 0;
+exports.getInstructorAnalytics = exports.getInstructorStudents = exports.getPublicStats = exports.getDashboardAnnouncements = exports.getDashboardResources = exports.getLeaderboard = exports.getAdminAnalytics = exports.getDashboardMetrics = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const userModel_1 = __importDefault(require("../models/userModel"));
 const courseModel_1 = __importDefault(require("../models/courseModel"));
@@ -25,6 +25,35 @@ const buildLastSevenDays = () => {
         days.push(d);
     }
     return days;
+};
+const toMonthKey = (date) => `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
+const toValidDate = (value) => {
+    if (!value) {
+        return null;
+    }
+    const candidate = new Date(value);
+    if (Number.isNaN(candidate.getTime())) {
+        return null;
+    }
+    return candidate;
+};
+const monthDiffInclusive = (start, end) => {
+    const years = end.getUTCFullYear() - start.getUTCFullYear();
+    const months = end.getUTCMonth() - start.getUTCMonth();
+    return (years * 12) + months + 1;
+};
+const buildMonthlyTimeline = (totalMonths) => {
+    const now = new Date();
+    const monthCount = Math.max(1, totalMonths);
+    const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (monthCount - 1), 1));
+    return Array.from({ length: monthCount }, (_, idx) => {
+        const date = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + idx, 1));
+        return {
+            key: toMonthKey(date),
+            label: date.toLocaleDateString('en-US', { month: 'short', year: '2-digit', timeZone: 'UTC' }),
+            date: date.toISOString(),
+        };
+    });
 };
 const buildAdminMetrics = async () => {
     const [totalUsers, totalCourses, openTickets, recentUsers] = await Promise.all([
@@ -440,6 +469,153 @@ exports.getInstructorStudents = (0, express_async_handler_1.default)(async (req,
         },
         courses: courseSummaries,
         students: studentRecords,
+    });
+});
+// @desc    Get instructor analytics
+// @route   GET /api/dashboard/instructor/analytics
+// @access  Private/Instructor/Admin
+exports.getInstructorAnalytics = (0, express_async_handler_1.default)(async (req, res) => {
+    const role = req.user.role;
+    if (role !== 'instructor' && role !== 'admin') {
+        res.status(403);
+        throw new Error('Only instructors and admins can access instructor analytics');
+    }
+    const instructorId = role === 'admin' && typeof req.query.instructorId === 'string'
+        ? req.query.instructorId
+        : req.user._id.toString();
+    const instructorCourses = await courseModel_1.default.find({
+        instructor: instructorId,
+        isDeleted: false,
+    })
+        .select('_id title students price rating numReviews createdAt')
+        .lean();
+    const courseIds = instructorCourses.map((course) => course._id);
+    const progresses = courseIds.length > 0
+        ? await progressModel_1.default.find({ course: { $in: courseIds } })
+            .select('course progressPercentage isCompleted createdAt completionDate updatedAt')
+            .lean()
+        : [];
+    const coursePriceMap = new Map();
+    const progressByCourse = new Map();
+    instructorCourses.forEach((course) => {
+        const courseId = course._id.toString();
+        coursePriceMap.set(courseId, Number(course.price) || 0);
+        progressByCourse.set(courseId, []);
+    });
+    progresses.forEach((entry) => {
+        const courseId = entry.course.toString();
+        const current = progressByCourse.get(courseId) || [];
+        current.push(entry);
+        progressByCourse.set(courseId, current);
+    });
+    const totalEnrollments = instructorCourses.reduce((sum, course) => {
+        const enrolled = Array.isArray(course.students) ? course.students.length : 0;
+        return sum + enrolled;
+    }, 0);
+    const totalRevenue = instructorCourses.reduce((sum, course) => {
+        const enrolled = Array.isArray(course.students) ? course.students.length : 0;
+        const price = Number(course.price) || 0;
+        return sum + (enrolled * price);
+    }, 0);
+    const totalReviews = instructorCourses.reduce((sum, course) => sum + (Number(course.numReviews) || 0), 0);
+    const weightedRatingSum = instructorCourses.reduce((sum, course) => sum + ((Number(course.rating) || 0) * (Number(course.numReviews) || 0)), 0);
+    const avgCourseRating = totalReviews > 0 ? Number((weightedRatingSum / totalReviews).toFixed(2)) : 0;
+    const completedCount = progresses.filter((entry) => entry.isCompleted).length;
+    const inProgressCount = progresses.filter((entry) => !entry.isCompleted && (entry.progressPercentage || 0) > 0).length;
+    const notStartedCount = progresses.filter((entry) => !entry.isCompleted && (entry.progressPercentage || 0) <= 0).length;
+    const sortedProgressDates = progresses
+        .map((entry) => toValidDate(entry.createdAt))
+        .filter((date) => date !== null)
+        .sort((a, b) => a.getTime() - b.getTime());
+    const now = new Date();
+    const earliestDate = sortedProgressDates[0]
+        ?? new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 5, 1));
+    const firstMonth = new Date(Date.UTC(earliestDate.getUTCFullYear(), earliestDate.getUTCMonth(), 1));
+    const currentMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    const totalMonths = monthDiffInclusive(firstMonth, currentMonth);
+    const trendTimeline = buildMonthlyTimeline(totalMonths);
+    const trendMap = new Map(trendTimeline.map((month) => [
+        month.key,
+        {
+            month: month.label,
+            date: month.date,
+            revenue: 0,
+            enrollments: 0,
+            completions: 0,
+        },
+    ]));
+    progresses.forEach((entry) => {
+        const courseId = entry.course.toString();
+        const coursePrice = coursePriceMap.get(courseId) || 0;
+        const enrollmentDate = toValidDate(entry.createdAt);
+        if (enrollmentDate) {
+            const key = toMonthKey(enrollmentDate);
+            const bucket = trendMap.get(key);
+            if (bucket) {
+                bucket.enrollments += 1;
+                bucket.revenue += coursePrice;
+            }
+        }
+        if (entry.isCompleted) {
+            const completionDate = toValidDate(entry.completionDate) || toValidDate(entry.updatedAt) || enrollmentDate;
+            if (completionDate) {
+                const key = toMonthKey(completionDate);
+                const bucket = trendMap.get(key);
+                if (bucket) {
+                    bucket.completions += 1;
+                }
+            }
+        }
+    });
+    const trends = trendTimeline.map((month) => (trendMap.get(month.key) || {
+        month: month.label,
+        date: month.date,
+        revenue: 0,
+        enrollments: 0,
+        completions: 0,
+    }));
+    const coursePerformance = instructorCourses
+        .map((course) => {
+        const courseId = course._id.toString();
+        const courseProgresses = progressByCourse.get(courseId) || [];
+        const enrollments = Array.isArray(course.students) ? course.students.length : 0;
+        const completions = courseProgresses.filter((entry) => entry.isCompleted).length;
+        const revenue = enrollments * (Number(course.price) || 0);
+        return {
+            courseId,
+            name: course.title,
+            enrollments,
+            completions,
+            revenue,
+            rating: Number(course.rating) || 0,
+            reviews: Number(course.numReviews) || 0,
+        };
+    })
+        .sort((a, b) => {
+        if (b.revenue !== a.revenue) {
+            return b.revenue - a.revenue;
+        }
+        if (b.enrollments !== a.enrollments) {
+            return b.enrollments - a.enrollments;
+        }
+        return b.completions - a.completions;
+    })
+        .slice(0, 8);
+    (0, apiResponse_1.sendSuccess)(res, {
+        summary: {
+            totalRevenue,
+            totalEnrollments,
+            avgCourseRating,
+            courseCompletions: completedCount,
+        },
+        trends,
+        progressStatus: [
+            { name: 'Completed', value: completedCount },
+            { name: 'In Progress', value: inProgressCount },
+            { name: 'Not Started', value: notStartedCount },
+        ],
+        coursePerformance,
+        generatedAt: new Date().toISOString(),
     });
 });
 //# sourceMappingURL=dashboardController.js.map

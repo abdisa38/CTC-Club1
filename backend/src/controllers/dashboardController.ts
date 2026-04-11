@@ -615,9 +615,8 @@ export const getInstructorAnalytics = asyncHandler(async (req: AuthRequest, res:
         .sort((a: Date, b: Date) => a.getTime() - b.getTime());
 
     const now = new Date();
-    const earliestDate = sortedProgressDates.length > 0
-        ? sortedProgressDates[0]
-        : new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 5, 1));
+    const earliestDate = sortedProgressDates[0]
+        ?? new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 5, 1));
     const firstMonth = new Date(Date.UTC(earliestDate.getUTCFullYear(), earliestDate.getUTCMonth(), 1));
     const currentMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
     const totalMonths = monthDiffInclusive(firstMonth, currentMonth);
