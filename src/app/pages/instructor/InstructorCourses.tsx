@@ -11,6 +11,7 @@ import apiService, { Course } from "../../services/api";
 
 export function InstructorCourses() {
   const { user, role } = useAuth();
+  const isAdminView = role === "admin";
 
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -78,8 +79,12 @@ export function InstructorCourses() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">My Courses</h1>
-          <p className="text-slate-500 dark:text-slate-400">Manage your created courses, lessons, and publication status.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">{isAdminView ? "All Courses" : "My Courses"}</h1>
+          <p className="text-slate-500 dark:text-slate-400">
+            {isAdminView
+              ? "Manage all instructor courses across the platform."
+              : "Manage your created courses, lessons, and publication status."}
+          </p>
         </div>
         <Button asChild className="bg-emerald-600 hover:bg-emerald-700 text-white">
           <Link to="/app/instructor/courses/new">
@@ -94,7 +99,7 @@ export function InstructorCourses() {
       <div className="flex gap-4 items-center">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input placeholder="Search your courses..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input placeholder={isAdminView ? "Search all courses..." : "Search your courses..."} className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <select
           className="h-10 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-800 dark:bg-slate-950"
