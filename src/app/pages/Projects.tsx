@@ -59,9 +59,7 @@ export function Projects() {
         const allCourses = Array.isArray(coursesData.items) ? coursesData.items : [];
         const scopedCourses = role === "instructor"
           ? allCourses.filter((course) => {
-              const instructorId = typeof course.instructor === "string"
-                ? course.instructor
-                : course.instructor?._id;
+              const instructorId = course.instructor?._id;
 
               if (!instructorId || !user?._id) {
                 return true;
