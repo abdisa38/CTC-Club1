@@ -758,9 +758,15 @@ exports.getInstructorGlobalSearch = (0, express_async_handler_1.default)(async (
         throw new Error('Only instructors can search instructor data');
     }
     const query = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+    const projectVisibility = req.query.projectVisibility === 'published'
+        ? 'published'
+        : req.query.projectVisibility === 'draft'
+            ? 'draft'
+            : 'all';
     if (query.length < 2) {
         (0, apiResponse_1.sendSuccess)(res, {
             query,
+            projectVisibility,
             items: [],
             counts: {
                 courses: 0,
@@ -783,6 +789,7 @@ exports.getInstructorGlobalSearch = (0, express_async_handler_1.default)(async (
     if (courseIds.length === 0) {
         (0, apiResponse_1.sendSuccess)(res, {
             query,
+            projectVisibility,
             items: [],
             counts: {
                 courses: 0,
@@ -830,6 +837,8 @@ exports.getInstructorGlobalSearch = (0, express_async_handler_1.default)(async (
         projectModel_1.Project.find({
             course: { $in: courseIds },
             isDeleted: false,
+            ...(projectVisibility === 'published' ? { isPublished: true } : {}),
+            ...(projectVisibility === 'draft' ? { isPublished: false } : {}),
             $or: [
                 { title: { $regex: regex } },
                 { description: { $regex: regex } },
@@ -918,6 +927,7 @@ exports.getInstructorGlobalSearch = (0, express_async_handler_1.default)(async (
     ];
     (0, apiResponse_1.sendSuccess)(res, {
         query,
+        projectVisibility,
         items,
         counts: {
             courses: courses.length,

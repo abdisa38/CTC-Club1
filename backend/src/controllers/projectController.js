@@ -3,11 +3,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.reviewProject = exports.submitProject = exports.createProject = exports.getProjectSubmissions = exports.getProjects = void 0;
+exports.reviewProject = exports.submitProject = exports.deleteProject = exports.updateProject = exports.createProject = exports.getProjectSubmissions = exports.getProjects = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const projectModel_1 = require("../models/projectModel");
 const userModel_1 = __importDefault(require("../models/userModel"));
 const courseModel_1 = __importDefault(require("../models/courseModel"));
+const notificationModel_1 = __importDefault(require("../models/notificationModel"));
 const apiResponse_1 = require("../utils/apiResponse");
 // @desc    Get projects based on role
 // @route   GET /api/projects
@@ -92,6 +93,108 @@ exports.createProject = (0, express_async_handler_1.default)(async (req, res) =>
     });
     (0, apiResponse_1.sendSuccess)(res, project, { statusCode: 201, message: 'Project created successfully' });
 });
+// @desc    Update a project
+// @route   PUT /api/projects/:id
+// @access  Private/Instructor/Admin
+exports.updateProject = (0, express_async_handler_1.default)(async (req, res) => {
+    const projectId = typeof req.params.id === 'string' ? req.params.id : '';
+    const { title, description, courseId, lessonId, instructions, requirements, xpReward, maxPoints, deadline, isPublished, } = req.body;
+    if (!projectId) {
+        res.status(400);
+        throw new Error('Project ID is required');
+    }
+    const project = await projectModel_1.Project.findById(projectId);
+    if (!project) {
+        res.status(404);
+        throw new Error('Project not found');
+    }
+    const targetCourseId = courseId || project.course;
+    const course = await courseModel_1.default.findById(targetCourseId);
+    if (!course) {
+        res.status(404);
+        throw new Error('Course not found');
+    }
+    if (course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+        res.status(403);
+        throw new Error('Not authorized to update this project');
+    }
+    if (typeof title === 'string' && title.trim()) {
+        project.title = title.trim();
+    }
+    if (typeof description === 'string' && description.trim()) {
+        project.description = description.trim();
+    }
+    if (courseId) {
+        project.course = course._id;
+    }
+    if (lessonId !== undefined) {
+        project.lesson = lessonId || undefined;
+    }
+    if (typeof instructions === 'string') {
+        project.instructions = instructions;
+    }
+    if (Array.isArray(requirements)) {
+        project.requirements = requirements;
+    }
+    if (xpReward !== undefined) {
+        const rewardValue = Number(xpReward);
+        if (!Number.isFinite(rewardValue) || rewardValue < 0) {
+            res.status(400);
+            throw new Error('XP reward must be a valid non-negative number');
+        }
+        project.xpReward = rewardValue;
+    }
+    if (maxPoints !== undefined) {
+        const pointsValue = Number(maxPoints);
+        if (!Number.isFinite(pointsValue) || pointsValue <= 0) {
+            res.status(400);
+            throw new Error('Max points must be a valid positive number');
+        }
+        project.maxPoints = pointsValue;
+    }
+    if (deadline !== undefined) {
+        if (deadline === null || deadline === '') {
+            project.deadline = undefined;
+        }
+        else {
+            const parsed = new Date(deadline);
+            if (Number.isNaN(parsed.getTime())) {
+                res.status(400);
+                throw new Error('Invalid deadline date');
+            }
+            project.deadline = parsed;
+        }
+    }
+    if (typeof isPublished === 'boolean') {
+        project.isPublished = isPublished;
+    }
+    const updated = await project.save();
+    const populated = await projectModel_1.Project.findById(updated._id).populate('course', 'title');
+    (0, apiResponse_1.sendSuccess)(res, populated || updated, { message: 'Project updated successfully' });
+});
+// @desc    Delete a project (soft delete)
+// @route   DELETE /api/projects/:id
+// @access  Private/Instructor/Admin
+exports.deleteProject = (0, express_async_handler_1.default)(async (req, res) => {
+    const projectId = typeof req.params.id === 'string' ? req.params.id : '';
+    if (!projectId) {
+        res.status(400);
+        throw new Error('Project ID is required');
+    }
+    const project = await projectModel_1.Project.findById(projectId);
+    if (!project) {
+        res.status(404);
+        throw new Error('Project not found');
+    }
+    const course = await courseModel_1.default.findById(project.course).select('instructor');
+    if (!course || (course.instructor.toString() !== req.user._id.toString() && req.user.role !== 'admin')) {
+        res.status(403);
+        throw new Error('Not authorized to delete this project');
+    }
+    project.isDeleted = true;
+    await project.save();
+    (0, apiResponse_1.sendSuccess)(res, null, { message: 'Project deleted successfully' });
+});
 // @desc    Submit a project
 // @route   POST /api/projects/:id/submit
 // @access  Private/Student
@@ -107,6 +210,7 @@ exports.submitProject = (0, express_async_handler_1.default)(async (req, res) =>
         res.status(404);
         throw new Error('Project not found');
     }
+    const course = await courseModel_1.default.findById(project.course).select('instructor title');
     // Check if student already submitted
     const existingSubmission = await projectModel_1.ProjectSubmission.findOne({ student: req.user._id, project: projectId });
     if (existingSubmission) {
@@ -121,6 +225,16 @@ exports.submitProject = (0, express_async_handler_1.default)(async (req, res) =>
         existingSubmission.comments = comments || existingSubmission.comments;
         existingSubmission.status = 'submitted';
         await existingSubmission.save();
+        if (course && course.instructor.toString() !== req.user._id.toString()) {
+            await notificationModel_1.default.create({
+                user: course.instructor,
+                title: 'Project submission updated',
+                message: `${req.user.name || 'A student'} updated submission for "${project.title}"`,
+                type: 'message',
+                relatedId: project._id,
+                link: '/app/instructor/projects',
+            });
+        }
         (0, apiResponse_1.sendSuccess)(res, existingSubmission, { message: 'Project submission updated' });
         return;
     }
@@ -134,6 +248,16 @@ exports.submitProject = (0, express_async_handler_1.default)(async (req, res) =>
         comments,
         status: 'submitted'
     });
+    if (course && course.instructor.toString() !== req.user._id.toString()) {
+        await notificationModel_1.default.create({
+            user: course.instructor,
+            title: 'New project submission',
+            message: `${req.user.name || 'A student'} submitted "${project.title}" for review`,
+            type: 'message',
+            relatedId: project._id,
+            link: '/app/instructor/projects',
+        });
+    }
     (0, apiResponse_1.sendSuccess)(res, submission, { statusCode: 201, message: 'Project submitted successfully' });
 });
 // @desc    Review and Grade a projected
@@ -171,6 +295,14 @@ exports.reviewProject = (0, express_async_handler_1.default)(async (req, res) =>
         });
     }
     await submission.save();
+    await notificationModel_1.default.create({
+        user: submission.student,
+        title: 'Project graded',
+        message: `Your submission for "${project.title}" has been graded${grade !== undefined ? ` (${grade}/${project.maxPoints || 100})` : ''}`,
+        type: 'project_graded',
+        relatedId: submission.project,
+        link: '/app/projects',
+    });
     (0, apiResponse_1.sendSuccess)(res, submission, { message: 'Project reviewed successfully' });
 });
 //# sourceMappingURL=projectController.js.map
