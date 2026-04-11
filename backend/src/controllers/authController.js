@@ -97,14 +97,17 @@ const upsertOAuthUser = async (input) => {
     const displayName = (input.name || email.split('@')[0] || 'Student').trim();
     let user = await userModel_1.default.findOne({ email });
     if (!user) {
-        user = await userModel_1.default.create({
+        const createInput = {
             name: displayName,
             email,
             password: createRandomPassword(),
             role: 'student',
-            avatar: input.avatar,
             oauthProvider: input.provider,
-        });
+        };
+        if (input.avatar) {
+            createInput.avatar = input.avatar;
+        }
+        user = await userModel_1.default.create(createInput);
         return user;
     }
     if (!user.oauthProvider) {
