@@ -13,8 +13,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/Avatar";
 import { cn } from "../../utils/cn";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/DropdownMenu";
 import { useAuth } from "../../context/AuthContext";
-import apiService, { AdminSearchData, AdminSearchItem, NotificationItem } from "../../services/api";
+import apiService, { AdminSearchData, AdminSearchItem, InstructorSearchData, InstructorSearchItem, NotificationItem } from "../../services/api";
 import ctcLogo from "../../../assets/f6c46c16a776a1f63a42e49b36947669f8dcc942.png";
+
+type HeaderSearchItem = AdminSearchItem | InstructorSearchItem;
+type HeaderSearchResult = AdminSearchData | InstructorSearchData;
 
 export function AppLayout() {
   const location = useLocation();
@@ -23,7 +26,7 @@ export function AppLayout() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState("");
-  const [searchResult, setSearchResult] = useState<AdminSearchData | null>(null);
+  const [searchResult, setSearchResult] = useState<HeaderSearchResult | null>(null);
 
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
@@ -87,11 +90,13 @@ export function AppLayout() {
     }
   };
 
-  const searchTypeIcon = (item: AdminSearchItem) => {
-    if (item.type === "user") return Users;
+  const searchTypeIcon = (item: HeaderSearchItem) => {
+    if (item.type === "user" || item.type === "student") return Users;
     if (item.type === "course") return BookOpen;
-    if (item.type === "ticket") return MessageSquare;
+    if (item.type === "ticket" || item.type === "discussion") return MessageSquare;
     if (item.type === "announcement") return Megaphone;
+    if (item.type === "project") return Focus;
+    if (item.type === "submission") return CheckSquare;
     return CalendarDays;
   };
 
@@ -100,7 +105,7 @@ export function AppLayout() {
   }, [user?._id]);
 
   useEffect(() => {
-    if (role !== "admin") {
+    if (role !== "admin" && role !== "instructor") {
       setSearchResult(null);
       setSearchError("");
       setSearchLoading(false);
@@ -121,7 +126,10 @@ export function AppLayout() {
       setSearchError("");
 
       try {
-        const result = await apiService.adminGlobalSearch(keyword);
+        const result = role === "admin"
+          ? await apiService.adminGlobalSearch(keyword)
+          : await apiService.instructorGlobalSearch(keyword);
+
         if (!ignore) {
           setSearchResult(result);
         }
@@ -314,13 +322,19 @@ export function AppLayout() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
                 type="search"
-                placeholder={role === "admin" ? "Search users, courses, tickets, announcements, events..." : "Search anything..."}
+                placeholder={
+                  role === "admin"
+                    ? "Search users, courses, tickets, announcements, events..."
+                    : role === "instructor"
+                      ? "Search your courses, students, projects, discussions..."
+                      : "Search anything..."
+                }
                 className="pl-9 bg-slate-50/80 border-slate-200/60 focus-visible:bg-white focus-visible:ring-indigo-500/20 focus-visible:border-indigo-400 transition-all rounded-xl h-10 text-sm dark:bg-white/5 dark:border-white/10"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
 
-              {role === "admin" && searchQuery.trim().length >= 2 ? (
+              {(role === "admin" || role === "instructor") && searchQuery.trim().length >= 2 ? (
                 <div className="absolute left-0 right-0 top-full mt-2 rounded-xl border border-slate-200/80 bg-white shadow-lg dark:border-white/10 dark:bg-[#131827] z-50 overflow-hidden">
                   {searchLoading ? (
                     <div className="p-3 text-xs text-slate-500 dark:text-slate-400">Searching...</div>
