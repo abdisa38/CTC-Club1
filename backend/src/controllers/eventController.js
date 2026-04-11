@@ -61,15 +61,18 @@ exports.createEvent = (0, express_async_handler_1.default)(async (req, res) => {
         }
         endDate = parsedEnd;
     }
-    const event = await eventModel_1.default.create({
+    const payload = {
         title: title.trim(),
         description: description.trim(),
         location: location?.trim() || '',
         startsAt: startDate,
-        endsAt: endDate,
         isPublished: typeof isPublished === 'boolean' ? isPublished : true,
         createdBy: req.user._id,
-    });
+    };
+    if (endDate) {
+        payload.endsAt = endDate;
+    }
+    const event = await eventModel_1.default.create(payload);
     const populated = await eventModel_1.default.findById(event._id).populate('createdBy', 'name email');
     (0, apiResponse_1.sendSuccess)(res, populated || event, { statusCode: 201, message: 'Event created successfully' });
 });
