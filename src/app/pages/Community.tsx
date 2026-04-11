@@ -184,7 +184,6 @@ export function Community() {
                 <option value="general">General</option>
                 <option value="qna">Q&A</option>
                 <option value="showcase">Showcase</option>
-                <option value="announcement">Announcement</option>
               </select>
               <Input
                 className="sm:col-span-2"
@@ -217,7 +216,6 @@ export function Community() {
                 <option value="general">General</option>
                 <option value="qna">Q&A</option>
                 <option value="showcase">Showcase</option>
-                <option value="announcement">Announcement</option>
               </select>
             </div>
           </CardContent>
@@ -329,7 +327,7 @@ export function Community() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {["general", "qna", "showcase", "announcement"].map((name) => (
+              {["general", "qna", "showcase"].map((name) => (
                 <Badge key={name} variant="secondary" className="cursor-pointer capitalize" onClick={() => setCategory(name)}>
                   {name}
                 </Badge>

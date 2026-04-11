@@ -266,31 +266,28 @@ exports.getDashboardResources = (0, express_async_handler_1.default)(async (req,
         filter.isPublished = true;
     }
     const lessons = await lessonModel_1.default.find(filter)
-        .populate('course', 'title')
+        .populate('course', 'title category')
         .sort({ updatedAt: -1 })
         .limit(150);
     const resources = lessons.flatMap((lesson) => {
         const courseTitle = lesson.course?.title || 'General';
+        const courseCategory = lesson.course?.category || 'General';
         const items = [];
-        if (lesson.videoUrl) {
-            items.push({
-                id: `video-${lesson._id}`,
-                title: lesson.title,
-                type: 'video',
-                size: '-',
-                course: courseTitle,
-                url: lesson.videoUrl,
-                date: lesson.updatedAt,
-            });
-        }
         if (Array.isArray(lesson.attachments)) {
             lesson.attachments.forEach((attachment, index) => {
+                const fileType = String(attachment.fileType || 'file').toLowerCase();
+                const url = String(attachment.url || '');
+                const isVideoAttachment = fileType.includes('video') || /\.(mp4|mov|avi|mkv|webm)(\?|$)/i.test(url);
+                if (isVideoAttachment) {
+                    return;
+                }
                 items.push({
                     id: `attachment-${lesson._id}-${index}`,
                     title: attachment.title || `${lesson.title} Resource`,
                     type: attachment.fileType || 'file',
                     size: '-',
                     course: courseTitle,
+                    courseCategory,
                     url: attachment.url,
                     date: lesson.updatedAt,
                 });

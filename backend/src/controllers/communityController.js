@@ -38,6 +38,10 @@ exports.getCommunityPosts = (0, express_async_handler_1.default)(async (req, res
     if (category && category !== 'all') {
         filter.category = category;
     }
+    else {
+        // Keep announcement feed separate from community discussions by default.
+        filter.category = { $ne: 'announcement' };
+    }
     if (course) {
         if (!mongoose_1.default.Types.ObjectId.isValid(course)) {
             res.status(400);
@@ -90,6 +94,10 @@ exports.createCommunityPost = (0, express_async_handler_1.default)(async (req, r
     if (!title || !content) {
         res.status(400);
         throw new Error('Title and content are required');
+    }
+    if (category === 'announcement' && req.user.role !== 'admin') {
+        res.status(403);
+        throw new Error('Only admins can create announcement posts');
     }
     const postPayload = {
         user: userId,

@@ -40,6 +40,9 @@ export const getCommunityPosts = asyncHandler(async (req: AuthRequest, res: Resp
 
   if (category && category !== 'all') {
     filter.category = category;
+  } else {
+    // Keep announcement feed separate from community discussions by default.
+    filter.category = { $ne: 'announcement' };
   }
 
   if (course) {
@@ -101,6 +104,11 @@ export const createCommunityPost = asyncHandler(async (req: AuthRequest, res: Re
   if (!title || !content) {
     res.status(400);
     throw new Error('Title and content are required');
+  }
+
+  if (category === 'announcement' && req.user.role !== 'admin') {
+    res.status(403);
+    throw new Error('Only admins can create announcement posts');
   }
 
   const postPayload: any = {
