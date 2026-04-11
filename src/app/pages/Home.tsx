@@ -310,26 +310,15 @@ export function Home() {
   }, [realCourses]);
 
   const eventCards = useMemo(() => {
-    const source = announcements.length > 0
-      ? announcements
-      : realCourses.slice(0, 3).map((course: any, index: number) => ({
-          id: String(course.id || `event-${index}`),
-          title: `Course Launch: ${course.title}`,
-          content: `${course.category} learning track is open for enrollment.`,
-          author: course.instructor || 'CTC Team',
-          createdAt: new Date().toISOString(),
-          category: 'launch',
-        }));
-
-    return source.slice(0, 3).map((item) => ({
+    return events.slice(0, 3).map((item) => ({
       id: item.id,
       title: item.title,
-      type: item.category || 'announcement',
-      desc: item.content,
-      date: new Date(item.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }),
-      time: new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      type: item.location ? 'scheduled event' : 'event',
+      desc: item.description,
+      date: new Date(item.startsAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }),
+      time: new Date(item.startsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     }));
-  }, [announcements, realCourses]);
+  }, [events]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
