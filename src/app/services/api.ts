@@ -284,6 +284,7 @@ export interface InstructorSearchItem {
 
 export interface InstructorSearchData {
   query: string;
+  projectVisibility?: "all" | "published" | "draft";
   items: InstructorSearchItem[];
   counts: {
     courses: number;
@@ -657,6 +658,29 @@ export const apiService = {
     return pickData<Project>(res.data);
   },
 
+  async updateProject(
+    projectId: string,
+    input: Partial<{
+      title: string;
+      description: string;
+      courseId: string;
+      lessonId?: string;
+      instructions?: string;
+      requirements?: string[];
+      xpReward?: number;
+      maxPoints?: number;
+      deadline?: string;
+      isPublished?: boolean;
+    }>
+  ): Promise<Project> {
+    const res = await api.put(`/projects/${projectId}`, input);
+    return pickData<Project>(res.data);
+  },
+
+  async deleteProject(projectId: string): Promise<void> {
+    await api.delete(`/projects/${projectId}`);
+  },
+
   async getProjectSubmissions(projectId?: string): Promise<ProjectSubmission[]> {
     const res = await api.get("/projects/submissions", { params: projectId ? { projectId } : undefined });
     return pickData<ProjectSubmission[]>(res.data);
@@ -748,8 +772,16 @@ export const apiService = {
     return pickData<AdminSearchData>(res.data);
   },
 
-  async instructorGlobalSearch(query: string): Promise<InstructorSearchData> {
-    const res = await api.get("/dashboard/instructor/search", { params: { q: query } });
+  async instructorGlobalSearch(
+    query: string,
+    params: { projectVisibility?: "all" | "published" | "draft" } = {}
+  ): Promise<InstructorSearchData> {
+    const res = await api.get("/dashboard/instructor/search", {
+      params: {
+        q: query,
+        projectVisibility: params.projectVisibility,
+      },
+    });
     return pickData<InstructorSearchData>(res.data);
   },
 

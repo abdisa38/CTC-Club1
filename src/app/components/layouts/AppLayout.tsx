@@ -27,6 +27,7 @@ export function AppLayout() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState("");
   const [searchResult, setSearchResult] = useState<HeaderSearchResult | null>(null);
+  const [instructorProjectFilter, setInstructorProjectFilter] = useState<"all" | "published" | "draft">("all");
 
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
@@ -128,7 +129,7 @@ export function AppLayout() {
       try {
         const result = role === "admin"
           ? await apiService.adminGlobalSearch(keyword)
-          : await apiService.instructorGlobalSearch(keyword);
+          : await apiService.instructorGlobalSearch(keyword, { projectVisibility: instructorProjectFilter });
 
         if (!ignore) {
           setSearchResult(result);
@@ -149,7 +150,13 @@ export function AppLayout() {
       ignore = true;
       clearTimeout(timer);
     };
-  }, [role, searchQuery]);
+  }, [role, searchQuery, instructorProjectFilter]);
+
+  useEffect(() => {
+    if (role !== "instructor" && instructorProjectFilter !== "all") {
+      setInstructorProjectFilter("all");
+    }
+  }, [role, instructorProjectFilter]);
 
   if (!user) {
     return <Navigate to="/login" replace />;
@@ -336,6 +343,33 @@ export function AppLayout() {
 
               {(role === "admin" || role === "instructor") && searchQuery.trim().length >= 2 ? (
                 <div className="absolute left-0 right-0 top-full mt-2 rounded-xl border border-slate-200/80 bg-white shadow-lg dark:border-white/10 dark:bg-[#131827] z-50 overflow-hidden">
+                  {role === "instructor" ? (
+                    <div className="flex items-center gap-2 border-b border-slate-200/80 px-3 py-2 text-xs dark:border-white/10">
+                      <span className="text-slate-500">Project filter:</span>
+                      <button
+                        type="button"
+                        onClick={() => setInstructorProjectFilter("all")}
+                        className={`rounded-md px-2 py-1 ${instructorProjectFilter === "all" ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-white/10"}`}
+                      >
+                        All
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setInstructorProjectFilter("published")}
+                        className={`rounded-md px-2 py-1 ${instructorProjectFilter === "published" ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-white/10"}`}
+                      >
+                        Published
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setInstructorProjectFilter("draft")}
+                        className={`rounded-md px-2 py-1 ${instructorProjectFilter === "draft" ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-white/10"}`}
+                      >
+                        Draft
+                      </button>
+                    </div>
+                  ) : null}
+
                   {searchLoading ? (
                     <div className="p-3 text-xs text-slate-500 dark:text-slate-400">Searching...</div>
                   ) : searchError ? (
