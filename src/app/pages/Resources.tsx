@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
-import { Search, Download, FileText, Image as ImageIcon, Code, Link as LinkIcon, Filter, Loader2, FolderOpen } from "lucide-react";
+import { Search, Download, FileText, Image as ImageIcon, Code, Link as LinkIcon, Filter, Loader2, FolderOpen, Heart } from "lucide-react";
 import apiService from "../services/api";
+import { useAuth } from "../context/AuthContext";
 
 type ResourceItem = {
   id: string;
@@ -66,19 +67,29 @@ const formatDate = (value?: string) => {
 };
 
 export function Resources() {
+  const { role } = useAuth();
+  const canFavorite = role === "student";
+
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [filterCourse, setFilterCourse] = useState("all");
   const [resources, setResources] = useState<ResourceItem[]>([]);
+  const [favoriteResourceIds, setFavoriteResourceIds] = useState<Set<string>>(new Set());
+  const [favoritingIds, setFavoritingIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     const loadResources = async () => {
       try {
-        const payload = await apiService.getDashboardResources();
+        const [payload, resourceFavorites] = await Promise.all([
+          apiService.getDashboardResources(),
+          canFavorite ? apiService.getFavoriteResources() : Promise.resolve([] as string[]),
+        ]);
+
         const fileOnly = (Array.isArray(payload) ? payload : []).filter((item: ResourceItem) => !isVideoLike(item));
         setResources(fileOnly as ResourceItem[]);
+        setFavoriteResourceIds(new Set(Array.isArray(resourceFavorites) ? resourceFavorites : []));
       } catch (err: any) {
         setError(err?.response?.data?.message || "Failed to load resources");
       } finally {
@@ -87,7 +98,47 @@ export function Resources() {
     };
 
     void loadResources();
-  }, []);
+  }, [canFavorite]);
+
+  const toggleFavoriteResource = async (resourceId: string) => {
+    if (!canFavorite || favoritingIds.has(resourceId)) {
+      return;
+    }
+
+    const currentlyFavorite = favoriteResourceIds.has(resourceId);
+
+    setFavoritingIds((prev) => {
+      const next = new Set(prev);
+      next.add(resourceId);
+      return next;
+    });
+
+    try {
+      if (currentlyFavorite) {
+        await apiService.removeFavoriteResource(resourceId);
+        setFavoriteResourceIds((prev) => {
+          const next = new Set(prev);
+          next.delete(resourceId);
+          return next;
+        });
+      } else {
+        await apiService.addFavoriteResource(resourceId);
+        setFavoriteResourceIds((prev) => {
+          const next = new Set(prev);
+          next.add(resourceId);
+          return next;
+        });
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to update resource favorite");
+    } finally {
+      setFavoritingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(resourceId);
+        return next;
+      });
+    }
+  };
 
   const courseOptions = useMemo(() => {
     return Array.from(new Set(resources.map((resource) => resource.course || "General"))).sort((a, b) => a.localeCompare(b));
@@ -205,6 +256,7 @@ export function Resources() {
                   const kind = toResourceKind(resource);
                   const { Icon, color } = iconForKind(kind);
                   const hasUrl = Boolean(resource.url);
+                  const isFavorite = favoriteResourceIds.has(resource.id);
 
                   return (
                     <Card key={resource.id} className="group hover:border-indigo-300 dark:hover:border-indigo-800 transition-colors bg-white dark:bg-slate-950">
@@ -213,7 +265,20 @@ export function Resources() {
                           <div className={`p-3 rounded-lg bg-slate-100 dark:bg-slate-800 ${color}`}>
                             <Icon className="h-8 w-8" />
                           </div>
-                          <span className="text-[10px] uppercase text-slate-400">{kindLabel[kind]}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] uppercase text-slate-400">{kindLabel[kind]}</span>
+                            {canFavorite ? (
+                              <button
+                                type="button"
+                                onClick={() => void toggleFavoriteResource(resource.id)}
+                                disabled={favoritingIds.has(resource.id)}
+                                className="rounded-full p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 disabled:opacity-60"
+                                title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                              >
+                                <Heart className={`h-3.5 w-3.5 ${isFavorite ? "text-red-500 fill-red-500" : "text-slate-500"}`} />
+                              </button>
+                            ) : null}
+                          </div>
                         </div>
 
                         <h3 className="font-semibold text-slate-900 dark:text-white mb-1 line-clamp-2">{resource.title}</h3>
