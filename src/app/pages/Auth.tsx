@@ -9,28 +9,84 @@ import { ArrowRight, Github, Mail } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import apiService from "../services/api";
 
+type OAuthProvider = "google" | "github";
+
 export function Auth() {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const [isLogin, setIsLogin] = useState(pathname === "/login");
   const navigate = useNavigate();
   const { login } = useAuth();
 
   const [formData, setFormData] = useState({ name: "", email: "", password: "" });
   const [errorMsg, setErrorMsg] = useState("");
+  const [forgotMsg, setForgotMsg] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [socialLoadingProvider, setSocialLoadingProvider] = useState<OAuthProvider | null>(null);
+
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotFormData, setForgotFormData] = useState({
+    email: "",
+    code: "",
+    newPassword: "",
+  });
+  const [isSendingResetCode, setIsSendingResetCode] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   useEffect(() => {
     setIsLogin(pathname === "/login" || pathname === "/");
     setErrorMsg("");
+    setForgotMsg("");
+    setForgotOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    const oauthStatus = params.get("oauth");
+    const oauthEmail = params.get("email");
+    const oauthMessage = params.get("message");
+
+    if (oauthEmail) {
+      setFormData((prev) => ({ ...prev, email: oauthEmail }));
+      setForgotFormData((prev) => ({ ...prev, email: oauthEmail }));
+    }
+
+    if (!oauthStatus) {
+      return;
+    }
+
+    if (oauthStatus === "success") {
+      void (async () => {
+        try {
+          const currentUser = await apiService.getCurrentUser();
+          login(currentUser);
+          redirectByRole(currentUser.role);
+        } catch {
+          setErrorMsg("Social login completed, but we could not load your account. Please try again.");
+          navigate(pathname, { replace: true });
+        }
+      })();
+
+      return;
+    }
+
+    setErrorMsg(oauthMessage || "Social login failed. Please try again.");
+    navigate(pathname, { replace: true });
+  }, [search, pathname, navigate, login]);
 
   const toggleAuthMode = () => {
     setIsLogin(!isLogin);
     setErrorMsg("");
+    setForgotMsg("");
+    setForgotOpen(false);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+
+    setFormData({ ...formData, [name]: value });
+    if (name === "email") {
+      setForgotFormData((prev) => ({ ...prev, email: value }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -56,6 +112,82 @@ export function Auth() {
       setErrorMsg(error.response?.data?.message || "Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleOAuth = (provider: OAuthProvider) => {
+    setErrorMsg("");
+    setForgotMsg("");
+    setSocialLoadingProvider(provider);
+    window.location.assign(apiService.getOAuthLoginUrl(provider));
+  };
+
+  const toggleForgotPassword = () => {
+    const nextOpen = !forgotOpen;
+    setForgotOpen(nextOpen);
+    setErrorMsg("");
+    setForgotMsg("");
+
+    if (nextOpen) {
+      setForgotFormData((prev) => ({
+        ...prev,
+        email: formData.email || prev.email,
+      }));
+    }
+  };
+
+  const handleForgotInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setForgotFormData((prev) => ({ ...prev, [name]: value }));
+
+    if (name === "email") {
+      setFormData((prev) => ({ ...prev, email: value }));
+    }
+  };
+
+  const handleSendResetCode = async () => {
+    if (!forgotFormData.email.trim()) {
+      setErrorMsg("Please enter your email address first.");
+      return;
+    }
+
+    setErrorMsg("");
+    setForgotMsg("");
+    setIsSendingResetCode(true);
+
+    try {
+      await apiService.requestPasswordResetCode(forgotFormData.email.trim());
+      setForgotMsg("Reset code sent. Check your email and enter the code below.");
+    } catch (error: any) {
+      setErrorMsg(error.response?.data?.message || "Failed to send reset code. Please try again.");
+    } finally {
+      setIsSendingResetCode(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!forgotFormData.email.trim() || !forgotFormData.code.trim() || !forgotFormData.newPassword.trim()) {
+      setErrorMsg("Email, reset code, and new password are required.");
+      return;
+    }
+
+    setErrorMsg("");
+    setForgotMsg("");
+    setIsResettingPassword(true);
+
+    try {
+      const user = await apiService.resetPasswordWithCode({
+        email: forgotFormData.email.trim(),
+        code: forgotFormData.code.trim(),
+        newPassword: forgotFormData.newPassword,
+      });
+
+      login(user);
+      redirectByRole(user.role);
+    } catch (error: any) {
+      setErrorMsg(error.response?.data?.message || "Failed to reset password. Please try again.");
+    } finally {
+      setIsResettingPassword(false);
     }
   };
 
@@ -107,15 +239,34 @@ export function Auth() {
               {errorMsg}
             </div>
           )}
+          {forgotMsg && (
+            <div className="bg-emerald-100 text-emerald-700 text-sm text-center font-medium mx-6 mt-4 p-2 rounded-lg break-words">
+              {forgotMsg}
+            </div>
+          )}
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4 pt-6">
               {/* Social login buttons */}
               <div className="grid grid-cols-2 gap-3">
-                <Button type="button" variant="outline" className="h-10 rounded-xl text-[13px] font-semibold">
-                  <Github className="h-4 w-4 mr-2" /> GitHub
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10 rounded-xl text-[13px] font-semibold"
+                  onClick={() => handleOAuth("github")}
+                  disabled={Boolean(socialLoadingProvider)}
+                >
+                  <Github className="h-4 w-4 mr-2" />
+                  {socialLoadingProvider === "github" ? "Connecting..." : "GitHub"}
                 </Button>
-                <Button type="button" variant="outline" className="h-10 rounded-xl text-[13px] font-semibold">
-                  <Mail className="h-4 w-4 mr-2" /> Google
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10 rounded-xl text-[13px] font-semibold"
+                  onClick={() => handleOAuth("google")}
+                  disabled={Boolean(socialLoadingProvider)}
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  {socialLoadingProvider === "google" ? "Connecting..." : "Google"}
                 </Button>
               </div>
 
@@ -154,6 +305,7 @@ export function Auth() {
                   value={formData.email}
                   onChange={handleInputChange}
                   placeholder="student@university.edu" 
+                  autoComplete="email"
                   required 
                   className="h-10 rounded-xl" 
                 />
@@ -188,12 +340,76 @@ export function Auth() {
                   </div>
                   <a href="#" className="text-[13px] font-medium text-indigo-600 hover:text-indigo-500 transition-colors">
                     Forgot password?
-                  </a>
+                  </button>
+                </div>
+              )}
+
+              {isLogin && forgotOpen && (
+                <div className="rounded-xl border border-slate-200 dark:border-white/[0.08] p-3 space-y-3 bg-slate-50/70 dark:bg-white/[0.02]">
+                  <p className="text-xs text-slate-500">Send a reset code to your email, then set a new password.</p>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[12px] font-medium text-slate-700 dark:text-slate-300">Email</label>
+                    <Input
+                      type="email"
+                      name="email"
+                      value={forgotFormData.email}
+                      onChange={handleForgotInputChange}
+                      placeholder="student@university.edu"
+                      autoComplete="email"
+                      className="h-9 rounded-lg"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[12px] font-medium text-slate-700 dark:text-slate-300">Reset Code</label>
+                    <Input
+                      type="text"
+                      name="code"
+                      value={forgotFormData.code}
+                      onChange={handleForgotInputChange}
+                      placeholder="6-digit code"
+                      inputMode="numeric"
+                      className="h-9 rounded-lg"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[12px] font-medium text-slate-700 dark:text-slate-300">New Password</label>
+                    <Input
+                      type="password"
+                      name="newPassword"
+                      value={forgotFormData.newPassword}
+                      onChange={handleForgotInputChange}
+                      placeholder="Enter a new password"
+                      className="h-9 rounded-lg"
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-9 rounded-lg text-xs"
+                      onClick={() => { void handleSendResetCode(); }}
+                      disabled={isSendingResetCode || isResettingPassword}
+                    >
+                      {isSendingResetCode ? "Sending..." : "Send Code"}
+                    </Button>
+                    <Button
+                      type="button"
+                      className="h-9 rounded-lg text-xs bg-indigo-600 hover:bg-indigo-700"
+                      onClick={() => { void handleResetPassword(); }}
+                      disabled={isResettingPassword || isSendingResetCode}
+                    >
+                      {isResettingPassword ? "Resetting..." : "Reset Password"}
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>
             <CardFooter className="flex-col gap-4">
-              <Button disabled={isLoading} type="submit" className="w-full h-11 rounded-xl font-semibold bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 shadow-sm shadow-indigo-500/20">
+              <Button disabled={isLoading || isSendingResetCode || isResettingPassword || Boolean(socialLoadingProvider)} type="submit" className="w-full h-11 rounded-xl font-semibold bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 shadow-sm shadow-indigo-500/20">
                 {isLoading ? "Please wait..." : isLogin ? "Sign in" : "Create Account"}
                 {!isLoading && <ArrowRight className="ml-2 h-4 w-4" />}
               </Button>
