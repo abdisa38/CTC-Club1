@@ -144,11 +144,12 @@ exports.getFavoriteCourses = (0, express_async_handler_1.default)(async (req, re
 // @route   POST /api/auth/favorites/courses/:courseId
 // @access  Private
 exports.addFavoriteCourse = (0, express_async_handler_1.default)(async (req, res) => {
-    const { courseId } = req.params;
-    if (!mongoose_1.default.Types.ObjectId.isValid(courseId)) {
+    const courseIdParam = req.params.courseId;
+    if (typeof courseIdParam !== 'string' || !mongoose_1.default.Types.ObjectId.isValid(courseIdParam)) {
         res.status(400);
         throw new Error('Invalid course id');
     }
+    const courseId = courseIdParam;
     const course = await courseModel_1.default.findOne({ _id: courseId, isDeleted: false });
     if (!course) {
         res.status(404);
@@ -168,11 +169,12 @@ exports.addFavoriteCourse = (0, express_async_handler_1.default)(async (req, res
 // @route   DELETE /api/auth/favorites/courses/:courseId
 // @access  Private
 exports.removeFavoriteCourse = (0, express_async_handler_1.default)(async (req, res) => {
-    const { courseId } = req.params;
-    if (!mongoose_1.default.Types.ObjectId.isValid(courseId)) {
+    const courseIdParam = req.params.courseId;
+    if (typeof courseIdParam !== 'string' || !mongoose_1.default.Types.ObjectId.isValid(courseIdParam)) {
         res.status(400);
         throw new Error('Invalid course id');
     }
+    const courseId = courseIdParam;
     const user = await userModel_1.default.findByIdAndUpdate(req.user._id, { $pull: { favoriteCourses: courseId } }, { new: true }).select('_id');
     if (!user) {
         res.status(404);
