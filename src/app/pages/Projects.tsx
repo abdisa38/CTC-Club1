@@ -265,16 +265,123 @@ export function Projects() {
   if (isInstructor) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Project Reviews</h1>
-          <p className="text-slate-500 dark:text-slate-400">Review student submissions and publish feedback.</p>
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Project Reviews</h1>
+            <p className="text-slate-500 dark:text-slate-400">Create project assignments, monitor submissions, and publish grades from one page.</p>
+          </div>
+
+          <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-indigo-600 hover:bg-indigo-700">
+                <PlusCircle className="h-4 w-4 mr-2" />
+                Create Project
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[620px]">
+              <DialogHeader>
+                <DialogTitle>Create Project Assignment</DialogTitle>
+                <DialogDescription>
+                  This publishes a project students can submit from their Projects page.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4 py-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Title *</label>
+                  <Input value={createTitle} onChange={(e) => setCreateTitle(e.target.value)} placeholder="Build a responsive portfolio website" />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Description *</label>
+                  <Textarea value={createDescription} onChange={(e) => setCreateDescription(e.target.value)} placeholder="Short overview of what students need to deliver." rows={3} />
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Course *</label>
+                    <select
+                      className="flex h-10 w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-800"
+                      value={createCourseId}
+                      onChange={(e) => setCreateCourseId(e.target.value)}
+                    >
+                      {courses.length === 0 ? <option value="">No courses available</option> : null}
+                      {courses.map((course) => (
+                        <option key={course._id} value={course._id}>{course.title}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Deadline</label>
+                    <Input type="datetime-local" value={createDeadline} onChange={(e) => setCreateDeadline(e.target.value)} />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Instructions</label>
+                  <Textarea value={createInstructions} onChange={(e) => setCreateInstructions(e.target.value)} placeholder="Detailed requirements, rubric, and submission rules." rows={4} />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Checklist Requirements (one per line)</label>
+                  <Textarea value={createRequirements} onChange={(e) => setCreateRequirements(e.target.value)} placeholder={"Responsive layout\nAt least 3 sections\nDeploy on Vercel"} rows={3} />
+                </div>
+
+                <div className="grid sm:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">XP Reward</label>
+                    <Input type="number" min={0} value={createXpReward} onChange={(e) => setCreateXpReward(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Max Points</label>
+                    <Input type="number" min={1} value={createMaxPoints} onChange={(e) => setCreateMaxPoints(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Visibility</label>
+                    <select
+                      className="flex h-10 w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-800"
+                      value={createPublished ? "published" : "draft"}
+                      onChange={(e) => setCreatePublished(e.target.value === "published")}
+                    >
+                      <option value="published">Published</option>
+                      <option value="draft">Draft</option>
+                    </select>
+                  </div>
+                </div>
+
+                {courses.length === 0 ? (
+                  <p className="text-xs text-amber-600">Create at least one course first before posting projects.</p>
+                ) : null}
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
+                <Button
+                  className="bg-indigo-600 hover:bg-indigo-700"
+                  onClick={() => void handleCreateProject()}
+                  disabled={creatingProject || courses.length === 0}
+                >
+                  {creatingProject ? "Creating..." : "Post Project"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {error ? <ErrorBanner message={error} /> : null}
 
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-sm text-slate-700 dark:text-slate-300">
+              Page flow: create project assignment here, students submit from their Projects page, then submissions appear in Needs Review, and graded work moves to Graded.
+            </p>
+          </CardContent>
+        </Card>
+
         <Tabs defaultValue="review" className="w-full">
-          <TabsList className="grid w-full sm:w-[400px] grid-cols-2">
+          <TabsList className="grid w-full sm:w-[560px] grid-cols-3">
             <TabsTrigger value="review">Needs Review ({reviewQueue.length})</TabsTrigger>
+            <TabsTrigger value="assignments">Assignments ({projects.length})</TabsTrigger>
             <TabsTrigger value="completed">Graded ({reviewed.length})</TabsTrigger>
           </TabsList>
 
@@ -296,6 +403,56 @@ export function Projects() {
                   onSubmit={handleReviewProject}
                 />
               ))
+            )}
+          </TabsContent>
+
+          <TabsContent value="assignments" className="space-y-4 mt-6">
+            {projects.length === 0 ? (
+              <EmptyState text="No project assignments yet. Click Create Project to post one." />
+            ) : (
+              projects.map((project) => {
+                const courseTitle = typeof project.course === "string" ? "Course" : project.course?.title || "Course";
+                const requirementList = Array.isArray(project.requirements) ? project.requirements.filter(Boolean) : [];
+                const submissionCount = submissionCountByProject.get(project._id) || 0;
+
+                return (
+                  <Card key={project._id}>
+                    <CardHeader className="pb-2">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <Badge variant={project.isPublished ? "success" : "secondary"}>{project.isPublished ? "published" : "draft"}</Badge>
+                        <Badge variant="outline">{courseTitle}</Badge>
+                      </div>
+                      <CardTitle className="text-xl">{project.title}</CardTitle>
+                      <CardDescription className="line-clamp-2">{project.description}</CardDescription>
+                    </CardHeader>
+
+                    <CardContent className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+                      {project.instructions ? (
+                        <p className="text-sm text-slate-700 dark:text-slate-300 line-clamp-3">{project.instructions}</p>
+                      ) : null}
+
+                      {requirementList.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {requirementList.map((requirement, index) => (
+                            <Badge key={`${project._id}-req-${index}`} variant="secondary" className="text-[11px]">
+                              {requirement}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : null}
+
+                      <div className="flex flex-wrap gap-4 text-xs text-slate-500">
+                        <span>Submissions: {submissionCount}</span>
+                        <span>Max Points: {project.maxPoints ?? 100}</span>
+                        <span>XP Reward: {project.xpReward ?? 50}</span>
+                        <span>
+                          Deadline: {project.deadline ? new Date(project.deadline).toLocaleString() : "No deadline"}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })
             )}
           </TabsContent>
 
