@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
@@ -137,6 +137,7 @@ export function CourseDetail() {
   const [isDiscussionLoading, setIsDiscussionLoading] = useState(false);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [error, setError] = useState("");
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (id === "new") return;
@@ -235,6 +236,14 @@ export function CourseDetail() {
   const progress = visibleLessons.length > 0 ? Math.round((completedCount / visibleLessons.length) * 100) : 0;
 
   const embedVideoUrl = selectedLesson?.videoUrl ? getEmbedVideoUrl(selectedLesson.videoUrl) : null;
+
+  useEffect(() => {
+    if (activeTab !== "content") {
+      return;
+    }
+
+    scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  }, [activeTab, selectedLessonId]);
 
   const courseResources = useMemo(() => {
     const resources: CourseResource[] = [];
@@ -340,7 +349,7 @@ export function CourseDetail() {
 
   return (
     <div className="flex flex-col lg:flex-row h-[calc(100vh-8rem)] bg-white dark:bg-slate-950 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm">
-      <div className="flex-1 flex flex-col overflow-y-auto bg-slate-50 dark:bg-slate-950/50">
+      <div ref={scrollContainerRef} className="flex-1 flex flex-col overflow-y-auto bg-slate-50 dark:bg-slate-950/50">
         <div className="aspect-video bg-slate-900 relative overflow-hidden">
           {!canAccessLessons ? (
             <>
@@ -557,7 +566,7 @@ export function CourseDetail() {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
                     <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Lesson Content</h3>
-                    <p className="text-sm text-slate-500">This tab shows the currently selected lecture details, written notes, video source, and files.</p>
+                    <p className="text-sm text-slate-500">This tab shows notes, source links, and files. The lesson video player stays above this tab, like Overview.</p>
                   </div>
                   {isInstructor && id ? (
                     <Button variant="outline" size="sm" asChild>
@@ -579,33 +588,12 @@ export function CourseDetail() {
                       <span className="text-xs text-slate-500">Duration: {formatDuration(selectedLesson.duration)}</span>
                     </div>
 
-                    <div className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Video Preview</p>
-                      {!canAccessLessons ? (
-                        <p className="text-sm text-slate-500">Enroll in this course to view the lesson video.</p>
-                      ) : selectedLesson.videoUrl ? (
-                        embedVideoUrl ? (
-                          <div className="aspect-video overflow-hidden rounded-lg bg-slate-900">
-                            <iframe
-                              title={`content-preview-${selectedLesson._id}`}
-                              src={embedVideoUrl}
-                              className="h-full w-full"
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                              allowFullScreen
-                            />
-                          </div>
-                        ) : (
-                          <video
-                            className="w-full rounded-lg bg-slate-900"
-                            controls
-                            src={selectedLesson.videoUrl}
-                            poster={course.coverImage || FALLBACK_COVER_IMAGE}
-                          >
-                            Your browser does not support video playback.
-                          </video>
-                        )
+                    <div>
+                      <h4 className="text-xl font-bold text-slate-900 dark:text-white">{selectedLesson.title}</h4>
+                      {selectedLesson.content?.trim() ? (
+                        <p className="mt-3 whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300">{selectedLesson.content}</p>
                       ) : (
-                        <p className="text-sm text-slate-500">No video URL attached to this lesson.</p>
+                        <p className="mt-3 text-sm text-slate-500">No written lesson notes yet. Add text in lesson content to display it here.</p>
                       )}
                     </div>
 
@@ -617,15 +605,6 @@ export function CourseDetail() {
                         </a>
                       ) : (
                         <p className="text-sm text-slate-500">No video URL attached to this lesson.</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <h4 className="text-xl font-bold text-slate-900 dark:text-white">{selectedLesson.title}</h4>
-                      {selectedLesson.content?.trim() ? (
-                        <p className="mt-3 whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300">{selectedLesson.content}</p>
-                      ) : (
-                        <p className="mt-3 text-sm text-slate-500">No written lesson notes yet. Add text in lesson content to display it here.</p>
                       )}
                     </div>
 
