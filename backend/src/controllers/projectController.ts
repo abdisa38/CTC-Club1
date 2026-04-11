@@ -192,7 +192,7 @@ export const updateProject = asyncHandler(async (req: AuthRequest, res: Response
 
   if (deadline !== undefined) {
     if (deadline === null || deadline === '') {
-      project.deadline = undefined;
+      project.set('deadline', undefined);
     } else {
       const parsed = new Date(deadline);
       if (Number.isNaN(parsed.getTime())) {
