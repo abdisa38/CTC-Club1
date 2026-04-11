@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getPublicStats = exports.getDashboardAnnouncements = exports.getDashboardResources = exports.getLeaderboard = exports.getAdminAnalytics = exports.getDashboardMetrics = void 0;
+exports.getInstructorStudents = exports.getPublicStats = exports.getDashboardAnnouncements = exports.getDashboardResources = exports.getLeaderboard = exports.getAdminAnalytics = exports.getDashboardMetrics = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const userModel_1 = __importDefault(require("../models/userModel"));
 const courseModel_1 = __importDefault(require("../models/courseModel"));
@@ -318,6 +318,128 @@ exports.getPublicStats = (0, express_async_handler_1.default)(async (req, res) =
         videoCourses: totalCourses,
         instructors: expertInstructors,
         certificates: totalCompleted,
+    });
+});
+// @desc    Get instructor students with aggregate stats
+// @route   GET /api/dashboard/instructor/students
+// @access  Private/Instructor/Admin
+exports.getInstructorStudents = (0, express_async_handler_1.default)(async (req, res) => {
+    const role = req.user.role;
+    if (role !== 'instructor' && role !== 'admin') {
+        res.status(403);
+        throw new Error('Only instructors and admins can access instructor students');
+    }
+    const keyword = typeof req.query.keyword === 'string' ? req.query.keyword.trim().toLowerCase() : '';
+    const courseId = typeof req.query.courseId === 'string' ? req.query.courseId : '';
+    const instructorId = role === 'admin' && typeof req.query.instructorId === 'string'
+        ? req.query.instructorId
+        : req.user._id.toString();
+    const courseFilter = { isDeleted: false };
+    if (role === 'instructor' || instructorId) {
+        courseFilter.instructor = instructorId;
+    }
+    if (courseId) {
+        courseFilter._id = courseId;
+    }
+    const instructorCourses = await courseModel_1.default.find(courseFilter)
+        .select('_id title students instructor')
+        .lean();
+    const courseSummaries = instructorCourses.map((course) => ({
+        _id: course._id.toString(),
+        title: course.title,
+    }));
+    const uniqueStudentIds = new Set();
+    instructorCourses.forEach((course) => {
+        const students = Array.isArray(course.students) ? course.students : [];
+        students.forEach((studentId) => {
+            uniqueStudentIds.add(studentId.toString());
+        });
+    });
+    const studentIds = Array.from(uniqueStudentIds);
+    if (studentIds.length === 0) {
+        (0, apiResponse_1.sendSuccess)(res, {
+            summary: {
+                totalEnrolled: 0,
+                avgCompletionRate: 0,
+                activeThisWeek: 0,
+            },
+            courses: courseSummaries,
+            students: [],
+        });
+        return;
+    }
+    const [students, progresses] = await Promise.all([
+        userModel_1.default.find({ _id: { $in: studentIds }, isDeleted: false })
+            .select('name email avatar isActive lastLogin createdAt updatedAt')
+            .lean(),
+        progressModel_1.default.find({
+            user: { $in: studentIds },
+            course: { $in: instructorCourses.map((c) => c._id) },
+        })
+            .select('user course progressPercentage isCompleted updatedAt')
+            .lean(),
+    ]);
+    const now = Date.now();
+    const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
+    const studentRecords = students
+        .map((student) => {
+        const studentId = student._id.toString();
+        const enrolledCourses = instructorCourses
+            .filter((course) => (Array.isArray(course.students) ? course.students : []).some((id) => id.toString() === studentId))
+            .map((course) => ({ _id: course._id.toString(), title: course.title }));
+        const studentProgress = progresses.filter((progress) => progress.user.toString() === studentId);
+        const avgProgress = studentProgress.length > 0
+            ? Math.round(studentProgress.reduce((sum, item) => sum + (item.progressPercentage || 0), 0) / studentProgress.length)
+            : 0;
+        const allCompleted = studentProgress.length > 0 && studentProgress.every((progress) => progress.isCompleted);
+        const candidateTimestamps = [
+            ...(studentProgress.map((progress) => new Date(progress.updatedAt).getTime()).filter((value) => Number.isFinite(value))),
+            student.lastLogin ? new Date(student.lastLogin).getTime() : 0,
+            student.updatedAt ? new Date(student.updatedAt).getTime() : 0,
+            student.createdAt ? new Date(student.createdAt).getTime() : 0,
+        ].filter((value) => value > 0);
+        const lastActiveAtMs = candidateTimestamps.length > 0 ? Math.max(...candidateTimestamps) : 0;
+        const isActiveThisWeek = lastActiveAtMs > 0 && (now - lastActiveAtMs) <= oneWeekMs;
+        const status = allCompleted
+            ? 'completed'
+            : (student.isActive !== false && isActiveThisWeek ? 'active' : 'inactive');
+        return {
+            id: studentId,
+            name: student.name,
+            email: student.email,
+            avatar: student.avatar,
+            enrolledAt: student.createdAt,
+            lastActiveAt: lastActiveAtMs > 0 ? new Date(lastActiveAtMs).toISOString() : null,
+            isActive: student.isActive !== false,
+            progress: avgProgress,
+            status,
+            courses: enrolledCourses,
+        };
+    })
+        .filter((student) => {
+        if (!keyword)
+            return true;
+        return (student.name.toLowerCase().includes(keyword)
+            || student.email.toLowerCase().includes(keyword)
+            || student.courses.some((course) => course.title.toLowerCase().includes(keyword)));
+    });
+    const avgCompletionRate = studentRecords.length > 0
+        ? Math.round(studentRecords.reduce((sum, student) => sum + (student.progress || 0), 0) / studentRecords.length)
+        : 0;
+    const activeThisWeek = studentRecords.filter((student) => {
+        if (!student.lastActiveAt)
+            return false;
+        const ts = new Date(student.lastActiveAt).getTime();
+        return Number.isFinite(ts) && (now - ts) <= oneWeekMs;
+    }).length;
+    (0, apiResponse_1.sendSuccess)(res, {
+        summary: {
+            totalEnrolled: studentRecords.length,
+            avgCompletionRate,
+            activeThisWeek,
+        },
+        courses: courseSummaries,
+        students: studentRecords,
     });
 });
 //# sourceMappingURL=dashboardController.js.map

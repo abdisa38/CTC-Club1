@@ -13,5 +13,6 @@ router.get('/metrics', authMiddleware_1.protect, dashboardController_1.getDashbo
 router.get('/analytics', authMiddleware_1.protect, dashboardController_1.getAdminAnalytics);
 router.get('/leaderboard', authMiddleware_1.protect, dashboardController_1.getLeaderboard);
 router.get('/resources', authMiddleware_1.protect, dashboardController_1.getDashboardResources);
+router.get('/instructor/students', authMiddleware_1.protect, dashboardController_1.getInstructorStudents);
 exports.default = router;
 //# sourceMappingURL=dashboardRoutes.js.map

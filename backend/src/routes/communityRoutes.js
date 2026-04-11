@@ -12,5 +12,7 @@ router.post('/posts', authMiddleware_1.protect, communityController_1.createComm
 router.post('/posts/:postId/vote', authMiddleware_1.protect, communityController_1.voteCommunityPost);
 router.get('/posts/:postId/replies', authMiddleware_1.protect, communityController_1.getCommunityReplies);
 router.post('/posts/:postId/replies', authMiddleware_1.protect, communityController_1.addCommunityReply);
+router.patch('/posts/:postId/pin', authMiddleware_1.protect, communityController_1.pinCommunityPost);
+router.delete('/posts/:postId', authMiddleware_1.protect, communityController_1.deleteCommunityPost);
 exports.default = router;
 //# sourceMappingURL=communityRoutes.js.map
