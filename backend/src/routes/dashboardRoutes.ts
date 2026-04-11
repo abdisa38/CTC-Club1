@@ -8,6 +8,7 @@ import {
 	getDashboardResources,
 	getDashboardAnnouncements,
 	getInstructorStudents,
+	getInstructorAnalytics,
 } from '../controllers/dashboardController';
 
 const router = express.Router();
@@ -19,5 +20,6 @@ router.get('/analytics', protect as any, getAdminAnalytics as any);
 router.get('/leaderboard', protect as any, getLeaderboard as any);
 router.get('/resources', protect as any, getDashboardResources as any);
 router.get('/instructor/students', protect as any, getInstructorStudents as any);
+router.get('/instructor/analytics', protect as any, getInstructorAnalytics as any);
 
 export default router;

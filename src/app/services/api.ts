@@ -160,6 +160,42 @@ export interface InstructorStudentsData {
   students: InstructorStudentRow[];
 }
 
+export interface InstructorAnalyticsTrend {
+  month: string;
+  date: string;
+  revenue: number;
+  enrollments: number;
+  completions: number;
+}
+
+export interface InstructorAnalyticsStatusItem {
+  name: string;
+  value: number;
+}
+
+export interface InstructorAnalyticsCourseItem {
+  courseId: string;
+  name: string;
+  enrollments: number;
+  completions: number;
+  revenue: number;
+  rating: number;
+  reviews: number;
+}
+
+export interface InstructorAnalyticsData {
+  summary: {
+    totalRevenue: number;
+    totalEnrollments: number;
+    avgCourseRating: number;
+    courseCompletions: number;
+  };
+  trends: InstructorAnalyticsTrend[];
+  progressStatus: InstructorAnalyticsStatusItem[];
+  coursePerformance: InstructorAnalyticsCourseItem[];
+  generatedAt: string;
+}
+
 export interface NotificationItem {
   _id: string;
   title: string;
@@ -633,6 +669,11 @@ export const apiService = {
   async getInstructorStudents(params: { keyword?: string; courseId?: string; instructorId?: string } = {}): Promise<InstructorStudentsData> {
     const res = await api.get("/dashboard/instructor/students", { params });
     return pickData<InstructorStudentsData>(res.data);
+  },
+
+  async getInstructorAnalytics(params: { instructorId?: string } = {}): Promise<InstructorAnalyticsData> {
+    const res = await api.get("/dashboard/instructor/analytics", { params });
+    return pickData<InstructorAnalyticsData>(res.data);
   },
 
   async getAnalytics(): Promise<any> {
