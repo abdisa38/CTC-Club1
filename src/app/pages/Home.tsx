@@ -148,6 +148,15 @@ type HomeAnnouncement = {
   category?: string;
 };
 
+type HomeEvent = {
+  id: string;
+  title: string;
+  description: string;
+  location?: string;
+  startsAt: string;
+  endsAt?: string;
+};
+
 const features = [
   { title: "Structured Courses", desc: "Follow curated learning paths with video lessons, quizzes, and hands-on labs.", icon: BookOpen, color: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50 dark:bg-blue-500/10" },
   { title: "Track Progress", desc: "XP system, daily streaks, and detailed analytics to keep you motivated.", icon: TrendingUp, color: "from-emerald-500 to-teal-600", lightBg: "bg-emerald-50 dark:bg-emerald-500/10" },
@@ -172,6 +181,7 @@ export function Home() {
 
   const [realCourses, setRealCourses] = useState<FeaturedCourse[]>([]);
   const [announcements, setAnnouncements] = useState<HomeAnnouncement[]>([]);
+  const [events, setEvents] = useState<HomeEvent[]>([]);
   const [stats, setStats] = useState({
     activeStudents: 0,
     videoCourses: 0,
@@ -190,7 +200,8 @@ export function Home() {
         const [statsRes, coursesRes, announcementsRes] = await Promise.all([
           api.get('/dashboard/public-stats'),
           api.get('/courses?limit=4'),
-          api.get('/dashboard/announcements')
+          api.get('/dashboard/announcements'),
+          api.get('/events?upcoming=true')
         ]);
 
         if (statsRes.data) {
@@ -241,6 +252,8 @@ export function Home() {
 
           setAnnouncements(mappedAnnouncements);
         }
+
+        const eventsPayload = arguments[0];
       } catch (err) {
         console.error("Error fetching homepage data:", err);
       }
