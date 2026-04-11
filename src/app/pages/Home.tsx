@@ -197,7 +197,7 @@ export function Home() {
   useEffect(() => {
     const fetchHomeData = async () => {
       try {
-        const [statsRes, coursesRes, announcementsRes] = await Promise.all([
+        const [statsRes, coursesRes, announcementsRes, eventsRes] = await Promise.all([
           api.get('/dashboard/public-stats'),
           api.get('/courses?limit=4'),
           api.get('/dashboard/announcements'),
@@ -253,7 +253,19 @@ export function Home() {
           setAnnouncements(mappedAnnouncements);
         }
 
-        const eventsPayload = arguments[0];
+        const eventsPayload = eventsRes.data?.data ?? eventsRes.data;
+        const rawEvents = Array.isArray(eventsPayload) ? eventsPayload : [];
+
+        const mappedEvents: HomeEvent[] = rawEvents.map((item: any, index: number) => ({
+          id: String(item._id || item.id || `event-${index}`),
+          title: String(item.title || 'Event'),
+          description: String(item.description || ''),
+          location: item.location ? String(item.location) : undefined,
+          startsAt: item.startsAt || new Date().toISOString(),
+          endsAt: item.endsAt,
+        }));
+
+        setEvents(mappedEvents);
       } catch (err) {
         console.error("Error fetching homepage data:", err);
       }
