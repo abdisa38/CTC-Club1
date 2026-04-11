@@ -118,7 +118,7 @@ export interface CommunityPost {
   _id: string;
   title: string;
   content: string;
-  course?: string;
+  course?: string | { _id: string; title: string };
   category: "general" | "qna" | "showcase" | "announcement";
   tags: string[];
   user?: { _id: string; name: string; avatar?: string; role?: Role };
@@ -135,6 +135,29 @@ export interface CommunityReply {
   content: string;
   user?: { _id: string; name: string; avatar?: string; role?: Role };
   createdAt: string;
+}
+
+export interface InstructorStudentRow {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  enrolledAt?: string;
+  lastActiveAt?: string | null;
+  isActive: boolean;
+  progress: number;
+  status: "active" | "inactive" | "completed";
+  courses: Array<{ _id: string; title: string }>;
+}
+
+export interface InstructorStudentsData {
+  summary: {
+    totalEnrolled: number;
+    avgCompletionRate: number;
+    activeThisWeek: number;
+  };
+  courses: Array<{ _id: string; title: string }>;
+  students: InstructorStudentRow[];
 }
 
 export interface NotificationItem {
@@ -607,6 +630,11 @@ export const apiService = {
     return pickData<any>(res.data);
   },
 
+  async getInstructorStudents(params: { keyword?: string; courseId?: string; instructorId?: string } = {}): Promise<InstructorStudentsData> {
+    const res = await api.get("/dashboard/instructor/students", { params });
+    return pickData<InstructorStudentsData>(res.data);
+  },
+
   async getAnalytics(): Promise<any> {
     const res = await api.get("/dashboard/analytics");
     return pickData<any>(res.data);
@@ -632,7 +660,7 @@ export const apiService = {
     return pickData<Announcement[]>(res.data);
   },
 
-  async getCommunityPosts(params: { page?: number; limit?: number; keyword?: string; category?: string; course?: string } = {}): Promise<Paginated<CommunityPost>> {
+  async getCommunityPosts(params: { page?: number; limit?: number; keyword?: string; category?: string; course?: string; managed?: boolean } = {}): Promise<Paginated<CommunityPost>> {
     const res = await api.get("/community/posts", { params });
     return pickPaginated<CommunityPost>(res.data, ["posts"]);
   },
@@ -655,6 +683,15 @@ export const apiService = {
   async addCommunityReply(postId: string, content: string): Promise<CommunityReply> {
     const res = await api.post(`/community/posts/${postId}/replies`, { content });
     return pickData<CommunityReply>(res.data);
+  },
+
+  async pinCommunityPost(postId: string, isPinned: boolean): Promise<CommunityPost> {
+    const res = await api.patch(`/community/posts/${postId}/pin`, { isPinned });
+    return pickData<CommunityPost>(res.data);
+  },
+
+  async deleteCommunityPost(postId: string): Promise<void> {
+    await api.delete(`/community/posts/${postId}`);
   },
 
   async getNotifications(params: { page?: number; limit?: number } = {}): Promise<Paginated<NotificationItem>> {
