@@ -20,6 +20,128 @@ export function AppLayout() {
   const location = useLocation();
   const { role, user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState("");
+  const [searchResult, setSearchResult] = useState<AdminSearchData | null>(null);
+
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [notificationsError, setNotificationsError] = useState("");
+
+  const unreadNotificationCount = useMemo(
+    () => notifications.filter((item) => !item.isRead).length,
+    [notifications]
+  );
+
+  const formatRelativeTime = (dateValue: string) => {
+    const date = new Date(dateValue);
+    if (!Number.isFinite(date.getTime())) {
+      return "just now";
+    }
+
+    const diffMs = Date.now() - date.getTime();
+    const minute = 60 * 1000;
+    const hour = 60 * minute;
+    const day = 24 * hour;
+
+    if (diffMs < minute) return "just now";
+    if (diffMs < hour) return `${Math.max(1, Math.floor(diffMs / minute))}m ago`;
+    if (diffMs < day) return `${Math.max(1, Math.floor(diffMs / hour))}h ago`;
+    return `${Math.max(1, Math.floor(diffMs / day))}d ago`;
+  };
+
+  const fetchNotifications = async () => {
+    if (!user) {
+      setNotifications([]);
+      return;
+    }
+
+    setNotificationsLoading(true);
+    setNotificationsError("");
+
+    try {
+      const payload = await apiService.getNotifications({ limit: 8 });
+      setNotifications(Array.isArray(payload.items) ? payload.items : []);
+    } catch (err: any) {
+      setNotificationsError(err?.response?.data?.message || "Failed to load notifications");
+    } finally {
+      setNotificationsLoading(false);
+    }
+  };
+
+  const markNotificationRead = async (notification: NotificationItem) => {
+    if (notification.isRead) {
+      return;
+    }
+
+    try {
+      await apiService.markNotificationRead(notification._id);
+      setNotifications((prev) => prev.map((item) => (
+        item._id === notification._id
+          ? { ...item, isRead: true }
+          : item
+      )));
+    } catch {
+      // Ignore dropdown mark-read errors to keep navigation smooth.
+    }
+  };
+
+  const searchTypeIcon = (item: AdminSearchItem) => {
+    if (item.type === "user") return Users;
+    if (item.type === "course") return BookOpen;
+    if (item.type === "ticket") return MessageSquare;
+    if (item.type === "announcement") return Megaphone;
+    return CalendarDays;
+  };
+
+  useEffect(() => {
+    void fetchNotifications();
+  }, [user?._id]);
+
+  useEffect(() => {
+    if (role !== "admin") {
+      setSearchResult(null);
+      setSearchError("");
+      setSearchLoading(false);
+      return;
+    }
+
+    const keyword = searchQuery.trim();
+    if (keyword.length < 2) {
+      setSearchResult(null);
+      setSearchError("");
+      setSearchLoading(false);
+      return;
+    }
+
+    let ignore = false;
+    const timer = setTimeout(async () => {
+      setSearchLoading(true);
+      setSearchError("");
+
+      try {
+        const result = await apiService.adminGlobalSearch(keyword);
+        if (!ignore) {
+          setSearchResult(result);
+        }
+      } catch (err: any) {
+        if (!ignore) {
+          setSearchResult(null);
+          setSearchError(err?.response?.data?.message || "Search failed");
+        }
+      } finally {
+        if (!ignore) {
+          setSearchLoading(false);
+        }
+      }
+    }, 250);
+
+    return () => {
+      ignore = true;
+      clearTimeout(timer);
+    };
+  }, [role, searchQuery]);
 
   if (!user) {
     return <Navigate to="/login" replace />;
