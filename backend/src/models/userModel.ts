@@ -7,6 +7,7 @@ export interface IUser extends Document {
   email: string;
   password?: string;
   role: 'student' | 'instructor' | 'admin';
+  oauthProvider?: 'google' | 'github';
   avatar?: string;
   xp: number;
   level: number;
@@ -18,6 +19,8 @@ export interface IUser extends Document {
   createdCourses: mongoose.Types.ObjectId[];
   favoriteCourses: mongoose.Types.ObjectId[];
   favoriteResources: string[];
+  passwordResetCodeHash?: string;
+  passwordResetCodeExpiresAt?: Date;
   matchPassword(enteredPassword: string): Promise<boolean>;
 }
 
@@ -47,6 +50,11 @@ const userSchema = new Schema<IUser>(
       type: String,
       enum: ['student', 'instructor', 'admin'],
       default: 'student',
+      index: true,
+    },
+    oauthProvider: {
+      type: String,
+      enum: ['google', 'github'],
       index: true,
     },
     avatar: {
@@ -95,6 +103,14 @@ const userSchema = new Schema<IUser>(
       trim: true,
       index: true,
     }],
+    passwordResetCodeHash: {
+      type: String,
+      select: false,
+    },
+    passwordResetCodeExpiresAt: {
+      type: Date,
+      select: false,
+    },
   },
   {
     timestamps: true, // adds createdAt and updatedAt
