@@ -155,7 +155,7 @@ export function Favorites() {
             <EmptyState
               icon={<Heart className="mx-auto h-12 w-12 text-slate-400 mb-4" />}
               title="No saved courses"
-              subtitle="Enroll in a course to see it here."
+              subtitle="Tap the heart icon on the Courses page to save courses here."
               ctaHref="/app/courses"
               ctaLabel="Browse Courses"
             />
