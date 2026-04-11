@@ -16,6 +16,9 @@ router.get('/profile', authMiddleware_1.protect, authController_1.getUserProfile
 router.get('/favorites/courses', authMiddleware_1.protect, authController_1.getFavoriteCourses);
 router.post('/favorites/courses/:courseId', authMiddleware_1.protect, authController_1.addFavoriteCourse);
 router.delete('/favorites/courses/:courseId', authMiddleware_1.protect, authController_1.removeFavoriteCourse);
+router.get('/favorites/resources', authMiddleware_1.protect, authController_1.getFavoriteResources);
+router.post('/favorites/resources/:resourceId', authMiddleware_1.protect, authController_1.addFavoriteResource);
+router.delete('/favorites/resources/:resourceId', authMiddleware_1.protect, authController_1.removeFavoriteResource);
 router.get('/users', authMiddleware_1.protect, (0, authMiddleware_1.authorizeRoles)('admin'), authController_1.getUsers);
 router.put('/users/:id/role', authMiddleware_1.protect, (0, authMiddleware_1.authorizeRoles)('admin'), authController_1.updateUserRole);
 router.put('/users/:id/status', authMiddleware_1.protect, (0, authMiddleware_1.authorizeRoles)('admin'), authController_1.updateUserStatus);

@@ -36,11 +36,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getActivityLogs = exports.softDeleteUser = exports.updateUserStatus = exports.updateUserRole = exports.getUsers = exports.removeFavoriteCourse = exports.addFavoriteCourse = exports.getFavoriteCourses = exports.getUserProfile = exports.logoutUser = exports.loginUser = exports.registerUser = void 0;
+exports.getActivityLogs = exports.softDeleteUser = exports.updateUserStatus = exports.updateUserRole = exports.getUsers = exports.removeFavoriteResource = exports.addFavoriteResource = exports.getFavoriteResources = exports.removeFavoriteCourse = exports.addFavoriteCourse = exports.getFavoriteCourses = exports.getUserProfile = exports.logoutUser = exports.loginUser = exports.registerUser = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const userModel_1 = __importDefault(require("../models/userModel"));
 const courseModel_1 = __importDefault(require("../models/courseModel"));
+const lessonModel_1 = __importDefault(require("../models/lessonModel"));
 const ticketModel_1 = __importDefault(require("../models/ticketModel"));
 const generateToken_1 = __importStar(require("../utils/generateToken"));
 const apiResponse_1 = require("../utils/apiResponse");
@@ -184,6 +185,119 @@ exports.removeFavoriteCourse = (0, express_async_handler_1.default)(async (req, 
         courseId,
         isFavorite: false,
     }, { message: 'Course removed from favorites' });
+});
+const resourceIdPattern = /^attachment-([a-fA-F0-9]{24})-(\d+)$/;
+const parseResourceReference = (resourceId) => {
+    const match = resourceIdPattern.exec(resourceId);
+    if (!match) {
+        return null;
+    }
+    const lessonId = match[1];
+    const attachmentIndex = Number(match[2]);
+    if (!Number.isInteger(attachmentIndex) || attachmentIndex < 0) {
+        return null;
+    }
+    return { lessonId, attachmentIndex };
+};
+const isVideoAttachment = (fileType, url) => {
+    const type = String(fileType || '').toLowerCase();
+    const safeUrl = String(url || '');
+    return type.includes('video') || /(\.mp4|\.mov|\.avi|\.mkv|\.webm)(\?|$)/i.test(safeUrl);
+};
+const resolveResourceId = async (resourceId, userRole) => {
+    const parsed = parseResourceReference(resourceId);
+    if (!parsed) {
+        return null;
+    }
+    const lesson = await lessonModel_1.default.findById(parsed.lessonId).select('attachments isPublished');
+    if (!lesson) {
+        return null;
+    }
+    if (userRole === 'student' && lesson.isPublished !== true) {
+        return null;
+    }
+    const attachments = Array.isArray(lesson.attachments) ? lesson.attachments : [];
+    const attachment = attachments[parsed.attachmentIndex];
+    if (!attachment?.url) {
+        return null;
+    }
+    if (isVideoAttachment(attachment.fileType, attachment.url)) {
+        return null;
+    }
+    return resourceId;
+};
+// @desc    Get current user's favorite resource IDs
+// @route   GET /api/auth/favorites/resources
+// @access  Private
+exports.getFavoriteResources = (0, express_async_handler_1.default)(async (req, res) => {
+    const user = await userModel_1.default.findById(req.user._id).select('favoriteResources');
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found');
+    }
+    const favorites = Array.isArray(user.favoriteResources)
+        ? user.favoriteResources
+        : [];
+    if (favorites.length === 0) {
+        (0, apiResponse_1.sendSuccess)(res, []);
+        return;
+    }
+    const validated = await Promise.all(favorites.map((resourceId) => resolveResourceId(resourceId, req.user.role)));
+    const validResourceIds = validated.filter((resourceId) => Boolean(resourceId));
+    const invalidResourceIds = favorites.filter((resourceId) => !validResourceIds.includes(resourceId));
+    if (invalidResourceIds.length > 0) {
+        await userModel_1.default.findByIdAndUpdate(req.user._id, {
+            $pull: { favoriteResources: { $in: invalidResourceIds } },
+        });
+    }
+    (0, apiResponse_1.sendSuccess)(res, validResourceIds);
+});
+// @desc    Add resource to favorites
+// @route   POST /api/auth/favorites/resources/:resourceId
+// @access  Private
+exports.addFavoriteResource = (0, express_async_handler_1.default)(async (req, res) => {
+    const rawResourceId = typeof req.params.resourceId === 'string'
+        ? decodeURIComponent(req.params.resourceId)
+        : '';
+    if (!rawResourceId) {
+        res.status(400);
+        throw new Error('Resource id is required');
+    }
+    const resourceId = await resolveResourceId(rawResourceId, req.user.role);
+    if (!resourceId) {
+        res.status(404);
+        throw new Error('Resource not found');
+    }
+    const user = await userModel_1.default.findByIdAndUpdate(req.user._id, { $addToSet: { favoriteResources: resourceId } }, { new: true }).select('_id');
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found');
+    }
+    (0, apiResponse_1.sendSuccess)(res, {
+        resourceId,
+        isFavorite: true,
+    }, { message: 'Resource added to favorites' });
+});
+// @desc    Remove resource from favorites
+// @route   DELETE /api/auth/favorites/resources/:resourceId
+// @access  Private
+exports.removeFavoriteResource = (0, express_async_handler_1.default)(async (req, res) => {
+    const rawResourceId = typeof req.params.resourceId === 'string'
+        ? decodeURIComponent(req.params.resourceId)
+        : '';
+    if (!rawResourceId) {
+        res.status(400);
+        throw new Error('Resource id is required');
+    }
+    const user = await userModel_1.default.findByIdAndUpdate(req.user._id, { $pull: { favoriteResources: rawResourceId } }, { new: true }).select('_id');
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found');
+    }
+    (0, apiResponse_1.sendSuccess)(res, {
+        resourceId: rawResourceId,
+        isFavorite: false,
+    }, { message: 'Resource removed from favorites' });
 });
 // @desc    Get users for admin table
 // @route   GET /api/auth/users

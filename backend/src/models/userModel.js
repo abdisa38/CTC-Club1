@@ -106,6 +106,11 @@ const userSchema = new mongoose_1.Schema({
             ref: 'Course',
             index: true,
         }],
+    favoriteResources: [{
+            type: String,
+            trim: true,
+            index: true,
+        }],
 }, {
     timestamps: true, // adds createdAt and updatedAt
 });

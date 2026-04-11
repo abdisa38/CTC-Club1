@@ -770,20 +770,27 @@ function ReviewCard({
   setReviewFeedback?: (v: string) => void;
   onSubmit?: () => void;
 }) {
+  const courseTitle = typeof submission.course === "string"
+    ? "Course"
+    : submission.course?.title || "Course";
+  const projectTitle = typeof submission.project === "string"
+    ? "Project Submission"
+    : submission.project?.title || "Project Submission";
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
         <div className="space-y-1">
           <div className="flex items-center gap-2 mb-1">
             <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400">
-              {submission.course?.title || "Course"}
+              {courseTitle}
             </Badge>
             <span className="flex items-center text-sm font-medium text-slate-600 dark:text-slate-400">
               <User className="h-3 w-3 mr-1" />
               {submission.student?.name || "Student"}
             </span>
           </div>
-          <CardTitle className="text-lg">{submission.project?.title || "Project Submission"}</CardTitle>
+          <CardTitle className="text-lg">{projectTitle}</CardTitle>
         </div>
         {submission.grade !== undefined ? (
           <div className="text-right">

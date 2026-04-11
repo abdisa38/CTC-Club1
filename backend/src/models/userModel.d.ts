@@ -14,6 +14,7 @@ export interface IUser extends Document {
     enrolledCourses: mongoose.Types.ObjectId[];
     createdCourses: mongoose.Types.ObjectId[];
     favoriteCourses: mongoose.Types.ObjectId[];
+    favoriteResources: string[];
     matchPassword(enteredPassword: string): Promise<boolean>;
 }
 declare const User: mongoose.Model<IUser, {}, {}, {}, mongoose.Document<unknown, {}, IUser, {}, mongoose.DefaultSchemaOptions> & IUser & Required<{
