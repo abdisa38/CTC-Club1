@@ -1056,3 +1056,179 @@ export const getInstructorGlobalSearch = asyncHandler(async (req: AuthRequest, r
         },
     });
 });
+
+// @desc    Global student search
+// @route   GET /api/dashboard/student/search
+// @access  Private/Student
+export const getStudentGlobalSearch = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+    if (req.user.role !== 'student') {
+        res.status(403);
+        throw new Error('Only students can search learner data');
+    }
+
+    const query = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+    if (query.length < 2) {
+        sendSuccess(res, {
+            query,
+            items: [],
+            counts: {
+                courses: 0,
+                projects: 0,
+                resources: 0,
+                discussions: 0,
+            },
+        });
+        return;
+    }
+
+    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(escaped, 'i');
+
+    const currentUser = await User.findById(req.user._id).select('enrolledCourses').lean();
+    const enrolledCourseIds = Array.isArray((currentUser as any)?.enrolledCourses)
+        ? (currentUser as any).enrolledCourses.map((id: any) => id.toString())
+        : [];
+
+    const [courses, projectsRaw, lessonsRaw, discussions] = await Promise.all([
+        Course.find({
+            isDeleted: false,
+            status: 'published',
+            $or: [
+                { title: { $regex: regex } },
+                { description: { $regex: regex } },
+                { category: { $regex: regex } },
+            ],
+        })
+            .select('_id title category instructor students')
+            .populate('instructor', 'name')
+            .sort({ createdAt: -1 })
+            .limit(6)
+            .lean(),
+        enrolledCourseIds.length > 0
+            ? Project.find({
+                course: { $in: enrolledCourseIds },
+                isDeleted: false,
+                isPublished: true,
+                $or: [
+                    { title: { $regex: regex } },
+                    { description: { $regex: regex } },
+                    { instructions: { $regex: regex } },
+                ],
+            })
+                .select('_id title course deadline')
+                .populate('course', 'title')
+                .sort({ createdAt: -1 })
+                .limit(6)
+                .lean()
+            : Promise.resolve([] as any[]),
+        enrolledCourseIds.length > 0
+            ? Lesson.find({
+                course: { $in: enrolledCourseIds },
+                isDeleted: false,
+                isPublished: true,
+                $or: [
+                    { title: { $regex: regex } },
+                    { content: { $regex: regex } },
+                ],
+            })
+                .select('_id title course attachments updatedAt')
+                .populate('course', 'title')
+                .sort({ updatedAt: -1 })
+                .limit(20)
+                .lean()
+            : Promise.resolve([] as any[]),
+        CommunityPost.find({
+            isDeleted: false,
+            category: { $ne: 'announcement' },
+            $or: [
+                { title: { $regex: regex } },
+                { content: { $regex: regex } },
+                { tags: { $elemMatch: { $regex: regex } } },
+            ],
+        })
+            .select('_id title course createdAt')
+            .populate('course', 'title')
+            .sort({ createdAt: -1 })
+            .limit(6)
+            .lean(),
+    ]);
+
+    const studentId = req.user._id.toString();
+
+    const courseItems = courses.map((item: any) => {
+        const studentList = Array.isArray(item.students) ? item.students : [];
+        const isEnrolled = studentList.some((id: any) => id.toString() === studentId);
+
+        return {
+            id: item._id.toString(),
+            type: 'course',
+            title: item.title,
+            subtitle: `${item.category || 'Course'} • ${item.instructor?.name || 'Instructor'}${isEnrolled ? ' • Enrolled' : ''}`,
+            href: `/app/courses/${item._id}`,
+        };
+    });
+
+    const projectItems = projectsRaw.map((item: any) => ({
+        id: item._id.toString(),
+        type: 'project',
+        title: item.title,
+        subtitle: `${item.course?.title || 'Course'}${item.deadline ? ` • Due ${new Date(item.deadline).toLocaleDateString()}` : ''}`,
+        href: '/app/projects',
+    }));
+
+    const resourceItems = lessonsRaw
+        .flatMap((lesson: any) => {
+            const attachments = Array.isArray(lesson.attachments) ? lesson.attachments : [];
+
+            return attachments
+                .filter((attachment: any) => {
+                    const url = String(attachment?.url || '');
+                    if (!url) {
+                        return false;
+                    }
+
+                    const fileType = String(attachment?.fileType || '').toLowerCase();
+                    const isVideoAttachment = fileType.includes('video') || /\.(mp4|mov|avi|mkv|webm)(\?|$)/i.test(url);
+                    if (isVideoAttachment) {
+                        return false;
+                    }
+
+                    const attachmentTitle = String(attachment?.title || '');
+                    return regex.test(attachmentTitle) || regex.test(url) || regex.test(String(lesson.title || ''));
+                })
+                .map((attachment: any, index: number) => ({
+                    id: `${lesson._id.toString()}-${index}`,
+                    type: 'resource',
+                    title: attachment.title || lesson.title,
+                    subtitle: `${lesson.course?.title || 'Course'} • ${attachment.fileType || 'file'}`,
+                    href: '/app/resources',
+                }));
+        })
+        .slice(0, 6);
+
+    const discussionItems = discussions.map((item: any) => ({
+        id: item._id.toString(),
+        type: 'discussion',
+        title: item.title,
+        subtitle: `${item.course?.title || 'Community'} • ${new Date(item.createdAt).toLocaleDateString()}`,
+        href: '/app/community',
+    }));
+
+    const items = [
+        ...courseItems,
+        ...projectItems,
+        ...resourceItems,
+        ...discussionItems,
+    ].slice(0, 16);
+
+    sendSuccess(res, {
+        query,
+        items,
+        counts: {
+            courses: courseItems.length,
+            projects: projectItems.length,
+            resources: resourceItems.length,
+            discussions: discussionItems.length,
+        },
+    });
+});

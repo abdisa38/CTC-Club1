@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getInstructorGlobalSearch = exports.getAdminGlobalSearch = exports.getInstructorAnalytics = exports.getInstructorStudents = exports.getPublicStats = exports.getDashboardAnnouncements = exports.getDashboardResources = exports.getLeaderboard = exports.getAdminAnalytics = exports.getDashboardMetrics = void 0;
+exports.getStudentGlobalSearch = exports.getInstructorGlobalSearch = exports.getAdminGlobalSearch = exports.getInstructorAnalytics = exports.getInstructorStudents = exports.getPublicStats = exports.getDashboardAnnouncements = exports.getDashboardResources = exports.getLeaderboard = exports.getAdminAnalytics = exports.getDashboardMetrics = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const userModel_1 = __importDefault(require("../models/userModel"));
 const courseModel_1 = __importDefault(require("../models/courseModel"));
@@ -935,6 +935,166 @@ exports.getInstructorGlobalSearch = (0, express_async_handler_1.default)(async (
             projects: projects.length,
             submissions: submissions.length,
             discussions: discussions.length,
+        },
+    });
+});
+// @desc    Global student search
+// @route   GET /api/dashboard/student/search
+// @access  Private/Student
+exports.getStudentGlobalSearch = (0, express_async_handler_1.default)(async (req, res) => {
+    if (req.user.role !== 'student') {
+        res.status(403);
+        throw new Error('Only students can search learner data');
+    }
+    const query = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+    if (query.length < 2) {
+        (0, apiResponse_1.sendSuccess)(res, {
+            query,
+            items: [],
+            counts: {
+                courses: 0,
+                projects: 0,
+                resources: 0,
+                discussions: 0,
+            },
+        });
+        return;
+    }
+    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(escaped, 'i');
+    const currentUser = await userModel_1.default.findById(req.user._id).select('enrolledCourses').lean();
+    const enrolledCourseIds = Array.isArray(currentUser?.enrolledCourses)
+        ? currentUser.enrolledCourses.map((id) => id.toString())
+        : [];
+    const [courses, projectsRaw, lessonsRaw, discussions] = await Promise.all([
+        courseModel_1.default.find({
+            isDeleted: false,
+            status: 'published',
+            $or: [
+                { title: { $regex: regex } },
+                { description: { $regex: regex } },
+                { category: { $regex: regex } },
+            ],
+        })
+            .select('_id title category instructor students')
+            .populate('instructor', 'name')
+            .sort({ createdAt: -1 })
+            .limit(6)
+            .lean(),
+        enrolledCourseIds.length > 0
+            ? projectModel_1.Project.find({
+                course: { $in: enrolledCourseIds },
+                isDeleted: false,
+                isPublished: true,
+                $or: [
+                    { title: { $regex: regex } },
+                    { description: { $regex: regex } },
+                    { instructions: { $regex: regex } },
+                ],
+            })
+                .select('_id title course deadline')
+                .populate('course', 'title')
+                .sort({ createdAt: -1 })
+                .limit(6)
+                .lean()
+            : Promise.resolve([]),
+        enrolledCourseIds.length > 0
+            ? lessonModel_1.default.find({
+                course: { $in: enrolledCourseIds },
+                isDeleted: false,
+                isPublished: true,
+                $or: [
+                    { title: { $regex: regex } },
+                    { content: { $regex: regex } },
+                ],
+            })
+                .select('_id title course attachments updatedAt')
+                .populate('course', 'title')
+                .sort({ updatedAt: -1 })
+                .limit(20)
+                .lean()
+            : Promise.resolve([]),
+        communityModel_1.CommunityPost.find({
+            isDeleted: false,
+            category: { $ne: 'announcement' },
+            $or: [
+                { title: { $regex: regex } },
+                { content: { $regex: regex } },
+                { tags: { $elemMatch: { $regex: regex } } },
+            ],
+        })
+            .select('_id title course createdAt')
+            .populate('course', 'title')
+            .sort({ createdAt: -1 })
+            .limit(6)
+            .lean(),
+    ]);
+    const studentId = req.user._id.toString();
+    const courseItems = courses.map((item) => {
+        const studentList = Array.isArray(item.students) ? item.students : [];
+        const isEnrolled = studentList.some((id) => id.toString() === studentId);
+        return {
+            id: item._id.toString(),
+            type: 'course',
+            title: item.title,
+            subtitle: `${item.category || 'Course'} • ${item.instructor?.name || 'Instructor'}${isEnrolled ? ' • Enrolled' : ''}`,
+            href: `/app/courses/${item._id}`,
+        };
+    });
+    const projectItems = projectsRaw.map((item) => ({
+        id: item._id.toString(),
+        type: 'project',
+        title: item.title,
+        subtitle: `${item.course?.title || 'Course'}${item.deadline ? ` • Due ${new Date(item.deadline).toLocaleDateString()}` : ''}`,
+        href: '/app/projects',
+    }));
+    const resourceItems = lessonsRaw
+        .flatMap((lesson) => {
+        const attachments = Array.isArray(lesson.attachments) ? lesson.attachments : [];
+        return attachments
+            .filter((attachment) => {
+            const url = String(attachment?.url || '');
+            if (!url) {
+                return false;
+            }
+            const fileType = String(attachment?.fileType || '').toLowerCase();
+            const isVideoAttachment = fileType.includes('video') || /\.(mp4|mov|avi|mkv|webm)(\?|$)/i.test(url);
+            if (isVideoAttachment) {
+                return false;
+            }
+            const attachmentTitle = String(attachment?.title || '');
+            return regex.test(attachmentTitle) || regex.test(url) || regex.test(String(lesson.title || ''));
+        })
+            .map((attachment, index) => ({
+            id: `${lesson._id.toString()}-${index}`,
+            type: 'resource',
+            title: attachment.title || lesson.title,
+            subtitle: `${lesson.course?.title || 'Course'} • ${attachment.fileType || 'file'}`,
+            href: '/app/resources',
+        }));
+    })
+        .slice(0, 6);
+    const discussionItems = discussions.map((item) => ({
+        id: item._id.toString(),
+        type: 'discussion',
+        title: item.title,
+        subtitle: `${item.course?.title || 'Community'} • ${new Date(item.createdAt).toLocaleDateString()}`,
+        href: '/app/community',
+    }));
+    const items = [
+        ...courseItems,
+        ...projectItems,
+        ...resourceItems,
+        ...discussionItems,
+    ].slice(0, 16);
+    (0, apiResponse_1.sendSuccess)(res, {
+        query,
+        items,
+        counts: {
+            courses: courseItems.length,
+            projects: projectItems.length,
+            resources: resourceItems.length,
+            discussions: discussionItems.length,
         },
     });
 });

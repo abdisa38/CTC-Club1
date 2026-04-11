@@ -21,6 +21,8 @@ router.route('/:id')
     .delete(authMiddleware_1.protect, (0, authMiddleware_1.authorizeRoles)('instructor', 'admin'), courseController_1.deleteCourse);
 // Enroll in a course (Students mostly, but maybe others too)
 router.post('/:id/enroll', authMiddleware_1.protect, courseController_1.enrollCourse);
+router.post('/:id/rate', authMiddleware_1.protect, courseController_1.rateCourse);
+router.get('/:id/rate/me', authMiddleware_1.protect, courseController_1.getMyCourseRating);
 // Sub-routing for lessons: Any request to /api/courses/:courseId/lessons will be handed to lessonRoutes
 router.use('/:courseId/lessons', lessonRoutes_1.default);
 exports.default = router;

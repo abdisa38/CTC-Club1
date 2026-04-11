@@ -295,6 +295,39 @@ export interface InstructorSearchData {
   };
 }
 
+export interface StudentSearchItem {
+  id: string;
+  type: "course" | "project" | "resource" | "discussion";
+  title: string;
+  subtitle?: string;
+  href: string;
+}
+
+export interface StudentSearchData {
+  query: string;
+  items: StudentSearchItem[];
+  counts: {
+    courses: number;
+    projects: number;
+    resources: number;
+    discussions: number;
+  };
+}
+
+export interface CourseRatingSummary {
+  courseId: string;
+  rating: number;
+  numReviews: number;
+  myRating: number;
+  myComment?: string;
+}
+
+export interface MyCourseRating {
+  rating: number;
+  comment?: string;
+  updatedAt?: string;
+}
+
 export interface Paginated<T> {
   items: T[];
   page: number;
@@ -480,6 +513,16 @@ export const apiService = {
   async enrollCourse(courseId: string): Promise<Course> {
     const res = await api.post(`/courses/${courseId}/enroll`);
     return pickData<Course>(res.data);
+  },
+
+  async rateCourse(courseId: string, input: { rating: number; comment?: string }): Promise<CourseRatingSummary> {
+    const res = await api.post(`/courses/${courseId}/rate`, input);
+    return pickData<CourseRatingSummary>(res.data);
+  },
+
+  async getMyCourseRating(courseId: string): Promise<MyCourseRating | null> {
+    const res = await api.get(`/courses/${courseId}/rate/me`);
+    return pickData<MyCourseRating | null>(res.data);
   },
 
   async getLessons(courseId: string): Promise<Lesson[]> {
@@ -783,6 +826,11 @@ export const apiService = {
       },
     });
     return pickData<InstructorSearchData>(res.data);
+  },
+
+  async studentGlobalSearch(query: string): Promise<StudentSearchData> {
+    const res = await api.get('/dashboard/student/search', { params: { q: query } });
+    return pickData<StudentSearchData>(res.data);
   },
 
   async getInstructorStudents(params: { keyword?: string; courseId?: string; instructorId?: string } = {}): Promise<InstructorStudentsData> {

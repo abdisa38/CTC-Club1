@@ -51,6 +51,7 @@ export function Projects() {
   const [createPublished, setCreatePublished] = useState(true);
 
   const [activeProjectId, setActiveProjectId] = useState<string>("");
+  const [openSubmissionProjectId, setOpenSubmissionProjectId] = useState<string>("");
   const [repoUrl, setRepoUrl] = useState("");
   const [liveUrl, setLiveUrl] = useState("");
   const [comments, setComments] = useState("");
@@ -135,6 +136,7 @@ export function Projects() {
   }, [submissions]);
 
   const resetSubmitForm = () => {
+    setOpenSubmissionProjectId("");
     setActiveProjectId("");
     setRepoUrl("");
     setLiveUrl("");
@@ -267,15 +269,15 @@ export function Projects() {
     }
   };
 
-  const handleSubmitProject = async () => {
-    if (!activeProjectId || !repoUrl.trim()) {
-      setError("Project and repository URL are required");
+  const handleSubmitProject = async (projectId: string) => {
+    if (!projectId) {
+      setError("Project ID is required");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const submission = await apiService.submitProject(activeProjectId, {
+      const submission = await apiService.submitProject(projectId, {
         repoUrl: repoUrl.trim(),
         liveUrl: liveUrl.trim() || undefined,
         comments: comments.trim() || undefined,
@@ -636,19 +638,26 @@ export function Projects() {
                       {!submission || submission.status !== "graded" ? (
                         <Dialog>
                           <DialogTrigger asChild>
-                            <Button
-                              onClick={() => {
-                                setActiveProjectId(project._id);
-                                setRepoUrl(submission?.repoUrl || "");
-                                setLiveUrl(submission?.liveUrl || "");
-                                setComments(submission?.comments || "");
-                              }}
-                            >
+                            <Button>
                               <UploadCloud className="mr-2 h-4 w-4" />
                               {submission ? "Update Submission" : "Submit Project"}
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="sm:max-w-[520px]">
+                          <DialogContent
+                            className="sm:max-w-[520px]"
+                            onOpenAutoFocus={() => {
+                              setOpenSubmissionProjectId(project._id);
+                              setActiveProjectId(project._id);
+                              setRepoUrl(submission?.repoUrl || "");
+                              setLiveUrl(submission?.liveUrl || "");
+                              setComments(submission?.comments || "");
+                            }}
+                            onCloseAutoFocus={() => {
+                              if (openSubmissionProjectId === project._id && !isSubmitting) {
+                                resetSubmitForm();
+                              }
+                            }}
+                          >
                             <DialogHeader>
                               <DialogTitle>{submission ? "Update Submission" : "Submit Project"}</DialogTitle>
                               <DialogDescription>
@@ -697,8 +706,8 @@ export function Projects() {
                             </div>
                             <DialogFooter>
                               <Button
-                                onClick={handleSubmitProject}
-                                disabled={isSubmitting || !repoUrl.trim() || activeProjectId !== project._id}
+                                onClick={() => void handleSubmitProject(project._id)}
+                                disabled={isSubmitting || openSubmissionProjectId !== project._id || activeProjectId !== project._id}
                               >
                                 {isSubmitting ? "Submitting..." : "Save Submission"}
                               </Button>

@@ -154,7 +154,7 @@ exports.updateProject = (0, express_async_handler_1.default)(async (req, res) =>
     }
     if (deadline !== undefined) {
         if (deadline === null || deadline === '') {
-            project.deadline = undefined;
+            project.set('deadline', undefined);
         }
         else {
             const parsed = new Date(deadline);

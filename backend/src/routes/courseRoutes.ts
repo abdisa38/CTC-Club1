@@ -6,8 +6,10 @@ import {
   createCourse,
   deleteCourse,
   enrollCourse,
+  getMyCourseRating,
   getCourseById,
   getCourses,
+  rateCourse,
   updateCourse,
 } from '../controllers/courseController';
 import lessonRoutes from './lessonRoutes';
@@ -27,6 +29,8 @@ router.route('/:id')
 
 // Enroll in a course (Students mostly, but maybe others too)
 router.post('/:id/enroll', protect as any, enrollCourse as any);
+router.post('/:id/rate', protect as any, rateCourse as any);
+router.get('/:id/rate/me', protect as any, getMyCourseRating as any);
 
 // Sub-routing for lessons: Any request to /api/courses/:courseId/lessons will be handed to lessonRoutes
 router.use('/:courseId/lessons', lessonRoutes);

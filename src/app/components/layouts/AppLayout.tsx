@@ -13,11 +13,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/Avatar";
 import { cn } from "../../utils/cn";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/DropdownMenu";
 import { useAuth } from "../../context/AuthContext";
-import apiService, { AdminSearchData, AdminSearchItem, InstructorSearchData, InstructorSearchItem, NotificationItem } from "../../services/api";
+import apiService, { AdminSearchData, AdminSearchItem, InstructorSearchData, InstructorSearchItem, NotificationItem, StudentSearchData, StudentSearchItem } from "../../services/api";
 import ctcLogo from "../../../assets/f6c46c16a776a1f63a42e49b36947669f8dcc942.png";
 
-type HeaderSearchItem = AdminSearchItem | InstructorSearchItem;
-type HeaderSearchResult = AdminSearchData | InstructorSearchData;
+type HeaderSearchItem = AdminSearchItem | InstructorSearchItem | StudentSearchItem;
+type HeaderSearchResult = AdminSearchData | InstructorSearchData | StudentSearchData;
 
 export function AppLayout() {
   const location = useLocation();
@@ -96,6 +96,7 @@ export function AppLayout() {
     if (item.type === "course") return BookOpen;
     if (item.type === "ticket" || item.type === "discussion") return MessageSquare;
     if (item.type === "announcement") return Megaphone;
+    if (item.type === "resource") return FileText;
     if (item.type === "project") return Focus;
     if (item.type === "submission") return CheckSquare;
     return CalendarDays;
@@ -106,7 +107,7 @@ export function AppLayout() {
   }, [user?._id]);
 
   useEffect(() => {
-    if (role !== "admin" && role !== "instructor") {
+    if (role !== "admin" && role !== "instructor" && role !== "student") {
       setSearchResult(null);
       setSearchError("");
       setSearchLoading(false);
@@ -129,7 +130,9 @@ export function AppLayout() {
       try {
         const result = role === "admin"
           ? await apiService.adminGlobalSearch(keyword)
-          : await apiService.instructorGlobalSearch(keyword, { projectVisibility: instructorProjectFilter });
+          : role === "instructor"
+            ? await apiService.instructorGlobalSearch(keyword, { projectVisibility: instructorProjectFilter })
+            : await apiService.studentGlobalSearch(keyword);
 
         if (!ignore) {
           setSearchResult(result);
@@ -341,7 +344,7 @@ export function AppLayout() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
 
-              {(role === "admin" || role === "instructor") && searchQuery.trim().length >= 2 ? (
+              {searchQuery.trim().length >= 2 ? (
                 <div className="absolute left-0 right-0 top-full mt-2 rounded-xl border border-slate-200/80 bg-white shadow-lg dark:border-white/10 dark:bg-[#131827] z-50 overflow-hidden">
                   {role === "instructor" ? (
                     <div className="flex items-center gap-2 border-b border-slate-200/80 px-3 py-2 text-xs dark:border-white/10">

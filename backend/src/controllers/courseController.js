@@ -3,9 +3,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.enrollCourse = exports.deleteCourse = exports.updateCourse = exports.getCourseById = exports.getCourses = exports.createCourse = void 0;
+exports.getMyCourseRating = exports.rateCourse = exports.enrollCourse = exports.deleteCourse = exports.updateCourse = exports.getCourseById = exports.getCourses = exports.createCourse = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const courseModel_1 = __importDefault(require("../models/courseModel"));
+const courseReviewModel_1 = __importDefault(require("../models/courseReviewModel"));
 const userModel_1 = __importDefault(require("../models/userModel"));
 const apiResponse_1 = require("../utils/apiResponse");
 // @desc    Create a course
@@ -53,8 +54,8 @@ exports.getCourses = (0, express_async_handler_1.default)(async (req, res) => {
         .sort({ createdAt: -1 })
         .limit(pageSize)
         .skip(pageSize * (page - 1));
-    if (!req.user || req.user.role === 'student') {
-        courseQuery.select('-students'); // Keep public/student payload lightweight
+    if (!req.user) {
+        courseQuery.select('-students');
     }
     const courses = await courseQuery;
     res.json({
@@ -71,8 +72,7 @@ exports.getCourses = (0, express_async_handler_1.default)(async (req, res) => {
 // @access  Public
 exports.getCourseById = (0, express_async_handler_1.default)(async (req, res) => {
     const course = await courseModel_1.default.findById(req.params.id)
-        .populate('instructor', 'name email avatar')
-        .slice('students', 10); // Only bring back first 10 students if ever needed for preview, prevents memory overload
+        .populate('instructor', 'name email avatar');
     if (course) {
         (0, apiResponse_1.sendSuccess)(res, course);
     }
@@ -135,5 +135,93 @@ exports.enrollCourse = (0, express_async_handler_1.default)(async (req, res) => 
         $addToSet: { enrolledCourses: course._id },
     });
     (0, apiResponse_1.sendSuccess)(res, course, { message: 'Successfully enrolled in course' });
+});
+const refreshCourseRatingStats = async (courseId) => {
+    const aggregate = await courseReviewModel_1.default.aggregate([
+        { $match: { course: courseId } },
+        {
+            $group: {
+                _id: '$course',
+                averageRating: { $avg: '$rating' },
+                reviewCount: { $sum: 1 },
+            },
+        },
+    ]);
+    const averageRating = Number(aggregate[0]?.averageRating || 0);
+    const reviewCount = Number(aggregate[0]?.reviewCount || 0);
+    const updatedCourse = await courseModel_1.default.findByIdAndUpdate(courseId, {
+        rating: Number(averageRating.toFixed(2)),
+        numReviews: reviewCount,
+    }, { new: true });
+    return updatedCourse;
+};
+// @desc    Rate a course (create or update student's rating)
+// @route   POST /api/courses/:id/rate
+// @access  Private/Student
+exports.rateCourse = (0, express_async_handler_1.default)(async (req, res) => {
+    if (req.user.role !== 'student') {
+        res.status(403);
+        throw new Error('Only students can rate courses');
+    }
+    const { rating, comment } = req.body;
+    const numericRating = Number(rating);
+    if (!Number.isFinite(numericRating) || numericRating < 1 || numericRating > 5) {
+        res.status(400);
+        throw new Error('Rating must be a number between 1 and 5');
+    }
+    const course = await courseModel_1.default.findById(req.params.id).select('_id students status');
+    if (!course) {
+        res.status(404);
+        throw new Error('Course not found');
+    }
+    const isEnrolled = Array.isArray(course.students)
+        && course.students.some((studentId) => studentId.toString() === req.user._id.toString());
+    if (!isEnrolled) {
+        res.status(403);
+        throw new Error('Enroll in this course before rating it');
+    }
+    const updatedReview = await courseReviewModel_1.default.findOneAndUpdate({
+        course: course._id,
+        user: req.user._id,
+    }, {
+        rating: numericRating,
+        comment: typeof comment === 'string' ? comment.trim() : undefined,
+    }, {
+        new: true,
+        upsert: true,
+        setDefaultsOnInsert: true,
+    });
+    const refreshedCourse = await refreshCourseRatingStats(course._id.toString());
+    (0, apiResponse_1.sendSuccess)(res, {
+        courseId: course._id.toString(),
+        rating: refreshedCourse?.rating || 0,
+        numReviews: refreshedCourse?.numReviews || 0,
+        myRating: updatedReview.rating,
+        myComment: updatedReview.comment || '',
+    }, { message: 'Course rating saved' });
+});
+// @desc    Get current student's rating for a course
+// @route   GET /api/courses/:id/rate/me
+// @access  Private/Student
+exports.getMyCourseRating = (0, express_async_handler_1.default)(async (req, res) => {
+    if (req.user.role !== 'student') {
+        res.status(403);
+        throw new Error('Only students can access course ratings');
+    }
+    const review = await courseReviewModel_1.default.findOne({
+        course: req.params.id,
+        user: req.user._id,
+    })
+        .select('rating comment updatedAt')
+        .lean();
+    if (!review) {
+        (0, apiResponse_1.sendSuccess)(res, null);
+        return;
+    }
+    (0, apiResponse_1.sendSuccess)(res, {
+        rating: review.rating,
+        comment: review.comment || '',
+        updatedAt: review.updatedAt,
+    });
 });
 //# sourceMappingURL=courseController.js.map

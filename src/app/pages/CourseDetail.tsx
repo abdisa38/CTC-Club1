@@ -15,6 +15,7 @@ import {
   ChevronRight,
   Star,
   Share2,
+  Heart,
   BookmarkPlus,
   Send,
   Loader2,
@@ -125,7 +126,7 @@ export function CourseDetail() {
   const isInstructor = role === "instructor" || role === "admin";
   const isAdmin = role === "admin";
 
-  const [activeTab, setActiveTab] = useState(isInstructor ? "overview" : "content");
+  const [activeTab, setActiveTab] = useState("overview");
   const [course, setCourse] = useState<Course | null>(null);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [selectedLessonId, setSelectedLessonId] = useState("");
@@ -136,6 +137,10 @@ export function CourseDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDiscussionLoading, setIsDiscussionLoading] = useState(false);
   const [isEnrolling, setIsEnrolling] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [favoriteBusy, setFavoriteBusy] = useState(false);
+  const [myRating, setMyRating] = useState(0);
+  const [ratingBusy, setRatingBusy] = useState(false);
   const [error, setError] = useState("");
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -242,14 +247,11 @@ export function CourseDetail() {
   }, [activeTab, selectedLessonId]);
 
   useEffect(() => {
-    const availableTabs = isInstructor
-      ? ["overview", "resources", "discussion"]
-      : ["content", "overview", "resources", "discussion"];
-
+    const availableTabs = ["overview", "resources", "discussion"];
     if (!availableTabs.includes(activeTab)) {
-      setActiveTab(availableTabs[0]);
+      setActiveTab("overview");
     }
-  }, [isInstructor, activeTab]);
+  }, [activeTab]);
 
   const courseResources = useMemo(() => {
     const resources: CourseResource[] = [];
@@ -295,6 +297,42 @@ export function CourseDetail() {
   const ratingValue = typeof course?.rating === "number" ? course.rating : 0;
   const reviewCount = typeof course?.numReviews === "number" ? course.numReviews : 0;
 
+  useEffect(() => {
+    if (!id || role !== "student") {
+      setMyRating(0);
+      setIsFavorite(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const fetchStudentCourseState = async () => {
+      try {
+        const [favoriteCourses, rating] = await Promise.all([
+          apiService.getFavoriteCourses(),
+          apiService.getMyCourseRating(id),
+        ]);
+
+        if (cancelled) {
+          return;
+        }
+
+        setIsFavorite(Array.isArray(favoriteCourses) && favoriteCourses.some((item) => item._id === id));
+        setMyRating(Number(rating?.rating || 0));
+      } catch {
+        if (!cancelled) {
+          setMyRating(0);
+        }
+      }
+    };
+
+    void fetchStudentCourseState();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, role, user?._id]);
+
   const handleEnroll = async () => {
     if (!user) {
       navigate("/login");
@@ -338,6 +376,58 @@ export function CourseDetail() {
       setError(postError?.response?.data?.message || "Failed to post discussion message");
     } finally {
       setIsPostingComment(false);
+    }
+  };
+
+  const handleToggleFavorite = async () => {
+    if (!id || role !== "student" || favoriteBusy) {
+      return;
+    }
+
+    setFavoriteBusy(true);
+    setError("");
+
+    try {
+      if (isFavorite) {
+        await apiService.removeFavoriteCourse(id);
+        setIsFavorite(false);
+      } else {
+        await apiService.addFavoriteCourse(id);
+        setIsFavorite(true);
+      }
+    } catch (favoriteError: any) {
+      setError(favoriteError?.response?.data?.message || "Failed to update favorite");
+    } finally {
+      setFavoriteBusy(false);
+    }
+  };
+
+  const handleRateCourse = async (value: number) => {
+    if (!id || role !== "student" || ratingBusy) {
+      return;
+    }
+
+    setRatingBusy(true);
+    setError("");
+
+    try {
+      const summary = await apiService.rateCourse(id, { rating: value });
+      setMyRating(Number(summary.myRating || value));
+      setCourse((prev) => {
+        if (!prev) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          rating: Number(summary.rating || prev.rating || 0),
+          numReviews: Number(summary.numReviews || prev.numReviews || 0),
+        };
+      });
+    } catch (ratingError: any) {
+      setError(ratingError?.response?.data?.message || "Failed to save rating");
+    } finally {
+      setRatingBusy(false);
     }
   };
 
@@ -442,15 +532,39 @@ export function CourseDetail() {
                 </span>
                 <span>{Array.isArray(course.students) ? course.students.length : 0} students</span>
               </div>
+              {role === "student" && isEnrolled ? (
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-medium text-slate-500">Your rating:</span>
+                  {[1, 2, 3, 4, 5].map((value) => (
+                    <button
+                      key={`rate-${value}`}
+                      type="button"
+                      onClick={() => void handleRateCourse(value)}
+                      disabled={ratingBusy}
+                      className="rounded p-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                      aria-label={`Rate ${value} star${value > 1 ? "s" : ""}`}
+                    >
+                      <Star className={`h-4 w-4 ${value <= myRating ? "text-amber-500 fill-amber-500" : "text-slate-300"}`} />
+                    </button>
+                  ))}
+                  <span className="text-xs text-slate-500">{ratingBusy ? "Saving..." : (myRating > 0 ? `${myRating}/5` : "Tap a star")}</span>
+                </div>
+              ) : null}
             </div>
             <div className="flex gap-2">
               {isAdmin ? (
                 <Button variant="destructive" size="sm">Delete Course</Button>
               ) : (
                 <>
-                  <Button variant="outline" size="icon">
-                    <BookmarkPlus className="h-5 w-5" />
-                  </Button>
+                  {role === "student" ? (
+                    <Button variant="outline" size="icon" onClick={() => void handleToggleFavorite()} disabled={favoriteBusy}>
+                      <Heart className={`h-5 w-5 ${isFavorite ? "text-red-500 fill-red-500" : ""}`} />
+                    </Button>
+                  ) : (
+                    <Button variant="outline" size="icon">
+                      <BookmarkPlus className="h-5 w-5" />
+                    </Button>
+                  )}
                   <Button variant="outline" size="icon">
                     <Share2 className="h-5 w-5" />
                   </Button>
@@ -461,7 +575,7 @@ export function CourseDetail() {
 
           <div className="border-b border-slate-200 dark:border-slate-800 mb-6">
             <nav className="flex gap-6">
-              {(isInstructor ? ["overview", "resources", "discussion"] : ["content", "overview", "resources", "discussion"]).map((tab) => (
+              {["overview", "resources", "discussion"].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -564,82 +678,6 @@ export function CourseDetail() {
                 ) : (
                   <div className="text-sm text-slate-500">No discussion yet. Be the first to post.</div>
                 )}
-              </div>
-            ) : null}
-
-            {!isInstructor && activeTab === "content" ? (
-              <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div>
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Lesson Content</h3>
-                    <p className="text-sm text-slate-500">This tab shows notes, source links, and files. The lesson video player stays above this tab, like Overview.</p>
-                  </div>
-                  {isInstructor && id ? (
-                    <Button variant="outline" size="sm" asChild>
-                      <Link to={`/app/instructor/courses/${id}/lessons`}>Manage Lessons</Link>
-                    </Button>
-                  ) : null}
-                </div>
-
-                {!selectedLesson ? (
-                  <div className="rounded-lg border border-dashed border-slate-300 p-6 text-sm text-slate-500 dark:border-slate-800">
-                    {isInstructor
-                      ? "No lessons yet. Add lesson title, written content, video URL, and attachments from Manage Lessons."
-                      : "No lesson content available yet."}
-                  </div>
-                ) : (
-                  <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-950 space-y-5">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant="secondary" className="text-[10px] uppercase">Selected Lecture</Badge>
-                      <span className="text-xs text-slate-500">Duration: {formatDuration(selectedLesson.duration)}</span>
-                    </div>
-
-                    <div>
-                      <h4 className="text-xl font-bold text-slate-900 dark:text-white">{selectedLesson.title}</h4>
-                      {selectedLesson.content?.trim() ? (
-                        <p className="mt-3 whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300">{selectedLesson.content}</p>
-                      ) : (
-                        <p className="mt-3 text-sm text-slate-500">No written lesson notes yet. Add text in lesson content to display it here.</p>
-                      )}
-                    </div>
-
-                    <div className="rounded-lg bg-slate-50 p-4 dark:bg-slate-900/60">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Video Source</p>
-                      {selectedLesson.videoUrl ? (
-                        <a href={selectedLesson.videoUrl} target="_blank" rel="noreferrer" className="text-sm text-indigo-600 hover:underline break-all">
-                          {selectedLesson.videoUrl}
-                        </a>
-                      ) : (
-                        <p className="text-sm text-slate-500">No video URL attached to this lesson.</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Lesson Files</p>
-                      {selectedLessonResources.length === 0 ? (
-                        <p className="text-sm text-slate-500">No files uploaded for this lesson yet.</p>
-                      ) : (
-                        <div className="space-y-2">
-                          {selectedLessonResources.map((resource) => (
-                            <div key={resource.id} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-800">
-                              <div className="min-w-0">
-                                <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{resource.name}</p>
-                                <p className="text-xs text-slate-500 truncate">{resource.fileType}</p>
-                              </div>
-                              <Button variant="outline" size="sm" asChild>
-                                <a href={resource.url} target="_blank" rel="noreferrer">Open</a>
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                <p className="text-xs text-slate-500">
-                  How to post content so it appears here: go to Manage Lessons, then add lesson title, lesson text content, video URL, and attachments.
-                </p>
               </div>
             ) : null}
           </div>

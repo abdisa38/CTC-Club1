@@ -11,6 +11,7 @@ import {
 	getInstructorAnalytics,
 	getAdminGlobalSearch,
 	getInstructorGlobalSearch,
+	getStudentGlobalSearch,
 } from '../controllers/dashboardController';
 
 const router = express.Router();
@@ -24,6 +25,7 @@ router.get('/resources', protect as any, getDashboardResources as any);
 router.get('/instructor/students', protect as any, getInstructorStudents as any);
 router.get('/instructor/analytics', protect as any, getInstructorAnalytics as any);
 router.get('/instructor/search', protect as any, getInstructorGlobalSearch as any);
+router.get('/student/search', protect as any, getStudentGlobalSearch as any);
 router.get('/admin/search', protect as any, getAdminGlobalSearch as any);
 
 export default router;
