@@ -24,6 +24,14 @@ const toDateTimeLocal = (value?: string) => {
   return `${y}-${m}-${d}T${hh}:${mm}`;
 };
 
+const getRefId = (value?: { _id: string } | string | null) => {
+  if (!value) {
+    return "";
+  }
+
+  return typeof value === "string" ? value : value._id;
+};
+
 export function Projects() {
   const { role, user } = useAuth();
   const isInstructor = role === "instructor" || role === "admin";
@@ -108,7 +116,7 @@ export function Projects() {
   const submissionByProjectId = useMemo(() => {
     const map = new Map<string, ProjectSubmission>();
     for (const submission of submissions) {
-      const projectId = submission.project?._id;
+      const projectId = getRefId(submission.project);
       if (projectId && !map.has(projectId)) {
         map.set(projectId, submission);
       }
@@ -128,7 +136,7 @@ export function Projects() {
   const submissionCountByProject = useMemo(() => {
     const counts = new Map<string, number>();
     submissions.forEach((submission) => {
-      const projectId = submission.project?._id;
+      const projectId = getRefId(submission.project);
       if (!projectId) return;
       counts.set(projectId, (counts.get(projectId) || 0) + 1);
     });
@@ -261,7 +269,7 @@ export function Projects() {
     try {
       await apiService.deleteProject(projectId);
       setProjects((prev) => prev.filter((project) => project._id !== projectId));
-      setSubmissions((prev) => prev.filter((submission) => submission.project?._id !== projectId));
+      setSubmissions((prev) => prev.filter((submission) => getRefId(submission.project) !== projectId));
     } catch (err: any) {
       setError(err?.response?.data?.message || "Failed to delete project");
     } finally {
@@ -284,7 +292,15 @@ export function Projects() {
       });
 
       setSubmissions((prev) => {
-        const withoutCurrent = prev.filter((s) => s._id !== submission._id);
+        const submittedProjectId = getRefId(submission.project) || projectId;
+        const withoutCurrent = prev.filter((s) => {
+          const existingProjectId = getRefId(s.project);
+          if (existingProjectId && existingProjectId === submittedProjectId) {
+            return false;
+          }
+
+          return s._id !== submission._id;
+        });
         return [submission, ...withoutCurrent];
       });
       resetSubmitForm();
