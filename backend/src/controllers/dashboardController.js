@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getAdminGlobalSearch = exports.getInstructorAnalytics = exports.getInstructorStudents = exports.getPublicStats = exports.getDashboardAnnouncements = exports.getDashboardResources = exports.getLeaderboard = exports.getAdminAnalytics = exports.getDashboardMetrics = void 0;
+exports.getInstructorGlobalSearch = exports.getAdminGlobalSearch = exports.getInstructorAnalytics = exports.getInstructorStudents = exports.getPublicStats = exports.getDashboardAnnouncements = exports.getDashboardResources = exports.getLeaderboard = exports.getAdminAnalytics = exports.getDashboardMetrics = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const userModel_1 = __importDefault(require("../models/userModel"));
 const courseModel_1 = __importDefault(require("../models/courseModel"));
@@ -746,6 +746,185 @@ exports.getAdminGlobalSearch = (0, express_async_handler_1.default)(async (req, 
             tickets: tickets.length,
             announcements: announcements.length,
             events: events.length,
+        },
+    });
+});
+// @desc    Global instructor search
+// @route   GET /api/dashboard/instructor/search
+// @access  Private/Instructor
+exports.getInstructorGlobalSearch = (0, express_async_handler_1.default)(async (req, res) => {
+    if (req.user.role !== 'instructor' && req.user.role !== 'admin') {
+        res.status(403);
+        throw new Error('Only instructors can search instructor data');
+    }
+    const query = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+    if (query.length < 2) {
+        (0, apiResponse_1.sendSuccess)(res, {
+            query,
+            items: [],
+            counts: {
+                courses: 0,
+                students: 0,
+                projects: 0,
+                submissions: 0,
+                discussions: 0,
+            },
+        });
+        return;
+    }
+    const instructorId = req.user._id.toString();
+    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(escaped, 'i');
+    const instructorCourses = await courseModel_1.default.find({
+        instructor: instructorId,
+        isDeleted: false,
+    }).select('_id title students').lean();
+    const courseIds = instructorCourses.map((course) => course._id);
+    if (courseIds.length === 0) {
+        (0, apiResponse_1.sendSuccess)(res, {
+            query,
+            items: [],
+            counts: {
+                courses: 0,
+                students: 0,
+                projects: 0,
+                submissions: 0,
+                discussions: 0,
+            },
+        });
+        return;
+    }
+    const studentIdSet = new Set();
+    instructorCourses.forEach((course) => {
+        const students = Array.isArray(course.students) ? course.students : [];
+        students.forEach((studentId) => {
+            studentIdSet.add(studentId.toString());
+        });
+    });
+    const studentIds = Array.from(studentIdSet);
+    const [courses, students, projects, submissionsRaw, discussions] = await Promise.all([
+        courseModel_1.default.find({
+            instructor: instructorId,
+            isDeleted: false,
+            $or: [
+                { title: { $regex: regex } },
+                { description: { $regex: regex } },
+            ],
+        })
+            .select('_id title category status')
+            .sort({ createdAt: -1 })
+            .limit(6)
+            .lean(),
+        userModel_1.default.find({
+            _id: { $in: studentIds },
+            isDeleted: false,
+            $or: [
+                { name: { $regex: regex } },
+                { email: { $regex: regex } },
+            ],
+        })
+            .select('_id name email')
+            .sort({ createdAt: -1 })
+            .limit(6)
+            .lean(),
+        projectModel_1.Project.find({
+            course: { $in: courseIds },
+            isDeleted: false,
+            $or: [
+                { title: { $regex: regex } },
+                { description: { $regex: regex } },
+                { instructions: { $regex: regex } },
+            ],
+        })
+            .select('_id title isPublished deadline course')
+            .populate('course', 'title')
+            .sort({ createdAt: -1 })
+            .limit(6)
+            .lean(),
+        projectModel_1.ProjectSubmission.find({
+            course: { $in: courseIds },
+        })
+            .populate('student', 'name email')
+            .populate('project', 'title')
+            .sort({ updatedAt: -1 })
+            .limit(40)
+            .lean(),
+        communityModel_1.CommunityPost.find({
+            course: { $in: courseIds },
+            isDeleted: false,
+            category: { $ne: 'announcement' },
+            $or: [
+                { title: { $regex: regex } },
+                { content: { $regex: regex } },
+                { tags: { $elemMatch: { $regex: regex } } },
+            ],
+        })
+            .populate('course', 'title')
+            .sort({ createdAt: -1 })
+            .limit(6)
+            .lean(),
+    ]);
+    const lowerQuery = query.toLowerCase();
+    const submissions = submissionsRaw
+        .filter((row) => {
+        const haystack = [
+            row.student?.name,
+            row.student?.email,
+            row.project?.title,
+            row.comments,
+        ]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase();
+        return haystack.includes(lowerQuery);
+    })
+        .slice(0, 6);
+    const items = [
+        ...courses.map((item) => ({
+            id: item._id.toString(),
+            type: 'course',
+            title: item.title,
+            subtitle: `${item.category || 'Course'} • ${item.status || 'draft'}`,
+            href: `/app/courses/${item._id}`,
+        })),
+        ...students.map((item) => ({
+            id: item._id.toString(),
+            type: 'student',
+            title: item.name,
+            subtitle: item.email,
+            href: '/app/instructor/students',
+        })),
+        ...projects.map((item) => ({
+            id: item._id.toString(),
+            type: 'project',
+            title: item.title,
+            subtitle: `${item.isPublished ? 'Published' : 'Draft'} • ${item.course?.title || 'Course Project'}`,
+            href: '/app/instructor/projects',
+        })),
+        ...submissions.map((item) => ({
+            id: item._id.toString(),
+            type: 'submission',
+            title: `${item.student?.name || 'Student'} • ${item.project?.title || 'Project'}`,
+            subtitle: `Submission • ${new Date(item.updatedAt).toLocaleString()}`,
+            href: '/app/instructor/projects',
+        })),
+        ...discussions.map((item) => ({
+            id: item._id.toString(),
+            type: 'discussion',
+            title: item.title,
+            subtitle: `${item.course?.title || 'Course Discussion'} • ${new Date(item.createdAt).toLocaleDateString()}`,
+            href: '/app/instructor/comments',
+        })),
+    ];
+    (0, apiResponse_1.sendSuccess)(res, {
+        query,
+        items,
+        counts: {
+            courses: courses.length,
+            students: students.length,
+            projects: projects.length,
+            submissions: submissions.length,
+            discussions: discussions.length,
         },
     });
 });
