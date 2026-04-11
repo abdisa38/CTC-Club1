@@ -802,22 +802,28 @@ export function Home() {
           </AnimatedSection>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-5xl mx-auto">
-            {eventCards.map((e, i) => (
-              <AnimatedSection key={e.id} delay={i * 0.08}>
-                <PremiumCard className="p-6">
-                  <Badge variant="outline" className="mb-4 text-[11px] font-semibold bg-indigo-50 text-indigo-700 border-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/20 capitalize">{e.type}</Badge>
-                  <h3 className="text-[15px] font-semibold text-slate-900 dark:text-white mb-2">{e.title}</h3>
-                  <p className="text-sm text-slate-500 mb-4 leading-relaxed">{e.desc}</p>
-                  <div className="flex items-center gap-4 text-[12px] text-slate-400 mb-5">
-                    <span className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" /> {e.date}</span>
-                    <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> {e.time}</span>
-                  </div>
-                  <Button size="sm" className="w-full rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white shadow-sm shadow-indigo-500/20" asChild>
-                    <Link to="/app/community">Read Update</Link>
-                  </Button>
-                </PremiumCard>
-              </AnimatedSection>
-            ))}
+            {eventCards.length === 0 ? (
+              <div className="md:col-span-3 rounded-2xl border border-dashed border-slate-300 p-8 text-center text-slate-500 dark:border-slate-700">
+                No upcoming events are published yet.
+              </div>
+            ) : (
+              eventCards.map((e, i) => (
+                <AnimatedSection key={e.id} delay={i * 0.08}>
+                  <PremiumCard className="p-6">
+                    <Badge variant="outline" className="mb-4 text-[11px] font-semibold bg-indigo-50 text-indigo-700 border-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/20 capitalize">{e.type}</Badge>
+                    <h3 className="text-[15px] font-semibold text-slate-900 dark:text-white mb-2">{e.title}</h3>
+                    <p className="text-sm text-slate-500 mb-4 leading-relaxed">{e.desc}</p>
+                    <div className="flex items-center gap-4 text-[12px] text-slate-400 mb-5">
+                      <span className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" /> {e.date}</span>
+                      <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> {e.time}</span>
+                    </div>
+                    <Button size="sm" className="w-full rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white shadow-sm shadow-indigo-500/20" asChild>
+                      <Link to="/events">View Events</Link>
+                    </Button>
+                  </PremiumCard>
+                </AnimatedSection>
+              ))
+            )}
           </div>
         </div>
       </section>
