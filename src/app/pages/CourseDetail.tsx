@@ -579,17 +579,8 @@ export function CourseDetail() {
                       <span className="text-xs text-slate-500">Duration: {formatDuration(selectedLesson.duration)}</span>
                     </div>
 
-                    <div>
-                      <h4 className="text-xl font-bold text-slate-900 dark:text-white">{selectedLesson.title}</h4>
-                      {selectedLesson.content?.trim() ? (
-                        <p className="mt-3 whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300">{selectedLesson.content}</p>
-                      ) : (
-                        <p className="mt-3 text-sm text-slate-500">No written lesson notes yet. Add text in lesson content to display it here.</p>
-                      )}
-                    </div>
-
                     <div className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Selected Lesson Video</p>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Video Preview</p>
                       {!canAccessLessons ? (
                         <p className="text-sm text-slate-500">Enroll in this course to view the lesson video.</p>
                       ) : selectedLesson.videoUrl ? (
@@ -626,6 +617,15 @@ export function CourseDetail() {
                         </a>
                       ) : (
                         <p className="text-sm text-slate-500">No video URL attached to this lesson.</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <h4 className="text-xl font-bold text-slate-900 dark:text-white">{selectedLesson.title}</h4>
+                      {selectedLesson.content?.trim() ? (
+                        <p className="mt-3 whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300">{selectedLesson.content}</p>
+                      ) : (
+                        <p className="mt-3 text-sm text-slate-500">No written lesson notes yet. Add text in lesson content to display it here.</p>
                       )}
                     </div>
 
