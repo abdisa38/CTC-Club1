@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
 import { Progress } from "../components/ui/Progress";
@@ -261,6 +261,21 @@ export function CourseDetail() {
 
     return resources;
   }, [visibleLessons]);
+
+  const selectedLessonResources = useMemo(() => {
+    if (!selectedLesson || !Array.isArray(selectedLesson.attachments)) {
+      return [];
+    }
+
+    return selectedLesson.attachments
+      .filter((attachment) => Boolean(attachment?.url))
+      .map((attachment, index) => ({
+        id: `${selectedLesson._id}-selected-${index}`,
+        name: attachment.title || toResourceName(attachment.url, `${selectedLesson.title} Resource`),
+        url: attachment.url,
+        fileType: attachment.fileType || "file",
+      }));
+  }, [selectedLesson]);
 
   const ratingValue = typeof course?.rating === "number" ? course.rating : 0;
   const reviewCount = typeof course?.numReviews === "number" ? course.numReviews : 0;
@@ -538,8 +553,78 @@ export function CourseDetail() {
             ) : null}
 
             {activeTab === "content" ? (
-              <div className="lg:hidden text-center p-8 text-slate-500">
-                <p>Course content is visible on the right sidebar on desktop, or scroll down on mobile.</p>
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Lesson Content</h3>
+                    <p className="text-sm text-slate-500">This tab shows the currently selected lecture details, written notes, video source, and files.</p>
+                  </div>
+                  {isInstructor && id ? (
+                    <Button variant="outline" size="sm" asChild>
+                      <Link to={`/app/instructor/courses/${id}/lessons`}>Manage Lessons</Link>
+                    </Button>
+                  ) : null}
+                </div>
+
+                {!selectedLesson ? (
+                  <div className="rounded-lg border border-dashed border-slate-300 p-6 text-sm text-slate-500 dark:border-slate-800">
+                    {isInstructor
+                      ? "No lessons yet. Add lesson title, written content, video URL, and attachments from Manage Lessons."
+                      : "No lesson content available yet."}
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-950 space-y-5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="secondary" className="text-[10px] uppercase">Selected Lecture</Badge>
+                      <span className="text-xs text-slate-500">Duration: {formatDuration(selectedLesson.duration)}</span>
+                    </div>
+
+                    <div>
+                      <h4 className="text-xl font-bold text-slate-900 dark:text-white">{selectedLesson.title}</h4>
+                      {selectedLesson.content?.trim() ? (
+                        <p className="mt-3 whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300">{selectedLesson.content}</p>
+                      ) : (
+                        <p className="mt-3 text-sm text-slate-500">No written lesson notes yet. Add text in lesson content to display it here.</p>
+                      )}
+                    </div>
+
+                    <div className="rounded-lg bg-slate-50 p-4 dark:bg-slate-900/60">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Video Source</p>
+                      {selectedLesson.videoUrl ? (
+                        <a href={selectedLesson.videoUrl} target="_blank" rel="noreferrer" className="text-sm text-indigo-600 hover:underline break-all">
+                          {selectedLesson.videoUrl}
+                        </a>
+                      ) : (
+                        <p className="text-sm text-slate-500">No video URL attached to this lesson.</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Lesson Files</p>
+                      {selectedLessonResources.length === 0 ? (
+                        <p className="text-sm text-slate-500">No files uploaded for this lesson yet.</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {selectedLessonResources.map((resource) => (
+                            <div key={resource.id} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-800">
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{resource.name}</p>
+                                <p className="text-xs text-slate-500 truncate">{resource.fileType}</p>
+                              </div>
+                              <Button variant="outline" size="sm" asChild>
+                                <a href={resource.url} target="_blank" rel="noreferrer">Open</a>
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-xs text-slate-500">
+                  How to post content so it appears here: go to Manage Lessons, then add lesson title, lesson text content, video URL, and attachments.
+                </p>
               </div>
             ) : null}
           </div>
