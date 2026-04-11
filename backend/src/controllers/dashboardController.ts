@@ -6,6 +6,7 @@ import Course from '../models/courseModel';
 import Progress from '../models/progressModel';
 import Ticket from '../models/ticketModel';
 import Lesson from '../models/lessonModel';
+import Event from '../models/eventModel';
 import { ProjectSubmission } from '../models/projectModel';
 import { QuizResult } from '../models/quizModel';
 import Notification from '../models/notificationModel';
@@ -715,5 +716,144 @@ export const getInstructorAnalytics = asyncHandler(async (req: AuthRequest, res:
         ],
         coursePerformance,
         generatedAt: new Date().toISOString(),
+    });
+});
+
+// @desc    Global admin search
+// @route   GET /api/dashboard/admin/search
+// @access  Private/Admin
+export const getAdminGlobalSearch = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
+    if (req.user.role !== 'admin') {
+        res.status(403);
+        throw new Error('Only admins can search platform data');
+    }
+
+    const query = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+    if (query.length < 2) {
+        sendSuccess(res, {
+            query,
+            items: [],
+            counts: {
+                users: 0,
+                courses: 0,
+                tickets: 0,
+                announcements: 0,
+                events: 0,
+            },
+        });
+        return;
+    }
+
+    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(escaped, 'i');
+
+    const [users, courses, tickets, announcements, events] = await Promise.all([
+        User.find({
+            isDeleted: false,
+            $or: [
+                { name: { $regex: regex } },
+                { email: { $regex: regex } },
+            ],
+        })
+            .select('name email role')
+            .sort({ createdAt: -1 })
+            .limit(6)
+            .lean(),
+        Course.find({
+            isDeleted: false,
+            $or: [
+                { title: { $regex: regex } },
+                { description: { $regex: regex } },
+            ],
+        })
+            .select('_id title category status')
+            .sort({ createdAt: -1 })
+            .limit(6)
+            .lean(),
+        Ticket.find({
+            isDeleted: false,
+            $or: [
+                { subject: { $regex: regex } },
+                { category: { $regex: regex } },
+            ],
+        })
+            .select('_id subject status priority')
+            .sort({ createdAt: -1 })
+            .limit(6)
+            .lean(),
+        CommunityPost.find({
+            isDeleted: false,
+            category: 'announcement',
+            $or: [
+                { title: { $regex: regex } },
+                { content: { $regex: regex } },
+            ],
+        })
+            .select('_id title createdAt')
+            .sort({ createdAt: -1 })
+            .limit(6)
+            .lean(),
+        Event.find({
+            isDeleted: false,
+            $or: [
+                { title: { $regex: regex } },
+                { description: { $regex: regex } },
+                { location: { $regex: regex } },
+            ],
+        })
+            .select('_id title startsAt isPublished')
+            .sort({ startsAt: 1 })
+            .limit(6)
+            .lean(),
+    ]);
+
+    const items = [
+        ...users.map((item: any) => ({
+            id: item._id.toString(),
+            type: 'user',
+            title: item.name,
+            subtitle: `${item.email} • ${item.role}`,
+            href: '/app/admin/users',
+        })),
+        ...courses.map((item: any) => ({
+            id: item._id.toString(),
+            type: 'course',
+            title: item.title,
+            subtitle: `${item.category || 'Course'} • ${item.status || 'draft'}`,
+            href: `/app/instructor/courses/${item._id}/edit`,
+        })),
+        ...tickets.map((item: any) => ({
+            id: item._id.toString(),
+            type: 'ticket',
+            title: item.subject,
+            subtitle: `${item.status} • ${item.priority}`,
+            href: '/app/admin/tickets',
+        })),
+        ...announcements.map((item: any) => ({
+            id: item._id.toString(),
+            type: 'announcement',
+            title: item.title,
+            subtitle: `Announcement • ${new Date(item.createdAt).toLocaleDateString()}`,
+            href: '/app/admin/announcements',
+        })),
+        ...events.map((item: any) => ({
+            id: item._id.toString(),
+            type: 'event',
+            title: item.title,
+            subtitle: `${item.isPublished ? 'Published' : 'Draft'} • ${new Date(item.startsAt).toLocaleString()}`,
+            href: '/app/admin/events',
+        })),
+    ];
+
+    sendSuccess(res, {
+        query,
+        items,
+        counts: {
+            users: users.length,
+            courses: courses.length,
+            tickets: tickets.length,
+            announcements: announcements.length,
+            events: events.length,
+        },
     });
 });
