@@ -6,12 +6,12 @@ import { Input } from "../components/ui/Input";
 import { Textarea } from "../components/ui/Textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "../components/ui/Dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/Tabs";
-import { Github, UploadCloud, Link as LinkIcon, CheckCircle2, Loader2, User, Clock } from "lucide-react";
+import { Github, UploadCloud, Link as LinkIcon, CheckCircle2, Loader2, User, Clock, PlusCircle } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import apiService, { Project, ProjectSubmission } from "../services/api";
+import apiService, { Course, Project, ProjectSubmission } from "../services/api";
 
 export function Projects() {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const isInstructor = role === "instructor" || role === "admin";
 
   const [isLoading, setIsLoading] = useState(true);
@@ -20,6 +20,19 @@ export function Projects() {
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [submissions, setSubmissions] = useState<ProjectSubmission[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
+
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [creatingProject, setCreatingProject] = useState(false);
+  const [createTitle, setCreateTitle] = useState("");
+  const [createDescription, setCreateDescription] = useState("");
+  const [createCourseId, setCreateCourseId] = useState("");
+  const [createInstructions, setCreateInstructions] = useState("");
+  const [createRequirements, setCreateRequirements] = useState("");
+  const [createXpReward, setCreateXpReward] = useState("50");
+  const [createMaxPoints, setCreateMaxPoints] = useState("100");
+  const [createDeadline, setCreateDeadline] = useState("");
+  const [createPublished, setCreatePublished] = useState(true);
 
   const [activeProjectId, setActiveProjectId] = useState<string>("");
   const [repoUrl, setRepoUrl] = useState("");
@@ -33,13 +46,33 @@ export function Projects() {
   const loadData = async () => {
     try {
       setError("");
-      const [projectData, submissionData] = await Promise.all([
+      const [projectData, submissionData, coursesData] = await Promise.all([
         apiService.getProjects(),
         apiService.getProjectSubmissions(),
+        isInstructor ? apiService.getCourses({ page: 1, limit: 200 }) : Promise.resolve(null),
       ]);
 
       setProjects(projectData);
       setSubmissions(submissionData);
+
+      if (coursesData) {
+        const allCourses = Array.isArray(coursesData.items) ? coursesData.items : [];
+        const scopedCourses = role === "instructor"
+          ? allCourses.filter((course) => {
+              const instructorId = typeof course.instructor === "string"
+                ? course.instructor
+                : course.instructor?._id;
+
+              if (!instructorId || !user?._id) {
+                return true;
+              }
+
+              return instructorId === user._id;
+            })
+          : allCourses;
+
+        setCourses(scopedCourses);
+      }
     } catch (err: any) {
       setError(err?.response?.data?.message || "Failed to load projects");
     } finally {
@@ -49,7 +82,13 @@ export function Projects() {
 
   useEffect(() => {
     void loadData();
-  }, []);
+  }, [isInstructor, role, user?._id]);
+
+  useEffect(() => {
+    if (!createCourseId && courses.length > 0) {
+      setCreateCourseId(courses[0]._id);
+    }
+  }, [courses, createCourseId]);
 
   const submissionByProjectId = useMemo(() => {
     const map = new Map<string, ProjectSubmission>();
@@ -71,6 +110,16 @@ export function Projects() {
     [submissions]
   );
 
+  const submissionCountByProject = useMemo(() => {
+    const counts = new Map<string, number>();
+    submissions.forEach((submission) => {
+      const projectId = submission.project?._id;
+      if (!projectId) return;
+      counts.set(projectId, (counts.get(projectId) || 0) + 1);
+    });
+    return counts;
+  }, [submissions]);
+
   const resetSubmitForm = () => {
     setActiveProjectId("");
     setRepoUrl("");
@@ -82,6 +131,73 @@ export function Projects() {
     setActiveReviewId("");
     setReviewGrade("");
     setReviewFeedback("");
+  };
+
+  const resetCreateForm = () => {
+    setCreateTitle("");
+    setCreateDescription("");
+    setCreateInstructions("");
+    setCreateRequirements("");
+    setCreateXpReward("50");
+    setCreateMaxPoints("100");
+    setCreateDeadline("");
+    setCreatePublished(true);
+  };
+
+  const handleCreateProject = async () => {
+    if (!createTitle.trim() || !createDescription.trim() || !createCourseId) {
+      setError("Project title, description, and course are required");
+      return;
+    }
+
+    const xpReward = Number(createXpReward || 0);
+    const maxPoints = Number(createMaxPoints || 0);
+
+    if (!Number.isFinite(xpReward) || xpReward < 0) {
+      setError("XP reward must be a valid number");
+      return;
+    }
+
+    if (!Number.isFinite(maxPoints) || maxPoints <= 0) {
+      setError("Max points must be greater than 0");
+      return;
+    }
+
+    setCreatingProject(true);
+    setError("");
+
+    try {
+      const created = await apiService.createProject({
+        title: createTitle.trim(),
+        description: createDescription.trim(),
+        courseId: createCourseId,
+        instructions: createInstructions.trim() || undefined,
+        requirements: createRequirements
+          .split("\n")
+          .map((item) => item.trim())
+          .filter(Boolean),
+        xpReward,
+        maxPoints,
+        deadline: createDeadline ? new Date(createDeadline).toISOString() : undefined,
+        isPublished: createPublished,
+      });
+
+      const selectedCourse = courses.find((course) => course._id === createCourseId);
+      const normalized: Project = {
+        ...created,
+        course: selectedCourse
+          ? { _id: selectedCourse._id, title: selectedCourse.title }
+          : created.course,
+      };
+
+      setProjects((prev) => [normalized, ...prev]);
+      setCreateDialogOpen(false);
+      resetCreateForm();
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to create project");
+    } finally {
+      setCreatingProject(false);
+    }
   };
 
   const handleSubmitProject = async () => {
