@@ -196,6 +196,12 @@ export const rateCourse = asyncHandler(async (req: AuthRequest, res: Response) =
     throw new Error('Only students can rate courses');
   }
 
+  const courseId = typeof req.params.id === 'string' ? req.params.id : '';
+  if (!courseId) {
+    res.status(400);
+    throw new Error('Course ID is required');
+  }
+
   const { rating, comment } = req.body as { rating?: number | string; comment?: string };
   const numericRating = Number(rating);
 
@@ -204,7 +210,7 @@ export const rateCourse = asyncHandler(async (req: AuthRequest, res: Response) =
     throw new Error('Rating must be a number between 1 and 5');
   }
 
-  const course = await Course.findById(req.params.id).select('_id students status');
+  const course = await Course.findById(courseId).select('_id students status');
   if (!course) {
     res.status(404);
     throw new Error('Course not found');
@@ -254,8 +260,14 @@ export const getMyCourseRating = asyncHandler(async (req: AuthRequest, res: Resp
     throw new Error('Only students can access course ratings');
   }
 
+  const courseId = typeof req.params.id === 'string' ? req.params.id : '';
+  if (!courseId) {
+    res.status(400);
+    throw new Error('Course ID is required');
+  }
+
   const review = await CourseReview.findOne({
-    course: req.params.id,
+    course: courseId,
     user: req.user._id,
   })
     .select('rating comment updatedAt')
