@@ -76,17 +76,22 @@ export const createEvent = asyncHandler(async (req: AuthRequest, res: Response) 
     endDate = parsedEnd;
   }
 
-  const event = await Event.create({
+  const payload: any = {
     title: title.trim(),
     description: description.trim(),
     location: location?.trim() || '',
     startsAt: startDate,
-    endsAt: endDate,
     isPublished: typeof isPublished === 'boolean' ? isPublished : true,
     createdBy: req.user._id,
-  });
+  };
 
-  const populated = await Event.findById(event._id).populate('createdBy', 'name email');
+  if (endDate) {
+    payload.endsAt = endDate;
+  }
+
+  const event = await Event.create(payload);
+
+  const populated = await Event.findById((event as any)._id).populate('createdBy', 'name email');
   sendSuccess(res, populated || event, { statusCode: 201, message: 'Event created successfully' });
 });
 
