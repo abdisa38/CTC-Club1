@@ -21,6 +21,7 @@ export function CourseEditor() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("Development");
+  const [pricingMode, setPricingMode] = useState<"free" | "paid">("free");
   const [price, setPrice] = useState("0");
   const [coverImage, setCoverImage] = useState("");
 
@@ -33,7 +34,9 @@ export function CourseEditor() {
         setTitle(course.title || "");
         setDescription(course.description || "");
         setCategory(course.category || "Development");
-        setPrice(String(course.price ?? 0));
+        const loadedPrice = Number(course.price ?? 0);
+        setPrice(String(loadedPrice));
+        setPricingMode(loadedPrice > 0 ? "paid" : "free");
         setCoverImage(course.coverImage || "");
       } catch (err: any) {
         setError(err?.response?.data?.message || "Failed to load course for editing");
@@ -57,7 +60,11 @@ export function CourseEditor() {
     }
 
     const priceNum = Number(price);
-    if (Number.isNaN(priceNum) || priceNum < 0) {
+    if (pricingMode === "paid") {
+      if (Number.isNaN(priceNum) || priceNum <= 0) {
+        issues.push("Paid course price must be greater than 0");
+      }
+    } else if (Number.isNaN(priceNum) || priceNum < 0) {
       issues.push("Price must be a valid non-negative number");
     }
 
@@ -66,7 +73,7 @@ export function CourseEditor() {
     }
 
     return issues;
-  }, [title, description, price, category]);
+  }, [title, description, price, category, pricingMode]);
 
   const handleSave = async () => {
     if (formErrors.length > 0) {
@@ -82,7 +89,8 @@ export function CourseEditor() {
         title: title.trim(),
         description: description.trim(),
         category,
-        price: Number(price),
+        price: pricingMode === "free" ? 0 : Number(price),
+        currency: "ETB",
         coverImage: coverImage.trim() || undefined,
       };
 
@@ -163,9 +171,43 @@ export function CourseEditor() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Price (USD) *</label>
-              <Input type="number" min="0" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0" />
+              <label className="text-sm font-medium">Pricing Model *</label>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant={pricingMode === "free" ? "default" : "outline"}
+                  onClick={() => {
+                    setPricingMode("free");
+                    setPrice("0");
+                  }}
+                >
+                  Free
+                </Button>
+                <Button
+                  type="button"
+                  variant={pricingMode === "paid" ? "default" : "outline"}
+                  onClick={() => setPricingMode("paid")}
+                >
+                  Paid
+                </Button>
+              </div>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Price (ETB) *</label>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              value={pricingMode === "free" ? "0" : price}
+              onChange={(e) => setPrice(e.target.value)}
+              disabled={pricingMode === "free"}
+              placeholder="0"
+            />
+            <p className="text-xs text-slate-500">
+              {pricingMode === "free" ? "Students can enroll instantly for free." : "Students must complete checkout to unlock this course."}
+            </p>
           </div>
 
           <div className="space-y-2">

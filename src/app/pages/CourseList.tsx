@@ -371,7 +371,7 @@ export function CourseList() {
                       </Badge>
                       <Badge className={`text-xs px-2 py-0.5 ${Number(course.price || 0) > 0 ? "bg-indigo-100 text-indigo-700" : "bg-emerald-100 text-emerald-700"}`}>
                         {Number(course.price || 0) > 0
-                          ? `${Number(course.price || 0).toFixed(2)} ${(course.currency || "ETB").toUpperCase()}`
+                          ? `${Number(course.price || 0).toFixed(2)} ETB`
                           : "Free"}
                       </Badge>
                     </div>
@@ -392,7 +392,7 @@ export function CourseList() {
                           {enrollingId === course._id
                             ? (Number(course.price || 0) > 0 ? "Opening checkout..." : "Enrolling...")
                             : (Number(course.price || 0) > 0
-                              ? `Pay ${Number(course.price || 0).toFixed(0)} ${(course.currency || "ETB").toUpperCase()}`
+                                ? `Pay ${Number(course.price || 0).toFixed(0)} ETB`
                               : "Enroll Free")}
                         </Button>
                       ) : null}
