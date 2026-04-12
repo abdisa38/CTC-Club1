@@ -5,7 +5,7 @@ import { Input } from "../components/ui/Input";
 import { Textarea } from "../components/ui/Textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/Avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/Tabs";
-import { Bell, User, Palette, Globe, Github, Linkedin, Shield, LogOut, AlertCircle, Loader2 } from "lucide-react";
+import { Bell, User, Palette, Globe, Github, Linkedin, Shield, LogOut, AlertCircle, Loader2, Crown, CheckCircle2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import apiService, { NotificationPreferences, ThemePreference } from "../services/api";
 
@@ -48,6 +48,19 @@ const applyThemePreference = (theme: ThemePreference) => {
   localStorage.setItem("theme", "system");
 };
 
+const formatPremiumDate = (value?: string) => {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return date.toLocaleDateString();
+};
+
 export function Settings() {
   const { user, login, logout } = useAuth();
   const [activeTab, setActiveTab] = useState("profile");
@@ -58,6 +71,8 @@ export function Settings() {
   const [isSavingEmail, setIsSavingEmail] = useState(false);
   const [isSavingNotifications, setIsSavingNotifications] = useState(false);
   const [isSavingTheme, setIsSavingTheme] = useState(false);
+  const [isStartingPremiumPayment, setIsStartingPremiumPayment] = useState(false);
+  const [isVerifyingPremiumPayment, setIsVerifyingPremiumPayment] = useState(false);
 
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
@@ -150,6 +165,65 @@ export function Settings() {
       ignore = true;
     };
   }, []);
+
+  useEffect(() => {
+    let ignore = false;
+
+    const params = new URLSearchParams(window.location.search);
+    const shouldVerify = params.get("premium") === "verify";
+    const txRef = params.get("tx_ref") || "";
+
+    if (!shouldVerify || !txRef) {
+      return;
+    }
+
+    const verifyPremium = async () => {
+      setIsVerifyingPremiumPayment(true);
+      setErrorMsg("");
+      setSuccessMsg("");
+
+      try {
+        const verification = await apiService.verifyPremiumPayment(txRef);
+
+        if (ignore) {
+          return;
+        }
+
+        const refreshedUser = await apiService.getCurrentUser();
+        if (ignore) {
+          return;
+        }
+
+        login(refreshedUser as any);
+        hydrateSettingsForm(refreshedUser);
+
+        if (verification.paymentVerified && verification.isPremium) {
+          setSuccessMsg("Premium payment verified. Your account is now premium.");
+        } else {
+          setErrorMsg(verification.reason || "Payment has not completed yet. If you already paid, try again in a few seconds.");
+        }
+      } catch (error: any) {
+        if (!ignore) {
+          setErrorMsg(error?.response?.data?.message || "Failed to verify premium payment.");
+        }
+      } finally {
+        if (!ignore) {
+          setIsVerifyingPremiumPayment(false);
+        }
+
+        const cleanUrl = new URL(window.location.href);
+        cleanUrl.searchParams.delete("premium");
+        cleanUrl.searchParams.delete("tx_ref");
+        window.history.replaceState({}, "", `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`);
+      }
+    };
+
+    void verifyPremium();
+
+    return () => {
+      ignore = true;
+    };
+  }, [login]);
 
   const updateProfile = async (input: {
     name?: string;
@@ -340,6 +414,40 @@ export function Settings() {
     }
   };
 
+  const handleStartPremiumPayment = async () => {
+    if (user?.isPremium) {
+      setSuccessMsg("Premium access is already active on your account.");
+      setErrorMsg("");
+      return;
+    }
+
+    setIsStartingPremiumPayment(true);
+    setErrorMsg("");
+    setSuccessMsg("");
+
+    try {
+      const init = await apiService.initializePremiumPayment();
+
+      if (init.alreadyPremium || init.isPremium) {
+        const refreshedUser = await apiService.getCurrentUser();
+        login(refreshedUser as any);
+        hydrateSettingsForm(refreshedUser);
+        setSuccessMsg("Premium access is already active on your account.");
+        return;
+      }
+
+      if (!init.checkoutUrl) {
+        throw new Error("Checkout URL was not returned by the server.");
+      }
+
+      window.location.href = init.checkoutUrl;
+    } catch (error: any) {
+      setErrorMsg(error?.response?.data?.message || error?.message || "Failed to start premium checkout.");
+    } finally {
+      setIsStartingPremiumPayment(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="max-w-4xl mx-auto space-y-6">
@@ -517,6 +625,43 @@ export function Settings() {
             </TabsContent>
 
             <TabsContent value="account" className="mt-0 space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2"><Crown className="h-5 w-5 text-amber-500" /> Premium Membership</CardTitle>
+                  <CardDescription>Unlock premium student features for a one-time payment of 200 ETB.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="rounded-xl border border-amber-200/70 bg-amber-50/60 dark:border-amber-800/60 dark:bg-amber-950/20 p-4">
+                    <p className="text-sm text-slate-700 dark:text-slate-300">Premium Price</p>
+                    <p className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">200 ETB</p>
+                    <p className="text-xs text-slate-500 mt-1">Secure checkout powered by Chapa (Telebirr, CBE Birr, and cards).</p>
+                  </div>
+
+                  {user?.isPremium ? (
+                    <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300 text-sm flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4" />
+                      Premium is active{formatPremiumDate(user.premiumActivatedAt) ? ` since ${formatPremiumDate(user.premiumActivatedAt)}` : ""}.
+                    </div>
+                  ) : null}
+
+                  {isVerifyingPremiumPayment ? (
+                    <div className="text-sm text-indigo-600 dark:text-indigo-300 flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Verifying your premium payment...
+                    </div>
+                  ) : null}
+                </CardContent>
+                <CardFooter className="border-t border-slate-200 dark:border-slate-800 pt-4 flex justify-end">
+                  <Button
+                    onClick={handleStartPremiumPayment}
+                    disabled={Boolean(user?.isPremium) || isStartingPremiumPayment || isVerifyingPremiumPayment}
+                  >
+                    {isStartingPremiumPayment ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Crown className="h-4 w-4 mr-2" />}
+                    {user?.isPremium ? "Premium Active" : "Pay 200 ETB and Upgrade"}
+                  </Button>
+                </CardFooter>
+              </Card>
+
               <Card>
                 <CardHeader>
                   <CardTitle>Email Address</CardTitle>

@@ -8,6 +8,8 @@ export interface AuthUser {
   email: string;
   role: Role;
   avatar?: string;
+  isPremium?: boolean;
+  premiumActivatedAt?: string;
   headline?: string;
   bio?: string;
   socialLinks?: SocialLinks;
@@ -36,6 +38,24 @@ export interface UserPreferences {
   appearance?: {
     theme?: ThemePreference;
   };
+}
+
+export interface PremiumPaymentInitResponse {
+  txRef: string;
+  checkoutUrl: string;
+  amount: number;
+  currency: 'ETB';
+  alreadyPremium?: boolean;
+  isPremium?: boolean;
+}
+
+export interface PremiumPaymentVerifyResponse {
+  txRef: string;
+  status: string;
+  paymentVerified: boolean;
+  isPremium: boolean;
+  premiumActivatedAt?: string;
+  reason?: string;
 }
 
 export interface Course {
@@ -524,6 +544,16 @@ export const apiService = {
   async updateAppearancePreference(theme: ThemePreference): Promise<{ theme: ThemePreference }> {
     const res = await api.put("/auth/preferences/appearance", { theme });
     return pickData<{ theme: ThemePreference }>(res.data);
+  },
+
+  async initializePremiumPayment(): Promise<PremiumPaymentInitResponse> {
+    const res = await api.post('/payments/premium/initialize');
+    return pickData<PremiumPaymentInitResponse>(res.data);
+  },
+
+  async verifyPremiumPayment(txRef: string): Promise<PremiumPaymentVerifyResponse> {
+    const res = await api.get(`/payments/premium/verify/${encodeURIComponent(txRef)}`);
+    return pickData<PremiumPaymentVerifyResponse>(res.data);
   },
 
   async requestPasswordResetCode(email: string): Promise<PasswordResetRequestResult> {

@@ -139,6 +139,7 @@ type ChapaVerificationSnapshot = {
 const parseChapaVerificationSnapshot = (payload: unknown): ChapaVerificationSnapshot => {
   const root = asRecord(payload);
   const data = asRecord(root.data);
+  const paidAt = parseOptionalDate(data.created_at ?? data.paid_at ?? data.updated_at);
 
   return {
     apiStatus: normalizeStatus(root.status),
@@ -149,7 +150,7 @@ const parseChapaVerificationSnapshot = (payload: unknown): ChapaVerificationSnap
     reference: String(data.reference ?? data.ref_id ?? '').trim(),
     chapaReference: String(data.chapa_reference ?? '').trim(),
     paymentMethod: String(data.payment_method ?? data.method ?? '').trim(),
-    paidAt: parseOptionalDate(data.created_at ?? data.paid_at ?? data.updated_at),
+    ...(paidAt ? { paidAt } : {}),
     raw: payload,
   };
 };
@@ -193,9 +194,18 @@ const finalizePremiumActivation = async (txRef: string, secretKey: string, userI
 
   transaction.rawVerifyResponse = snapshot.raw;
   transaction.verifiedAt = new Date();
-  transaction.paymentReference = snapshot.reference || transaction.paymentReference;
-  transaction.chapaReference = snapshot.chapaReference || transaction.chapaReference;
-  transaction.paymentMethod = snapshot.paymentMethod || transaction.paymentMethod;
+
+  if (snapshot.reference) {
+    transaction.paymentReference = snapshot.reference;
+  }
+
+  if (snapshot.chapaReference) {
+    transaction.chapaReference = snapshot.chapaReference;
+  }
+
+  if (snapshot.paymentMethod) {
+    transaction.paymentMethod = snapshot.paymentMethod;
+  }
 
   if (snapshot.paidAt) {
     transaction.paidAt = snapshot.paidAt;

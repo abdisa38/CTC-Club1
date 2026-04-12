@@ -24,6 +24,8 @@ export interface IUser extends Document {
             theme?: 'system' | 'light' | 'dark';
         };
     };
+    isPremium: boolean;
+    premiumActivatedAt?: Date;
     xp: number;
     level: number;
     badges: mongoose.Types.ObjectId[];

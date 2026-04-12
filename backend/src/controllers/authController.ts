@@ -307,6 +307,8 @@ export const registerUser = asyncHandler(async (req: Request, res: Response) => 
       email: user.email,
       role: user.role,
       avatar: user.avatar,
+      isPremium: user.isPremium,
+      premiumActivatedAt: user.premiumActivatedAt,
     }, { statusCode: 201, message: 'User registered successfully' });
   } else {
     res.status(400);
@@ -335,6 +337,8 @@ export const loginUser = asyncHandler(async (req: Request, res: Response) => {
       email: user.email,
       role: user.role,
       avatar: user.avatar,
+      isPremium: user.isPremium,
+      premiumActivatedAt: user.premiumActivatedAt,
     }, { message: 'Login successful' });
   } else {
     res.status(401);
@@ -585,6 +589,8 @@ export const resetPasswordWithCode = asyncHandler(async (req: Request, res: Resp
     email: user.email,
     role: user.role,
     avatar: user.avatar,
+    isPremium: user.isPremium,
+    premiumActivatedAt: user.premiumActivatedAt,
   }, { message: 'Password reset successful' });
 });
 

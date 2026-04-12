@@ -10,6 +10,8 @@ export interface User {
   email: string;
   role: Role;
   avatar?: string;
+  isPremium?: boolean;
+  premiumActivatedAt?: string;
 }
 
 interface AuthContextType {

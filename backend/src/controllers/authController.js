@@ -274,6 +274,8 @@ exports.registerUser = (0, express_async_handler_1.default)(async (req, res) => 
             email: user.email,
             role: user.role,
             avatar: user.avatar,
+            isPremium: user.isPremium,
+            premiumActivatedAt: user.premiumActivatedAt,
         }, { statusCode: 201, message: 'User registered successfully' });
     }
     else {
@@ -298,6 +300,8 @@ exports.loginUser = (0, express_async_handler_1.default)(async (req, res) => {
             email: user.email,
             role: user.role,
             avatar: user.avatar,
+            isPremium: user.isPremium,
+            premiumActivatedAt: user.premiumActivatedAt,
         }, { message: 'Login successful' });
     }
     else {
@@ -511,6 +515,8 @@ exports.resetPasswordWithCode = (0, express_async_handler_1.default)(async (req,
         email: user.email,
         role: user.role,
         avatar: user.avatar,
+        isPremium: user.isPremium,
+        premiumActivatedAt: user.premiumActivatedAt,
     }, { message: 'Password reset successful' });
 });
 // @desc    Logout user & clear cookie

@@ -21,6 +21,7 @@ const communityRoutes_1 = __importDefault(require("./routes/communityRoutes"));
 const notificationRoutes_1 = __importDefault(require("./routes/notificationRoutes"));
 const uploadRoutes_1 = __importDefault(require("./routes/uploadRoutes"));
 const eventRoutes_1 = __importDefault(require("./routes/eventRoutes"));
+const paymentRoutes_1 = __importDefault(require("./routes/paymentRoutes"));
 // Load env vars
 dotenv_1.default.config();
 // Connect to database
@@ -56,6 +57,7 @@ app.use('/api/community', communityRoutes_1.default);
 app.use('/api/notifications', notificationRoutes_1.default);
 app.use('/api/uploads', uploadRoutes_1.default);
 app.use('/api/events', eventRoutes_1.default);
+app.use('/api/payments', paymentRoutes_1.default);
 // For operations purely based on LessonId (Update, Delete a lesson)
 app.use('/api/lessons', lessonRoutes_1.default);
 // Error handling middleware

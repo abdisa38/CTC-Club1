@@ -116,6 +116,14 @@ const userSchema = new mongoose_1.Schema({
             },
         },
     },
+    isPremium: {
+        type: Boolean,
+        default: false,
+        index: true,
+    },
+    premiumActivatedAt: {
+        type: Date,
+    },
     xp: {
         type: Number,
         default: 0,
