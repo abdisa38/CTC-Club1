@@ -17,6 +17,24 @@ type ThemePreference = 'system' | 'light' | 'dark';
 const getServerUrl = () => process.env.SERVER_URL || `http://localhost:${process.env.PORT || 5000}`;
 const getClientUrl = () => process.env.CLIENT_URL || 'http://localhost:5173';
 
+const getRequestBaseUrl = (req: Request) => {
+  const forwardedProtoHeader = req.headers['x-forwarded-proto'];
+  const forwardedProto = Array.isArray(forwardedProtoHeader)
+    ? forwardedProtoHeader[0]
+    : forwardedProtoHeader;
+  const protocol = String(forwardedProto || req.protocol || 'http').split(',')[0]?.trim() || 'http';
+  const host = req.get('host');
+
+  if (host) {
+    return `${protocol}://${host}`;
+  }
+
+  return getServerUrl();
+};
+
+const getOAuthCallbackUrl = (req: Request, provider: OAuthProvider) =>
+  `${getRequestBaseUrl(req)}/api/auth/oauth/${provider}/callback`;
+
 const normalizeEmail = (value: unknown) => String(value || '').trim().toLowerCase();
 const buildClientAuthRedirectUrl = (params: {
   status: 'success' | 'error';
@@ -175,7 +193,7 @@ const upsertOAuthUser = async (input: {
   return user;
 };
 
-const fetchGoogleProfile = async (code: string) => {
+const fetchGoogleProfile = async (code: string, callbackUrl: string) => {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
@@ -183,7 +201,6 @@ const fetchGoogleProfile = async (code: string) => {
     throw new Error('Google OAuth is not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.');
   }
 
-  const callbackUrl = `${getServerUrl()}/api/auth/oauth/google/callback`;
   const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -219,7 +236,7 @@ const fetchGoogleProfile = async (code: string) => {
   };
 };
 
-const fetchGitHubProfile = async (code: string) => {
+const fetchGitHubProfile = async (code: string, callbackUrl: string) => {
   const clientId = process.env.GITHUB_CLIENT_ID;
   const clientSecret = process.env.GITHUB_CLIENT_SECRET;
 
@@ -227,7 +244,6 @@ const fetchGitHubProfile = async (code: string) => {
     throw new Error('GitHub OAuth is not configured. Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET.');
   }
 
-  const callbackUrl = `${getServerUrl()}/api/auth/oauth/github/callback`;
   const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
     method: 'POST',
     headers: {
@@ -349,7 +365,7 @@ export const loginUser = asyncHandler(async (req: Request, res: Response) => {
 // @desc    Start Google OAuth login
 // @route   GET /api/auth/oauth/google
 // @access  Public
-export const startGoogleOAuth = asyncHandler(async (_req: Request, res: Response) => {
+export const startGoogleOAuth = asyncHandler(async (req: Request, res: Response) => {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
@@ -362,7 +378,7 @@ export const startGoogleOAuth = asyncHandler(async (_req: Request, res: Response
     return;
   }
 
-  const callbackUrl = `${getServerUrl()}/api/auth/oauth/google/callback`;
+  const callbackUrl = getOAuthCallbackUrl(req, 'google');
   const state = createOAuthState();
 
   setOAuthStateCookie(res, 'google', state);
@@ -398,7 +414,8 @@ export const googleOAuthCallback = asyncHandler(async (req: Request, res: Respon
   }
 
   try {
-    const profile = await fetchGoogleProfile(code);
+    const callbackUrl = getOAuthCallbackUrl(req, 'google');
+    const profile = await fetchGoogleProfile(code, callbackUrl);
     const user = await upsertOAuthUser({
       provider: 'google',
       email: profile.email,
@@ -427,7 +444,7 @@ export const googleOAuthCallback = asyncHandler(async (req: Request, res: Respon
 // @desc    Start GitHub OAuth login
 // @route   GET /api/auth/oauth/github
 // @access  Public
-export const startGitHubOAuth = asyncHandler(async (_req: Request, res: Response) => {
+export const startGitHubOAuth = asyncHandler(async (req: Request, res: Response) => {
   const clientId = process.env.GITHUB_CLIENT_ID;
   const clientSecret = process.env.GITHUB_CLIENT_SECRET;
 
@@ -440,7 +457,7 @@ export const startGitHubOAuth = asyncHandler(async (_req: Request, res: Response
     return;
   }
 
-  const callbackUrl = `${getServerUrl()}/api/auth/oauth/github/callback`;
+  const callbackUrl = getOAuthCallbackUrl(req, 'github');
   const state = createOAuthState();
 
   setOAuthStateCookie(res, 'github', state);
@@ -474,7 +491,8 @@ export const githubOAuthCallback = asyncHandler(async (req: Request, res: Respon
   }
 
   try {
-    const profile = await fetchGitHubProfile(code);
+    const callbackUrl = getOAuthCallbackUrl(req, 'github');
+    const profile = await fetchGitHubProfile(code, callbackUrl);
     const user = await upsertOAuthUser({
       provider: 'github',
       email: profile.email,

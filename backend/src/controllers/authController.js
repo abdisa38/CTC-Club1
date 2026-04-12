@@ -49,6 +49,19 @@ const apiResponse_1 = require("../utils/apiResponse");
 const email_1 = require("../utils/email");
 const getServerUrl = () => process.env.SERVER_URL || `http://localhost:${process.env.PORT || 5000}`;
 const getClientUrl = () => process.env.CLIENT_URL || 'http://localhost:5173';
+const getRequestBaseUrl = (req) => {
+    const forwardedProtoHeader = req.headers['x-forwarded-proto'];
+    const forwardedProto = Array.isArray(forwardedProtoHeader)
+        ? forwardedProtoHeader[0]
+        : forwardedProtoHeader;
+    const protocol = String(forwardedProto || req.protocol || 'http').split(',')[0].trim();
+    const host = req.get('host');
+    if (host) {
+        return `${protocol}://${host}`;
+    }
+    return getServerUrl();
+};
+const getOAuthCallbackUrl = (req, provider) => `${getRequestBaseUrl(req)}/api/auth/oauth/${provider}/callback`;
 const normalizeEmail = (value) => String(value || '').trim().toLowerCase();
 const buildClientAuthRedirectUrl = (params) => {
     const { status, message, email, provider } = params;
@@ -163,13 +176,12 @@ const upsertOAuthUser = async (input) => {
     await user.save();
     return user;
 };
-const fetchGoogleProfile = async (code) => {
+const fetchGoogleProfile = async (code, callbackUrl) => {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
     if (!clientId || !clientSecret) {
         throw new Error('Google OAuth is not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.');
     }
-    const callbackUrl = `${getServerUrl()}/api/auth/oauth/google/callback`;
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -200,13 +212,12 @@ const fetchGoogleProfile = async (code) => {
         avatar: String(profile.picture || ''),
     };
 };
-const fetchGitHubProfile = async (code) => {
+const fetchGitHubProfile = async (code, callbackUrl) => {
     const clientId = process.env.GITHUB_CLIENT_ID;
     const clientSecret = process.env.GITHUB_CLIENT_SECRET;
     if (!clientId || !clientSecret) {
         throw new Error('GitHub OAuth is not configured. Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET.');
     }
-    const callbackUrl = `${getServerUrl()}/api/auth/oauth/github/callback`;
     const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
         method: 'POST',
         headers: {
@@ -312,7 +323,7 @@ exports.loginUser = (0, express_async_handler_1.default)(async (req, res) => {
 // @desc    Start Google OAuth login
 // @route   GET /api/auth/oauth/google
 // @access  Public
-exports.startGoogleOAuth = (0, express_async_handler_1.default)(async (_req, res) => {
+exports.startGoogleOAuth = (0, express_async_handler_1.default)(async (req, res) => {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
     if (!clientId || !clientSecret) {
@@ -323,7 +334,7 @@ exports.startGoogleOAuth = (0, express_async_handler_1.default)(async (_req, res
         }));
         return;
     }
-    const callbackUrl = `${getServerUrl()}/api/auth/oauth/google/callback`;
+    const callbackUrl = getOAuthCallbackUrl(req, 'google');
     const state = createOAuthState();
     setOAuthStateCookie(res, 'google', state);
     const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
@@ -352,7 +363,8 @@ exports.googleOAuthCallback = (0, express_async_handler_1.default)(async (req, r
         return;
     }
     try {
-        const profile = await fetchGoogleProfile(code);
+        const callbackUrl = getOAuthCallbackUrl(req, 'google');
+        const profile = await fetchGoogleProfile(code, callbackUrl);
         const user = await upsertOAuthUser({
             provider: 'google',
             email: profile.email,
@@ -379,7 +391,7 @@ exports.googleOAuthCallback = (0, express_async_handler_1.default)(async (req, r
 // @desc    Start GitHub OAuth login
 // @route   GET /api/auth/oauth/github
 // @access  Public
-exports.startGitHubOAuth = (0, express_async_handler_1.default)(async (_req, res) => {
+exports.startGitHubOAuth = (0, express_async_handler_1.default)(async (req, res) => {
     const clientId = process.env.GITHUB_CLIENT_ID;
     const clientSecret = process.env.GITHUB_CLIENT_SECRET;
     if (!clientId || !clientSecret) {
@@ -390,7 +402,7 @@ exports.startGitHubOAuth = (0, express_async_handler_1.default)(async (_req, res
         }));
         return;
     }
-    const callbackUrl = `${getServerUrl()}/api/auth/oauth/github/callback`;
+    const callbackUrl = getOAuthCallbackUrl(req, 'github');
     const state = createOAuthState();
     setOAuthStateCookie(res, 'github', state);
     const authUrl = new URL('https://github.com/login/oauth/authorize');
@@ -417,7 +429,8 @@ exports.githubOAuthCallback = (0, express_async_handler_1.default)(async (req, r
         return;
     }
     try {
-        const profile = await fetchGitHubProfile(code);
+        const callbackUrl = getOAuthCallbackUrl(req, 'github');
+        const profile = await fetchGitHubProfile(code, callbackUrl);
         const user = await upsertOAuthUser({
             provider: 'github',
             email: profile.email,
