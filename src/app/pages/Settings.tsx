@@ -657,39 +657,14 @@ export function Settings() {
             <TabsContent value="account" className="mt-0 space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2"><Crown className="h-5 w-5 text-amber-500" /> Premium Membership</CardTitle>
-                  <CardDescription>Unlock premium student features for a one-time payment of 200 ETB.</CardDescription>
+                  <CardTitle>Course Access Payments</CardTitle>
+                  <CardDescription>Payments are now handled directly on each paid course page.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="rounded-xl border border-amber-200/70 bg-amber-50/60 dark:border-amber-800/60 dark:bg-amber-950/20 p-4">
-                    <p className="text-sm text-slate-700 dark:text-slate-300">Premium Price</p>
-                    <p className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">200 ETB</p>
-                    <p className="text-xs text-slate-500 mt-1">Secure checkout powered by Chapa (Telebirr, CBE Birr, and cards).</p>
+                  <div className="rounded-xl border border-indigo-200/70 bg-indigo-50/60 dark:border-indigo-800/60 dark:bg-indigo-950/20 p-4 text-sm text-slate-700 dark:text-slate-300">
+                    Open a paid course and click the payment button there. Free courses remain accessible without checkout.
                   </div>
-
-                  {user?.isPremium ? (
-                    <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300 text-sm flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4" />
-                      Premium is active{formatPremiumDate(user.premiumActivatedAt) ? ` since ${formatPremiumDate(user.premiumActivatedAt)}` : ""}.
-                    </div>
-                  ) : null}
-
-                  {isVerifyingPremiumPayment ? (
-                    <div className="text-sm text-indigo-600 dark:text-indigo-300 flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Verifying your premium payment...
-                    </div>
-                  ) : null}
                 </CardContent>
-                <CardFooter className="border-t border-slate-200 dark:border-slate-800 pt-4 flex justify-end">
-                  <Button
-                    onClick={handleStartPremiumPayment}
-                    disabled={Boolean(user?.isPremium) || isStartingPremiumPayment || isVerifyingPremiumPayment}
-                  >
-                    {isStartingPremiumPayment ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Crown className="h-4 w-4 mr-2" />}
-                    {user?.isPremium ? "Premium Active" : "Pay 200 ETB and Upgrade"}
-                  </Button>
-                </CardFooter>
               </Card>
 
               <Card>
