@@ -54,7 +54,7 @@ const getRequestBaseUrl = (req) => {
     const forwardedProto = Array.isArray(forwardedProtoHeader)
         ? forwardedProtoHeader[0]
         : forwardedProtoHeader;
-    const protocol = String(forwardedProto || req.protocol || 'http').split(',')[0].trim();
+    const protocol = String(forwardedProto || req.protocol || 'http').split(',')[0]?.trim() || 'http';
     const host = req.get('host');
     if (host) {
         return `${protocol}://${host}`;
