@@ -58,6 +58,26 @@ export interface PremiumPaymentVerifyResponse {
   reason?: string;
 }
 
+export interface CoursePaymentInitResponse {
+  courseId: string;
+  txRef?: string;
+  checkoutUrl?: string;
+  amount: number;
+  currency: 'ETB';
+  requiresPayment?: boolean;
+  alreadyEnrolled?: boolean;
+  isEnrolled: boolean;
+}
+
+export interface CoursePaymentVerifyResponse {
+  courseId: string;
+  txRef: string;
+  status: string;
+  paymentVerified: boolean;
+  isEnrolled: boolean;
+  reason?: string;
+}
+
 export interface Course {
   _id: string;
   title: string;
@@ -68,6 +88,7 @@ export interface Course {
   status?: "draft" | "published" | "archived";
   level?: "beginner" | "intermediate" | "advanced";
   price: number;
+  currency?: string;
   instructor?: {
     _id: string;
     name: string;
@@ -554,6 +575,16 @@ export const apiService = {
   async verifyPremiumPayment(txRef: string): Promise<PremiumPaymentVerifyResponse> {
     const res = await api.get(`/payments/premium/verify/${encodeURIComponent(txRef)}`);
     return pickData<PremiumPaymentVerifyResponse>(res.data);
+  },
+
+  async initializeCoursePayment(courseId: string): Promise<CoursePaymentInitResponse> {
+    const res = await api.post(`/payments/courses/${encodeURIComponent(courseId)}/initialize`);
+    return pickData<CoursePaymentInitResponse>(res.data);
+  },
+
+  async verifyCoursePayment(courseId: string, txRef: string): Promise<CoursePaymentVerifyResponse> {
+    const res = await api.get(`/payments/courses/${encodeURIComponent(courseId)}/verify/${encodeURIComponent(txRef)}`);
+    return pickData<CoursePaymentVerifyResponse>(res.data);
   },
 
   async requestPasswordResetCode(email: string): Promise<PasswordResetRequestResult> {

@@ -118,6 +118,23 @@ const initials = (name?: string): string => {
     .join("");
 };
 
+const extractErrorMessage = (error: any, fallback: string) => {
+  const candidate = error?.response?.data?.message ?? error?.message;
+  if (typeof candidate === "string" && candidate.trim()) {
+    return candidate;
+  }
+
+  if (candidate && typeof candidate === "object") {
+    try {
+      return JSON.stringify(candidate);
+    } catch {
+      return fallback;
+    }
+  }
+
+  return fallback;
+};
+
 export function CourseDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -137,11 +154,14 @@ export function CourseDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDiscussionLoading, setIsDiscussionLoading] = useState(false);
   const [isEnrolling, setIsEnrolling] = useState(false);
+  const [isStartingCoursePayment, setIsStartingCoursePayment] = useState(false);
+  const [isVerifyingCoursePayment, setIsVerifyingCoursePayment] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [favoriteBusy, setFavoriteBusy] = useState(false);
   const [myRating, setMyRating] = useState(0);
   const [ratingBusy, setRatingBusy] = useState(false);
   const [error, setError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
