@@ -160,6 +160,7 @@ export function CourseDetail() {
   const [favoriteBusy, setFavoriteBusy] = useState(false);
   const [myRating, setMyRating] = useState(0);
   const [ratingBusy, setRatingBusy] = useState(false);
+  const [loadError, setLoadError] = useState("");
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -175,6 +176,7 @@ export function CourseDetail() {
 
       setIsLoading(true);
       setError("");
+      setLoadError("");
 
       try {
         const [courseRes, lessonsRes] = await Promise.all([
@@ -190,7 +192,9 @@ export function CourseDetail() {
           setSelectedLessonId((prev) => prev || sortedLessons[0]._id);
         }
       } catch (fetchError: any) {
-        setError(fetchError?.response?.data?.message || "Failed to load course details");
+        const message = extractErrorMessage(fetchError, "Failed to load course details");
+        setError(message);
+        setLoadError(message);
       } finally {
         setIsLoading(false);
       }
@@ -558,7 +562,7 @@ export function CourseDetail() {
   }
 
   if (!course) {
-    return <div className="text-center py-20 text-slate-500">Course not found.</div>;
+    return <div className="text-center py-20 text-slate-500">{loadError || "Course not found."}</div>;
   }
 
   return (
