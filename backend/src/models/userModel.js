@@ -74,6 +74,48 @@ const userSchema = new mongoose_1.Schema({
         type: String,
         default: 'https://icon-library.com/images/anonymous-avatar-icon/anonymous-avatar-icon-25.jpg',
     },
+    headline: {
+        type: String,
+        trim: true,
+        default: '',
+    },
+    bio: {
+        type: String,
+        trim: true,
+        default: '',
+    },
+    socialLinks: {
+        github: {
+            type: String,
+            trim: true,
+            default: '',
+        },
+        linkedin: {
+            type: String,
+            trim: true,
+            default: '',
+        },
+        website: {
+            type: String,
+            trim: true,
+            default: '',
+        },
+    },
+    preferences: {
+        notifications: {
+            courseUpdates: { type: Boolean, default: true },
+            assignmentFeedback: { type: Boolean, default: true },
+            communityMentions: { type: Boolean, default: false },
+            weeklySummary: { type: Boolean, default: true },
+        },
+        appearance: {
+            theme: {
+                type: String,
+                enum: ['system', 'light', 'dark'],
+                default: 'system',
+            },
+        },
+    },
     xp: {
         type: Number,
         default: 0,

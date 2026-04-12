@@ -36,7 +36,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getActivityLogs = exports.softDeleteUser = exports.updateUserStatus = exports.updateUserRole = exports.getUsers = exports.removeFavoriteResource = exports.addFavoriteResource = exports.getFavoriteResources = exports.removeFavoriteCourse = exports.addFavoriteCourse = exports.getFavoriteCourses = exports.getUserProfile = exports.logoutUser = exports.resetPasswordWithCode = exports.requestPasswordResetCode = exports.githubOAuthCallback = exports.startGitHubOAuth = exports.googleOAuthCallback = exports.startGoogleOAuth = exports.loginUser = exports.registerUser = void 0;
+exports.getActivityLogs = exports.softDeleteUser = exports.updateUserStatus = exports.updateUserRole = exports.getUsers = exports.removeFavoriteResource = exports.addFavoriteResource = exports.getFavoriteResources = exports.removeFavoriteCourse = exports.addFavoriteCourse = exports.getFavoriteCourses = exports.updateAppearancePreferences = exports.updateNotificationPreferences = exports.changeUserPassword = exports.updateUserProfile = exports.getUserProfile = exports.logoutUser = exports.resetPasswordWithCode = exports.requestPasswordResetCode = exports.githubOAuthCallback = exports.startGitHubOAuth = exports.googleOAuthCallback = exports.startGoogleOAuth = exports.loginUser = exports.registerUser = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const crypto_1 = __importDefault(require("crypto"));
@@ -85,6 +85,47 @@ const clearOAuthStateCookie = (res, provider) => {
 const createOAuthState = () => crypto_1.default.randomBytes(24).toString('hex');
 const createRandomPassword = () => crypto_1.default.randomBytes(24).toString('hex');
 const hashResetCode = (code) => crypto_1.default.createHash('sha256').update(code).digest('hex');
+const DEFAULT_AVATAR_URL = 'https://icon-library.com/images/anonymous-avatar-icon/anonymous-avatar-icon-25.jpg';
+const normalizeText = (value, maxLength = 2000) => String(value ?? '').trim().slice(0, maxLength);
+const normalizeHttpUrl = (value) => {
+    const raw = String(value ?? '').trim();
+    if (!raw) {
+        return '';
+    }
+    try {
+        const parsed = new URL(raw);
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+            return '';
+        }
+        return parsed.toString();
+    }
+    catch {
+        return '';
+    }
+};
+const normalizeThemePreference = (value) => {
+    if (value === 'light' || value === 'dark') {
+        return value;
+    }
+    return 'system';
+};
+const getMergedNotificationPreferences = (user, updates = {}) => {
+    const current = user?.preferences?.notifications || {};
+    return {
+        courseUpdates: typeof updates.courseUpdates === 'boolean'
+            ? updates.courseUpdates
+            : typeof current.courseUpdates === 'boolean' ? current.courseUpdates : true,
+        assignmentFeedback: typeof updates.assignmentFeedback === 'boolean'
+            ? updates.assignmentFeedback
+            : typeof current.assignmentFeedback === 'boolean' ? current.assignmentFeedback : true,
+        communityMentions: typeof updates.communityMentions === 'boolean'
+            ? updates.communityMentions
+            : typeof current.communityMentions === 'boolean' ? current.communityMentions : false,
+        weeklySummary: typeof updates.weeklySummary === 'boolean'
+            ? updates.weeklySummary
+            : typeof current.weeklySummary === 'boolean' ? current.weeklySummary : true,
+    };
+};
 const PASSWORD_RESET_CODE_TTL_MINUTES = (() => {
     const value = Number(process.env.PASSWORD_RESET_CODE_TTL_MINUTES || 10);
     if (!Number.isFinite(value) || value <= 0) {
@@ -491,6 +532,120 @@ exports.getUserProfile = (0, express_async_handler_1.default)(async (req, res) =
         res.status(404);
         throw new Error('User not found');
     }
+});
+// @desc    Update current user profile settings
+// @route   PUT /api/auth/profile
+// @access  Private
+exports.updateUserProfile = (0, express_async_handler_1.default)(async (req, res) => {
+    const user = await userModel_1.default.findById(req.user._id).select('-password');
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found');
+    }
+    const nameInput = normalizeText(req.body?.name, 80);
+    const firstNameInput = normalizeText(req.body?.firstName, 40);
+    const lastNameInput = normalizeText(req.body?.lastName, 40);
+    const combinedName = `${firstNameInput} ${lastNameInput}`.trim();
+    const nextName = nameInput || combinedName;
+    if (nextName) {
+        user.name = nextName;
+    }
+    if (Object.prototype.hasOwnProperty.call(req.body || {}, 'headline')) {
+        user.headline = normalizeText(req.body?.headline, 120);
+    }
+    if (Object.prototype.hasOwnProperty.call(req.body || {}, 'bio')) {
+        user.bio = normalizeText(req.body?.bio, 2000);
+    }
+    if (Object.prototype.hasOwnProperty.call(req.body || {}, 'avatar')) {
+        const normalizedAvatar = normalizeHttpUrl(req.body?.avatar);
+        user.avatar = normalizedAvatar || DEFAULT_AVATAR_URL;
+    }
+    if (req.body?.socialLinks && typeof req.body.socialLinks === 'object') {
+        const currentLinks = (user.socialLinks || {});
+        const socialInput = req.body.socialLinks;
+        user.socialLinks = {
+            github: Object.prototype.hasOwnProperty.call(socialInput, 'github')
+                ? normalizeHttpUrl(socialInput.github)
+                : String(currentLinks.github || ''),
+            linkedin: Object.prototype.hasOwnProperty.call(socialInput, 'linkedin')
+                ? normalizeHttpUrl(socialInput.linkedin)
+                : String(currentLinks.linkedin || ''),
+            website: Object.prototype.hasOwnProperty.call(socialInput, 'website')
+                ? normalizeHttpUrl(socialInput.website)
+                : String(currentLinks.website || ''),
+        };
+    }
+    await user.save();
+    (0, apiResponse_1.sendSuccess)(res, user, { message: 'Profile updated successfully' });
+});
+// @desc    Change current user password
+// @route   PUT /api/auth/password/change
+// @access  Private
+exports.changeUserPassword = (0, express_async_handler_1.default)(async (req, res) => {
+    const currentPassword = String(req.body?.currentPassword || '');
+    const newPassword = String(req.body?.newPassword || '');
+    if (!currentPassword || !newPassword) {
+        res.status(400);
+        throw new Error('Current password and new password are required');
+    }
+    const user = await userModel_1.default.findById(req.user._id).select('+password');
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found');
+    }
+    const isCurrentPasswordValid = await user.matchPassword(currentPassword);
+    if (!isCurrentPasswordValid) {
+        res.status(400);
+        throw new Error('Current password is incorrect');
+    }
+    user.password = newPassword;
+    await user.save();
+    (0, apiResponse_1.sendSuccess)(res, null, { message: 'Password updated successfully' });
+});
+// @desc    Update notification preferences
+// @route   PUT /api/auth/preferences/notifications
+// @access  Private
+exports.updateNotificationPreferences = (0, express_async_handler_1.default)(async (req, res) => {
+    const user = await userModel_1.default.findById(req.user._id).select('-password');
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found');
+    }
+    const mergedNotifications = getMergedNotificationPreferences(user, {
+        courseUpdates: req.body?.courseUpdates,
+        assignmentFeedback: req.body?.assignmentFeedback,
+        communityMentions: req.body?.communityMentions,
+        weeklySummary: req.body?.weeklySummary,
+    });
+    const currentTheme = normalizeThemePreference(user?.preferences?.appearance?.theme);
+    user.preferences = {
+        notifications: mergedNotifications,
+        appearance: {
+            theme: currentTheme,
+        },
+    };
+    await user.save();
+    (0, apiResponse_1.sendSuccess)(res, user.preferences.notifications, { message: 'Notification preferences updated' });
+});
+// @desc    Update appearance preferences
+// @route   PUT /api/auth/preferences/appearance
+// @access  Private
+exports.updateAppearancePreferences = (0, express_async_handler_1.default)(async (req, res) => {
+    const user = await userModel_1.default.findById(req.user._id).select('-password');
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found');
+    }
+    const theme = normalizeThemePreference(req.body?.theme);
+    const mergedNotifications = getMergedNotificationPreferences(user);
+    user.preferences = {
+        notifications: mergedNotifications,
+        appearance: {
+            theme,
+        },
+    };
+    await user.save();
+    (0, apiResponse_1.sendSuccess)(res, user.preferences.appearance, { message: 'Appearance preferences updated' });
 });
 // @desc    Get current user's favorite courses
 // @route   GET /api/auth/favorites/courses
