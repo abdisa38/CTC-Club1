@@ -219,6 +219,17 @@ export function AppLayout() {
   };
   const rc = roleConfig[role] || roleConfig.student;
 
+  const displayName = (user?.name || user?.email?.split("@")[0] || "Student").trim();
+  const displayEmail = user?.email || "";
+  const avatarSrc = (user?.avatar || "").trim() || undefined;
+  const avatarFallback = displayName
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase() || "U";
+
   const isActive = (href: string) => {
     if (href === '/app/admin') return location.pathname === '/app/admin';
     return location.pathname.startsWith(href) &&
@@ -476,24 +487,33 @@ export function AppLayout() {
             {/* Profile */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Avatar className={cn("h-9 w-9 cursor-pointer ring-2 ring-offset-2 ring-offset-white dark:ring-offset-[#0c0f1a] transition-all hover:ring-indigo-400",
-                  role === 'student' ? "ring-indigo-200 dark:ring-indigo-800" :
-                  role === 'instructor' ? "ring-emerald-200 dark:ring-emerald-800" :
-                  "ring-violet-200 dark:ring-violet-800"
-                )}>
-                  <AvatarImage src={
-                    role === 'student' ? "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=150" :
-                    role === 'instructor' ? "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=150" :
-                    "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=150"
-                  } />
-                  <AvatarFallback className="text-xs font-semibold">U</AvatarFallback>
-                </Avatar>
+                <button
+                  type="button"
+                  className="group flex items-center gap-2 rounded-xl px-1 py-1 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+                >
+                  <Avatar className={cn("h-9 w-9 cursor-pointer ring-2 ring-offset-2 ring-offset-white dark:ring-offset-[#0c0f1a] transition-all group-hover:ring-indigo-400",
+                    role === 'student' ? "ring-indigo-200 dark:ring-indigo-800" :
+                    role === 'instructor' ? "ring-emerald-200 dark:ring-emerald-800" :
+                    "ring-violet-200 dark:ring-violet-800"
+                  )}>
+                    <AvatarImage src={avatarSrc} alt={displayName} />
+                    <AvatarFallback className="text-xs font-semibold">{avatarFallback}</AvatarFallback>
+                  </Avatar>
+                  <div className="hidden md:flex flex-col items-start leading-tight">
+                    <span className="max-w-[140px] truncate text-xs font-semibold text-slate-800 dark:text-slate-100">
+                      {displayName}
+                    </span>
+                    <span className="max-w-[180px] truncate text-[11px] text-slate-500 dark:text-slate-400">
+                      {displayEmail}
+                    </span>
+                  </div>
+                </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-lg border-slate-200/60 dark:border-white/10">
                 <DropdownMenuLabel>
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-semibold leading-none capitalize">{user.name}</p>
-                    <p className="text-xs leading-none text-slate-500">{user.email}</p>
+                    <p className="text-sm font-semibold leading-none capitalize">{displayName}</p>
+                    <p className="text-xs leading-none text-slate-500">{displayEmail}</p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
