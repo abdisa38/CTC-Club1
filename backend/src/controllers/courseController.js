@@ -124,6 +124,16 @@ exports.deleteCourse = (0, express_async_handler_1.default)(async (req, res) => 
 // @route   POST /api/courses/:id/enroll
 // @access  Private (student role etc)
 exports.enrollCourse = (0, express_async_handler_1.default)(async (req, res) => {
+    const existingCourse = await courseModel_1.default.findById(req.params.id).select('price');
+    if (!existingCourse) {
+        res.status(404);
+        throw new Error('Course not found');
+    }
+    const isPaidCourse = Number(existingCourse.price || 0) > 0;
+    if (isPaidCourse && req.user.role === 'student') {
+        res.status(402);
+        throw new Error('This is a paid course. Start checkout first to access it.');
+    }
     // Use $addToSet to avoid race conditions. This guarantees a user is only added once natively by MongoDB
     const course = await courseModel_1.default.findByIdAndUpdate(req.params.id, { $addToSet: { students: req.user._id } }, { new: true } // Returns the updated document
     );

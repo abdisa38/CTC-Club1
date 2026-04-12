@@ -131,6 +131,17 @@ const getLessonsByCourse = async (req, res) => {
         if (!courseId) {
             return res.status(400).json({ message: 'Course ID is required' });
         }
+        const course = await courseModel_1.default.findById(courseId).select('price students instructor');
+        if (!course) {
+            return res.status(404).json({ message: 'Course not found' });
+        }
+        const isPrivilegedUser = req.user.role === 'admin' || String(course.instructor) === String(req.user._id);
+        const isPaidCourse = Number(course.price || 0) > 0;
+        const isEnrolled = Array.isArray(course.students)
+            && course.students.some((studentId) => String(studentId) === String(req.user._id));
+        if (isPaidCourse && !isPrivilegedUser && !isEnrolled) {
+            return res.status(403).json({ message: 'Enroll in this paid course to access lessons' });
+        }
         // For a fully secure app, check if user is enrolled. For now, just return them.
         const lessons = await lessonModel_1.default.find({ course: courseId }).sort({ order: 1 });
         (0, apiResponse_1.sendSuccess)(res, lessons);

@@ -1,7 +1,10 @@
 import mongoose, { Document } from 'mongoose';
 export type PaymentStatus = 'initialized' | 'pending' | 'success' | 'failed' | 'cancelled';
+export type PaymentTransactionType = 'premium' | 'course';
 export interface IPaymentTransaction extends Document {
     user: mongoose.Types.ObjectId;
+    transactionType: PaymentTransactionType;
+    course?: mongoose.Types.ObjectId;
     txRef: string;
     amount: number;
     currency: 'ETB';

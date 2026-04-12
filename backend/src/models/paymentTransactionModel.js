@@ -41,6 +41,18 @@ const paymentTransactionSchema = new mongoose_1.Schema({
         required: true,
         index: true,
     },
+    transactionType: {
+        type: String,
+        required: true,
+        default: 'premium',
+        enum: ['premium', 'course'],
+        index: true,
+    },
+    course: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'Course',
+        index: true,
+    },
     txRef: {
         type: String,
         required: true,
@@ -101,6 +113,7 @@ const paymentTransactionSchema = new mongoose_1.Schema({
     timestamps: true,
 });
 paymentTransactionSchema.index({ user: 1, createdAt: -1 });
+paymentTransactionSchema.index({ course: 1, createdAt: -1 });
 const PaymentTransaction = mongoose_1.default.model('PaymentTransaction', paymentTransactionSchema);
 exports.default = PaymentTransaction;
 //# sourceMappingURL=paymentTransactionModel.js.map
