@@ -204,7 +204,10 @@ export function Settings() {
         }
       } catch (error: any) {
         if (!ignore) {
-          setErrorMsg(error?.response?.data?.message || "Failed to verify premium payment.");
+          console.error('Settings init/verify error:', error);
+          const errData = error?.response?.data;
+          const msg = errData?.message || error?.message || "Failed to verify premium payment.";
+          setErrorMsg(typeof msg === 'string' ? msg : JSON.stringify(msg));
         }
       } finally {
         if (!ignore) {
