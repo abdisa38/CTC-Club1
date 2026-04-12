@@ -63,6 +63,7 @@ export const router = createBrowserRouter([
       { path: "analytics", lazy: lazyComponent(() => import("./pages/AdminReports"), "AdminReports") },
       { path: "jobs", lazy: lazyComponent(() => import("./pages/Dashboard"), "Dashboard") },
       { path: "profile", lazy: lazyComponent(() => import("./pages/Profile"), "Profile") },
+      { path: "premium-return", lazy: lazyComponent(() => import("./pages/PremiumReturn"), "PremiumReturn") },
       { path: "settings", lazy: lazyComponent(() => import("./pages/Settings"), "Settings") },
       { path: "*", lazy: lazyComponent(() => import("./pages/Dashboard"), "Dashboard") },
     ],
