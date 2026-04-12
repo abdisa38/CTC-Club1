@@ -179,17 +179,26 @@ export function CourseDetail() {
       setLoadError("");
 
       try {
-        const [courseRes, lessonsRes] = await Promise.all([
-          apiService.getCourseById(id),
-          apiService.getLessons(id),
-        ]);
-
-        const sortedLessons = [...(Array.isArray(lessonsRes) ? lessonsRes : [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+        const courseRes = await apiService.getCourseById(id);
         setCourse(courseRes);
-        setLessons(sortedLessons);
 
-        if (sortedLessons.length > 0) {
-          setSelectedLessonId((prev) => prev || sortedLessons[0]._id);
+        try {
+          const lessonsRes = await apiService.getLessons(id);
+          const sortedLessons = [...(Array.isArray(lessonsRes) ? lessonsRes : [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+          setLessons(sortedLessons);
+
+          if (sortedLessons.length > 0) {
+            setSelectedLessonId((prev) => prev || sortedLessons[0]._id);
+          }
+        } catch (lessonError: any) {
+          const status = Number(lessonError?.response?.status || 0);
+
+          // Paid courses can return 403 for lesson access before enrollment/payment.
+          if (status === 403 || status === 401) {
+            setLessons([]);
+          } else {
+            setError(extractErrorMessage(lessonError, "Failed to load lessons"));
+          }
         }
       } catch (fetchError: any) {
         const message = extractErrorMessage(fetchError, "Failed to load course details");
@@ -276,11 +285,11 @@ export function CourseDetail() {
   }, [activeTab, selectedLessonId]);
 
   useEffect(() => {
-    const availableTabs = ["overview", "resources", "discussion"];
+    const availableTabs = canAccessLessons ? ["overview", "resources", "discussion"] : ["overview"];
     if (!availableTabs.includes(activeTab)) {
       setActiveTab("overview");
     }
-  }, [activeTab]);
+  }, [activeTab, canAccessLessons]);
 
   const courseResources = useMemo(() => {
     const resources: CourseResource[] = [];
@@ -394,6 +403,16 @@ export function CourseDetail() {
         }
 
         setCourse(refreshedCourse);
+
+        try {
+          const lessonsRes = await apiService.getLessons(id);
+          if (!ignore) {
+            const sortedLessons = [...(Array.isArray(lessonsRes) ? lessonsRes : [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+            setLessons(sortedLessons);
+          }
+        } catch {
+          // If lessons are still unavailable, keep current state and message from verification.
+        }
 
         if (verification.paymentVerified && verification.isEnrolled) {
           setSuccessMsg("Payment verified. Course access unlocked.");
@@ -663,6 +682,9 @@ export function CourseDetail() {
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{course.title}</h1>
+                <Badge className={`font-extrabold tracking-wide ${isPaidCourse ? "bg-indigo-600 text-white hover:bg-indigo-600" : "bg-emerald-600 text-white hover:bg-emerald-600"}`}>
+                  {isPaidCourse ? `PAID ${coursePrice.toFixed(2)} ${courseCurrency}` : "FREE COURSE"}
+                </Badge>
                 {isAdmin ? <Badge variant="secondary">Manage Course</Badge> : null}
               </div>
               <div className="flex items-center gap-4 text-sm text-slate-500">
@@ -745,13 +767,14 @@ export function CourseDetail() {
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
+                  disabled={!canAccessLessons && tab !== "overview"}
                   className={`pb-4 text-sm font-medium capitalize border-b-2 transition-colors ${
                     activeTab === tab
                       ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
                       : "border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-300"
-                  }`}
+                  } ${!canAccessLessons && tab !== "overview" ? "cursor-not-allowed opacity-50" : ""}`}
                 >
-                  {tab}
+                  {tab === "overview" ? tab : (!canAccessLessons ? `${tab} (locked)` : tab)}
                 </button>
               ))}
             </nav>

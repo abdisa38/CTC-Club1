@@ -335,7 +335,12 @@ export function CourseList() {
                         <Link to={`/app/courses/${course._id}`}><PlayCircle className="h-6 w-6 text-white" /></Link>
                       </Button>
                     </div>
-                    <Badge className="absolute top-3 left-3 bg-white/90 text-slate-900 hover:bg-white">{course.category}</Badge>
+                    <div className="absolute top-3 left-3 flex flex-col gap-2">
+                      <Badge className="bg-white/90 text-slate-900 hover:bg-white">{course.category}</Badge>
+                      <Badge className={`font-extrabold tracking-wide ${Number(course.price || 0) > 0 ? "bg-indigo-600 text-white hover:bg-indigo-600" : "bg-emerald-600 text-white hover:bg-emerald-600"}`}>
+                        {Number(course.price || 0) > 0 ? "PAID COURSE" : "FREE COURSE"}
+                      </Badge>
+                    </div>
                     <button
                       onClick={(e) => { e.preventDefault(); void toggleFavorite(course._id); }}
                       disabled={role !== 'student' || favoritingIds.has(course._id)}
@@ -369,7 +374,7 @@ export function CourseList() {
                       <Badge variant="secondary" className="text-xs px-2 py-0.5">
                         {course.category}
                       </Badge>
-                      <Badge className={`text-xs px-2 py-0.5 ${Number(course.price || 0) > 0 ? "bg-indigo-100 text-indigo-700" : "bg-emerald-100 text-emerald-700"}`}>
+                      <Badge className={`text-xs px-2 py-0.5 font-bold ${Number(course.price || 0) > 0 ? "bg-indigo-100 text-indigo-700" : "bg-emerald-100 text-emerald-700"}`}>
                         {Number(course.price || 0) > 0
                           ? `${Number(course.price || 0).toFixed(2)} ETB`
                           : "Free"}
@@ -392,7 +397,7 @@ export function CourseList() {
                           {enrollingId === course._id
                             ? (Number(course.price || 0) > 0 ? "Opening checkout..." : "Enrolling...")
                             : (Number(course.price || 0) > 0
-                                ? `Pay ${Number(course.price || 0).toFixed(0)} ETB`
+                                ? `Pay ${Number(course.price || 0).toFixed(2)} ETB`
                               : "Enroll Free")}
                         </Button>
                       ) : null}
