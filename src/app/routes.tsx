@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from "react-router";
+import { createBrowserRouter, Navigate, useLocation } from "react-router";
 import { AppLayout } from "./components/layouts/AppLayout";
 import { PublicLayout } from "./components/layouts/PublicLayout";
 
@@ -8,6 +8,13 @@ const lazyComponent = <T extends Record<string, any>>(loader: () => Promise<T>, 
     return { Component: module[exportName] };
   };
 };
+
+function SettingsRedirect() {
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  params.set("section", "settings");
+  return <Navigate to={`/app/profile?${params.toString()}`} replace />;
+}
 
 export const router = createBrowserRouter([
   {
@@ -64,7 +71,7 @@ export const router = createBrowserRouter([
       { path: "jobs", lazy: lazyComponent(() => import("./pages/Dashboard"), "Dashboard") },
       { path: "profile", lazy: lazyComponent(() => import("./pages/Profile"), "Profile") },
       { path: "premium-return", lazy: lazyComponent(() => import("./pages/PremiumReturn"), "PremiumReturn") },
-      { path: "settings", lazy: lazyComponent(() => import("./pages/Settings"), "Settings") },
+      { path: "settings", Component: SettingsRedirect },
       { path: "*", lazy: lazyComponent(() => import("./pages/Dashboard"), "Dashboard") },
     ],
   },
