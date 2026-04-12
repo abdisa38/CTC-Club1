@@ -94,7 +94,7 @@ const courseSchema = new Schema<ICourse>(
     },
     currency: {
       type: String,
-      default: 'USD',
+      default: 'ETB',
     },
     isPublished: {
       type: Boolean,

@@ -518,7 +518,7 @@ export const initializeCoursePayment = asyncHandler(async (req: AuthRequest, res
       alreadyEnrolled: true,
       isEnrolled: true,
       amount: Number(course.price || 0),
-      currency: normalizeUpperText(course.currency || 'ETB') || 'ETB',
+      currency: 'ETB',
     }, { message: 'Course access is already active for this user.' });
     return;
   }
@@ -531,8 +531,7 @@ export const initializeCoursePayment = asyncHandler(async (req: AuthRequest, res
 
   const courseCurrency = normalizeUpperText(course.currency || 'ETB') || 'ETB';
   if (courseCurrency !== 'ETB') {
-    res.status(400);
-    throw new Error('Only ETB paid courses are currently supported for checkout.');
+    await Course.findByIdAndUpdate(course._id, { currency: 'ETB' });
   }
 
   if (coursePrice === 0) {
