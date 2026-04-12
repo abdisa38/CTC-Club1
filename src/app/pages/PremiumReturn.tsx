@@ -11,7 +11,7 @@ export function PremiumReturn() {
   const [secondsLeft, setSecondsLeft] = useState(REDIRECT_SECONDS);
 
   const params = useMemo(() => new URLSearchParams(window.location.search), []);
-  const txRef = (params.get("tx_ref") || params.get("trx_ref") || "").trim();
+  const txRef = (params.get("tx_ref") || params.get("amp;tx_ref") || params.get("trx_ref") || params.get("amp;trx_ref") || "").trim();
   const status = (params.get("status") || "").trim().toLowerCase();
 
   const targetUrl = useMemo(() => {
