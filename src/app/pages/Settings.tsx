@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Textarea } from "../components/ui/Textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/Avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/Tabs";
-import { Bell, User, Palette, Globe, Github, Linkedin, Shield, LogOut, AlertCircle, Loader2, Crown, CheckCircle2 } from "lucide-react";
+import { Badge } from "../components/ui/Badge";
+import { Progress } from "../components/ui/Progress";
+import { Bell, User, Palette, Globe, Github, Linkedin, Shield, LogOut, AlertCircle, Loader2, Crown, CheckCircle2, Award, Briefcase, Calendar } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import apiService, { NotificationPreferences, ThemePreference } from "../services/api";
+import apiService, { NotificationPreferences, ProjectSubmission, ThemePreference } from "../services/api";
 
 const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   courseUpdates: true,
@@ -61,6 +64,32 @@ const formatPremiumDate = (value?: string) => {
   return date.toLocaleDateString();
 };
 
+const formatDate = (value?: string) => {
+  if (!value) {
+    return "N/A";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "N/A";
+  }
+
+  return date.toLocaleDateString();
+};
+
+const statusBadgeClass = (status?: string) => {
+  switch (status) {
+    case "graded":
+      return "bg-emerald-100 text-emerald-700";
+    case "under_review":
+      return "bg-amber-100 text-amber-700";
+    case "submitted":
+      return "bg-indigo-100 text-indigo-700";
+    default:
+      return "bg-slate-100 text-slate-700";
+  }
+};
+
 const extractErrorMessage = (error: any, fallback: string) => {
   const responseData = error?.response?.data;
   const candidate = responseData?.message ?? responseData?.error ?? responseData;
@@ -104,6 +133,8 @@ export function Settings({ embedded = false }: { embedded?: boolean }) {
 
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const [metrics, setMetrics] = useState<any>(null);
+  const [recentSubmissions, setRecentSubmissions] = useState<ProjectSubmission[]>([]);
 
   const [profileForm, setProfileForm] = useState({
     firstName: "",
@@ -140,6 +171,15 @@ export function Settings({ embedded = false }: { embedded?: boolean }) {
     return initials || "U";
   }, [profileForm.firstName, profileForm.lastName, user?.name, user?.email]);
 
+  const xp = Number(metrics?.xp ?? (user as any)?.xp ?? 0);
+  const level = Math.max(1, Number(metrics?.level ?? (user as any)?.level ?? Math.floor(xp / 1000) + 1));
+  const xpTarget = Math.max(level * 1000, 1000);
+  const xpProgress = Math.min(100, Math.round((xp / xpTarget) * 100));
+  const enrolledCourses = Number(metrics?.enrolledCourses || 0);
+  const completedCourses = Number(metrics?.completedCourses || 0);
+  const activeCoursesCount = Array.isArray(metrics?.activeCourses) ? metrics.activeCourses.length : 0;
+  const completionRate = enrolledCourses > 0 ? Math.round((completedCourses / enrolledCourses) * 100) : 0;
+
   const hydrateSettingsForm = (payload: any) => {
     const { firstName, lastName } = splitName(payload?.name || "");
 
@@ -172,12 +212,18 @@ export function Settings({ embedded = false }: { embedded?: boolean }) {
       setErrorMsg("");
 
       try {
-        const currentUser = await apiService.getCurrentUser();
+        const [currentUser, dashboardMetrics, submissions] = await Promise.all([
+          apiService.getCurrentUser(),
+          apiService.getDashboardMetrics().catch(() => null),
+          apiService.getProjectSubmissions().catch(() => []),
+        ]);
         if (ignore) {
           return;
         }
 
         hydrateSettingsForm(currentUser);
+        setMetrics(dashboardMetrics);
+        setRecentSubmissions(Array.isArray(submissions) ? submissions.slice(0, 6) : []);
       } catch (error: any) {
         if (!ignore) {
           console.error('Settings load error:', error);
