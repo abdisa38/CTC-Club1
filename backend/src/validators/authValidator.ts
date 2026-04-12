@@ -60,6 +60,12 @@ export const changePasswordSchema = z.object({
   }),
 });
 
+export const changeEmailSchema = z.object({
+  body: z.object({
+    email: z.string().email('Invalid email address'),
+  }),
+});
+
 export const updateNotificationPreferencesSchema = z.object({
   body: z.object({
     courseUpdates: z.boolean().optional(),
