@@ -1,9 +1,12 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export type PaymentStatus = 'initialized' | 'pending' | 'success' | 'failed' | 'cancelled';
+export type PaymentTransactionType = 'premium' | 'course';
 
 export interface IPaymentTransaction extends Document {
   user: mongoose.Types.ObjectId;
+  transactionType: PaymentTransactionType;
+  course?: mongoose.Types.ObjectId;
   txRef: string;
   amount: number;
   currency: 'ETB';
@@ -25,6 +28,18 @@ const paymentTransactionSchema = new Schema<IPaymentTransaction>(
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
+      index: true,
+    },
+    transactionType: {
+      type: String,
+      required: true,
+      default: 'premium',
+      enum: ['premium', 'course'],
+      index: true,
+    },
+    course: {
+      type: Schema.Types.ObjectId,
+      ref: 'Course',
       index: true,
     },
     txRef: {
@@ -90,6 +105,7 @@ const paymentTransactionSchema = new Schema<IPaymentTransaction>(
 );
 
 paymentTransactionSchema.index({ user: 1, createdAt: -1 });
+paymentTransactionSchema.index({ course: 1, createdAt: -1 });
 
 const PaymentTransaction = mongoose.model<IPaymentTransaction>('PaymentTransaction', paymentTransactionSchema);
 
