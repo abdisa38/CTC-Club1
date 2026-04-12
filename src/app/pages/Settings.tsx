@@ -1,15 +1,329 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { Textarea } from "../components/ui/Textarea";
-import { Badge } from "../components/ui/Badge";
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/Avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/Tabs";
-import { Bell, Lock, User, Palette, Globe, Github, Linkedin, Shield, LogOut } from "lucide-react";
+import { Bell, User, Palette, Globe, Github, Linkedin, Shield, LogOut, AlertCircle, Loader2 } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
+import apiService, { NotificationPreferences, ThemePreference } from "../services/api";
+
+const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
+  courseUpdates: true,
+  assignmentFeedback: true,
+  communityMentions: false,
+  weeklySummary: true,
+};
+
+const splitName = (fullName: string) => {
+  const safeName = String(fullName || "").trim();
+  if (!safeName) {
+    return { firstName: "", lastName: "" };
+  }
+
+  const parts = safeName.split(/\s+/);
+  const firstName = parts[0] || "";
+  const lastName = parts.slice(1).join(" ");
+  return { firstName, lastName };
+};
+
+const applyThemePreference = (theme: ThemePreference) => {
+  const root = document.documentElement;
+
+  if (theme === "dark") {
+    root.classList.add("dark");
+    localStorage.setItem("theme", "dark");
+    return;
+  }
+
+  if (theme === "light") {
+    root.classList.remove("dark");
+    localStorage.setItem("theme", "light");
+    return;
+  }
+
+  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  root.classList.toggle("dark", prefersDark);
+  localStorage.setItem("theme", "system");
+};
 
 export function Settings() {
+  const { user, login, logout } = useAuth();
   const [activeTab, setActiveTab] = useState("profile");
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
+  const [isSavingNotifications, setIsSavingNotifications] = useState(false);
+  const [isSavingTheme, setIsSavingTheme] = useState(false);
+
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+
+  const [profileForm, setProfileForm] = useState({
+    firstName: "",
+    lastName: "",
+    headline: "",
+    bio: "",
+    avatar: "",
+    github: "",
+    linkedin: "",
+    website: "",
+  });
+
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+
+  const [notificationForm, setNotificationForm] = useState<NotificationPreferences>(DEFAULT_NOTIFICATION_PREFERENCES);
+  const [themePreference, setThemePreference] = useState<ThemePreference>("system");
+
+  const profileInitials = useMemo(() => {
+    const base = `${profileForm.firstName} ${profileForm.lastName}`.trim() || user?.name || user?.email || "U";
+    const initials = base
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase();
+
+    return initials || "U";
+  }, [profileForm.firstName, profileForm.lastName, user?.name, user?.email]);
+
+  const hydrateSettingsForm = (payload: any) => {
+    const { firstName, lastName } = splitName(payload?.name || "");
+
+    setProfileForm({
+      firstName,
+      lastName,
+      headline: String(payload?.headline || ""),
+      bio: String(payload?.bio || ""),
+      avatar: String(payload?.avatar || ""),
+      github: String(payload?.socialLinks?.github || ""),
+      linkedin: String(payload?.socialLinks?.linkedin || ""),
+      website: String(payload?.socialLinks?.website || ""),
+    });
+
+    setNotificationForm({
+      ...DEFAULT_NOTIFICATION_PREFERENCES,
+      ...(payload?.preferences?.notifications || {}),
+    });
+
+    const nextTheme = (payload?.preferences?.appearance?.theme || "system") as ThemePreference;
+    setThemePreference(nextTheme);
+    applyThemePreference(nextTheme);
+  };
+
+  useEffect(() => {
+    let ignore = false;
+
+    const loadSettings = async () => {
+      setIsLoading(true);
+      setErrorMsg("");
+
+      try {
+        const currentUser = await apiService.getCurrentUser();
+        if (ignore) {
+          return;
+        }
+
+        hydrateSettingsForm(currentUser);
+      } catch (error: any) {
+        if (!ignore) {
+          setErrorMsg(error?.response?.data?.message || "Failed to load account settings.");
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void loadSettings();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const updateProfile = async (input: {
+    name?: string;
+    firstName?: string;
+    lastName?: string;
+    headline?: string;
+    bio?: string;
+    avatar?: string;
+    socialLinks?: { github?: string; linkedin?: string; website?: string };
+  }, successText: string) => {
+    setIsSavingProfile(true);
+    setErrorMsg("");
+    setSuccessMsg("");
+
+    try {
+      const updatedUser = await apiService.updateCurrentUserProfile(input);
+      login(updatedUser as any);
+      hydrateSettingsForm(updatedUser);
+      setSuccessMsg(successText);
+    } catch (error: any) {
+      setErrorMsg(error?.response?.data?.message || "Failed to update profile settings.");
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
+  const handleChangeAvatar = async () => {
+    const nextAvatar = window.prompt("Paste your profile image URL (http/https)", profileForm.avatar || "");
+    if (nextAvatar === null) {
+      return;
+    }
+
+    await updateProfile({ avatar: nextAvatar.trim() }, "Profile picture updated.");
+  };
+
+  const handleRemoveAvatar = async () => {
+    await updateProfile({ avatar: "" }, "Profile picture removed.");
+  };
+
+  const handleSavePersonalInfo = async () => {
+    await updateProfile({
+      firstName: profileForm.firstName,
+      lastName: profileForm.lastName,
+      headline: profileForm.headline,
+      bio: profileForm.bio,
+    }, "Personal information saved.");
+  };
+
+  const handleSaveSocialLinks = async () => {
+    await updateProfile({
+      socialLinks: {
+        github: profileForm.github,
+        linkedin: profileForm.linkedin,
+        website: profileForm.website,
+      },
+    }, "Social links updated.");
+  };
+
+  const handleChangePassword = async () => {
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      setErrorMsg("Please fill current password, new password, and confirm password.");
+      setSuccessMsg("");
+      return;
+    }
+
+    if (passwordForm.newPassword.length < 6) {
+      setErrorMsg("New password must be at least 6 characters.");
+      setSuccessMsg("");
+      return;
+    }
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setErrorMsg("New password and confirm password do not match.");
+      setSuccessMsg("");
+      return;
+    }
+
+    setIsSavingPassword(true);
+    setErrorMsg("");
+    setSuccessMsg("");
+
+    try {
+      await apiService.changeCurrentUserPassword({
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
+      });
+
+      setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setSuccessMsg("Password changed successfully.");
+    } catch (error: any) {
+      setErrorMsg(error?.response?.data?.message || "Failed to change password.");
+    } finally {
+      setIsSavingPassword(false);
+    }
+  };
+
+  const handleSaveNotifications = async () => {
+    setIsSavingNotifications(true);
+    setErrorMsg("");
+    setSuccessMsg("");
+
+    try {
+      const updatedNotifications = await apiService.updateNotificationPreferences(notificationForm);
+      setNotificationForm({ ...DEFAULT_NOTIFICATION_PREFERENCES, ...updatedNotifications });
+
+      if (user) {
+        login({
+          ...user,
+          preferences: {
+            ...(user as any).preferences,
+            notifications: { ...DEFAULT_NOTIFICATION_PREFERENCES, ...updatedNotifications },
+          },
+        } as any);
+      }
+
+      setSuccessMsg("Notification preferences saved.");
+    } catch (error: any) {
+      setErrorMsg(error?.response?.data?.message || "Failed to save notification preferences.");
+    } finally {
+      setIsSavingNotifications(false);
+    }
+  };
+
+  const handleThemeSelect = async (nextTheme: ThemePreference) => {
+    const previousTheme = themePreference;
+
+    setThemePreference(nextTheme);
+    applyThemePreference(nextTheme);
+    setIsSavingTheme(true);
+    setErrorMsg("");
+    setSuccessMsg("");
+
+    try {
+      const savedAppearance = await apiService.updateAppearancePreference(nextTheme);
+      const savedTheme = savedAppearance.theme || nextTheme;
+
+      setThemePreference(savedTheme);
+      applyThemePreference(savedTheme);
+
+      if (user) {
+        login({
+          ...user,
+          preferences: {
+            ...(user as any).preferences,
+            appearance: { theme: savedTheme },
+          },
+        } as any);
+      }
+
+      setSuccessMsg("Theme updated.");
+    } catch (error: any) {
+      setThemePreference(previousTheme);
+      applyThemePreference(previousTheme);
+      setErrorMsg(error?.response?.data?.message || "Failed to update theme preference.");
+    } finally {
+      setIsSavingTheme(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Account Settings</h1>
+          <p className="text-slate-500 dark:text-slate-400">Loading your settings...</p>
+        </div>
+        <Card>
+          <CardContent className="py-10 flex items-center gap-3 text-slate-500">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            Fetching account settings from database...
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -17,6 +331,18 @@ export function Settings() {
         <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Account Settings</h1>
         <p className="text-slate-500 dark:text-slate-400">Manage your profile, preferences, and security.</p>
       </div>
+
+      {errorMsg && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
+          {errorMsg}
+        </div>
+      )}
+
+      {successMsg && (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300">
+          {successMsg}
+        </div>
+      )}
 
       <div className="flex flex-col md:flex-row gap-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col md:flex-row gap-6">
@@ -50,15 +376,20 @@ export function Settings() {
                 </CardHeader>
                 <CardContent className="flex items-center gap-6">
                   <Avatar className="h-24 w-24 border border-slate-200 dark:border-slate-800">
-                    <AvatarImage src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=250" />
-                    <AvatarFallback>AC</AvatarFallback>
+                    <AvatarImage src={profileForm.avatar || undefined} alt="Profile" />
+                    <AvatarFallback>{profileInitials}</AvatarFallback>
                   </Avatar>
                   <div className="space-y-2">
                     <div className="flex gap-2">
-                      <Button>Change Avatar</Button>
-                      <Button variant="outline" className="text-red-500 hover:text-red-600">Remove</Button>
+                      <Button onClick={handleChangeAvatar} disabled={isSavingProfile}>
+                        {isSavingProfile ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                        Change Avatar
+                      </Button>
+                      <Button variant="outline" className="text-red-500 hover:text-red-600" onClick={handleRemoveAvatar} disabled={isSavingProfile}>
+                        Remove
+                      </Button>
                     </div>
-                    <p className="text-xs text-slate-500">JPG, GIF or PNG. Max size 2MB.</p>
+                    <p className="text-xs text-slate-500">Use a public image URL (http/https).</p>
                   </div>
                 </CardContent>
               </Card>
@@ -72,24 +403,44 @@ export function Settings() {
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label className="text-sm font-medium">First Name</label>
-                      <Input defaultValue="Alex" />
+                      <Input
+                        value={profileForm.firstName}
+                        onChange={(e) => setProfileForm((prev) => ({ ...prev, firstName: e.target.value }))}
+                        placeholder="First name"
+                      />
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Last Name</label>
-                      <Input defaultValue="Chen" />
+                      <Input
+                        value={profileForm.lastName}
+                        onChange={(e) => setProfileForm((prev) => ({ ...prev, lastName: e.target.value }))}
+                        placeholder="Last name"
+                      />
                     </div>
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Headline / Bio</label>
-                    <Input defaultValue="Computer Science Student, Junior" />
+                    <Input
+                      value={profileForm.headline}
+                      onChange={(e) => setProfileForm((prev) => ({ ...prev, headline: e.target.value }))}
+                      placeholder="Your short headline"
+                    />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">About Me</label>
-                    <Textarea defaultValue="Passionate about web development and artificial intelligence. Currently learning React and Node.js." rows={4} />
+                    <Textarea
+                      value={profileForm.bio}
+                      onChange={(e) => setProfileForm((prev) => ({ ...prev, bio: e.target.value }))}
+                      rows={4}
+                      placeholder="Write something about yourself"
+                    />
                   </div>
                 </CardContent>
                 <CardFooter className="border-t border-slate-200 dark:border-slate-800 pt-4 flex justify-end">
-                  <Button>Save Changes</Button>
+                  <Button onClick={handleSavePersonalInfo} disabled={isSavingProfile}>
+                    {isSavingProfile ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                    Save Changes
+                  </Button>
                 </CardFooter>
               </Card>
 
@@ -101,19 +452,34 @@ export function Settings() {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium flex items-center gap-2"><Github className="h-4 w-4" /> GitHub</label>
-                    <Input defaultValue="https://github.com/alexchen" />
+                    <Input
+                      value={profileForm.github}
+                      onChange={(e) => setProfileForm((prev) => ({ ...prev, github: e.target.value }))}
+                      placeholder="https://github.com/your-username"
+                    />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium flex items-center gap-2"><Linkedin className="h-4 w-4" /> LinkedIn</label>
-                    <Input defaultValue="https://linkedin.com/in/alexchen" />
+                    <Input
+                      value={profileForm.linkedin}
+                      onChange={(e) => setProfileForm((prev) => ({ ...prev, linkedin: e.target.value }))}
+                      placeholder="https://linkedin.com/in/your-profile"
+                    />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium flex items-center gap-2"><Globe className="h-4 w-4" /> Personal Website</label>
-                    <Input placeholder="https://" />
+                    <Input
+                      value={profileForm.website}
+                      onChange={(e) => setProfileForm((prev) => ({ ...prev, website: e.target.value }))}
+                      placeholder="https://"
+                    />
                   </div>
                 </CardContent>
                 <CardFooter className="border-t border-slate-200 dark:border-slate-800 pt-4 flex justify-end">
-                  <Button>Update Links</Button>
+                  <Button onClick={handleSaveSocialLinks} disabled={isSavingProfile}>
+                    {isSavingProfile ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                    Update Links
+                  </Button>
                 </CardFooter>
               </Card>
             </TabsContent>
@@ -126,8 +492,8 @@ export function Settings() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-col sm:flex-row gap-4 items-center">
-                    <Input value="alex.chen@university.edu" readOnly disabled className="bg-slate-50" />
-                    <Button variant="outline" className="w-full sm:w-auto shrink-0">Change Email</Button>
+                    <Input value={user?.email || ""} readOnly disabled className="bg-slate-50" />
+                    <Button variant="outline" className="w-full sm:w-auto shrink-0" disabled>Change Email</Button>
                   </div>
                   <p className="text-sm text-amber-600 mt-2 flex items-center gap-1">
                     <AlertCircle className="h-4 w-4" /> Changing email requires verification.
@@ -143,24 +509,39 @@ export function Settings() {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Current Password</label>
-                    <Input type="password" />
+                    <Input
+                      type="password"
+                      value={passwordForm.currentPassword}
+                      onChange={(e) => setPasswordForm((prev) => ({ ...prev, currentPassword: e.target.value }))}
+                    />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">New Password</label>
-                    <Input type="password" />
+                    <Input
+                      type="password"
+                      value={passwordForm.newPassword}
+                      onChange={(e) => setPasswordForm((prev) => ({ ...prev, newPassword: e.target.value }))}
+                    />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Confirm New Password</label>
-                    <Input type="password" />
+                    <Input
+                      type="password"
+                      value={passwordForm.confirmPassword}
+                      onChange={(e) => setPasswordForm((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+                    />
                   </div>
                 </CardContent>
                 <CardFooter className="border-t border-slate-200 dark:border-slate-800 pt-4 flex justify-end">
-                  <Button>Update Password</Button>
+                  <Button onClick={handleChangePassword} disabled={isSavingPassword}>
+                    {isSavingPassword ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                    Update Password
+                  </Button>
                 </CardFooter>
               </Card>
 
               <div className="flex justify-end">
-                <Button variant="destructive" className="w-full sm:w-auto"><LogOut className="h-4 w-4 mr-2" /> Log out everywhere</Button>
+                <Button variant="destructive" className="w-full sm:w-auto" onClick={() => void logout()}><LogOut className="h-4 w-4 mr-2" /> Log out</Button>
               </div>
             </TabsContent>
 
@@ -172,14 +553,25 @@ export function Settings() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {[
-                    { title: 'Course Updates', desc: 'New modules, resources, and announcements from instructors.', checked: true },
-                    { title: 'Assignment Feedback', desc: 'When an instructor grades or leaves feedback on your project.', checked: true },
-                    { title: 'Community Mentions', desc: 'When someone replies to your comment or mentions you.', checked: false },
-                    { title: 'Weekly Summary', desc: 'A summary of your learning progress and upcoming deadlines.', checked: true },
+                    { key: 'courseUpdates', title: 'Course Updates', desc: 'New modules, resources, and announcements from instructors.' },
+                    { key: 'assignmentFeedback', title: 'Assignment Feedback', desc: 'When an instructor grades or leaves feedback on your project.' },
+                    { key: 'communityMentions', title: 'Community Mentions', desc: 'When someone replies to your comment or mentions you.' },
+                    { key: 'weeklySummary', title: 'Weekly Summary', desc: 'A summary of your learning progress and upcoming deadlines.' },
                   ].map((item, i) => (
                     <div key={i} className="flex items-start space-x-4">
                       <div className="flex items-center h-5">
-                        <input type="checkbox" defaultChecked={item.checked} className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600" />
+                        <input
+                          type="checkbox"
+                          checked={Boolean(notificationForm[item.key as keyof NotificationPreferences])}
+                          onChange={(e) => {
+                            const key = item.key as keyof NotificationPreferences;
+                            setNotificationForm((prev) => ({
+                              ...prev,
+                              [key]: e.target.checked,
+                            }));
+                          }}
+                          className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600"
+                        />
                       </div>
                       <div className="flex flex-col">
                         <span className="text-sm font-medium text-slate-900 dark:text-white leading-none">{item.title}</span>
@@ -189,7 +581,10 @@ export function Settings() {
                   ))}
                 </CardContent>
                 <CardFooter className="border-t border-slate-200 dark:border-slate-800 pt-4 flex justify-end">
-                  <Button>Save Preferences</Button>
+                  <Button onClick={handleSaveNotifications} disabled={isSavingNotifications}>
+                    {isSavingNotifications ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                    Save Preferences
+                  </Button>
                 </CardFooter>
               </Card>
             </TabsContent>
@@ -202,19 +597,34 @@ export function Settings() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-3 gap-4">
-                    <button className="border-2 border-indigo-600 rounded-xl p-4 flex flex-col items-center gap-3 bg-white dark:bg-slate-950">
+                    <button
+                      type="button"
+                      onClick={() => void handleThemeSelect("system")}
+                      className={`border-2 rounded-xl p-4 flex flex-col items-center gap-3 bg-white dark:bg-slate-950 ${themePreference === "system" ? "border-indigo-600" : "border-transparent hover:border-slate-300 dark:hover:border-slate-700"}`}
+                    >
                       <div className="h-12 w-full rounded bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800" />
-                      <span className="text-sm font-medium text-indigo-600">System Match</span>
+                      <span className={`text-sm font-medium ${themePreference === "system" ? "text-indigo-600" : "text-slate-600 dark:text-slate-400"}`}>System Match</span>
                     </button>
-                    <button className="border-2 border-transparent hover:border-slate-300 dark:hover:border-slate-700 rounded-xl p-4 flex flex-col items-center gap-3 bg-white dark:bg-slate-950">
+                    <button
+                      type="button"
+                      onClick={() => void handleThemeSelect("light")}
+                      className={`border-2 rounded-xl p-4 flex flex-col items-center gap-3 bg-white dark:bg-slate-950 ${themePreference === "light" ? "border-indigo-600" : "border-transparent hover:border-slate-300 dark:hover:border-slate-700"}`}
+                    >
                       <div className="h-12 w-full rounded bg-white border border-slate-200" />
-                      <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Light Mode</span>
+                      <span className={`text-sm font-medium ${themePreference === "light" ? "text-indigo-600" : "text-slate-600 dark:text-slate-400"}`}>Light Mode</span>
                     </button>
-                    <button className="border-2 border-transparent hover:border-slate-300 dark:hover:border-slate-700 rounded-xl p-4 flex flex-col items-center gap-3 bg-white dark:bg-slate-950">
+                    <button
+                      type="button"
+                      onClick={() => void handleThemeSelect("dark")}
+                      className={`border-2 rounded-xl p-4 flex flex-col items-center gap-3 bg-white dark:bg-slate-950 ${themePreference === "dark" ? "border-indigo-600" : "border-transparent hover:border-slate-300 dark:hover:border-slate-700"}`}
+                    >
                       <div className="h-12 w-full rounded bg-slate-950 border border-slate-800" />
-                      <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Dark Mode</span>
+                      <span className={`text-sm font-medium ${themePreference === "dark" ? "text-indigo-600" : "text-slate-600 dark:text-slate-400"}`}>Dark Mode</span>
                     </button>
                   </div>
+                  <p className="mt-4 text-xs text-slate-500">
+                    {isSavingTheme ? "Saving theme preference..." : "Theme is saved automatically when you select an option."}
+                  </p>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -224,11 +634,3 @@ export function Settings() {
     </div>
   );
 }
-
-const AlertCircle = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <circle cx="12" cy="12" r="10" />
-    <line x1="12" y1="8" x2="12" y2="12" />
-    <line x1="12" y1="16" x2="12.01" y2="16" />
-  </svg>
-)
