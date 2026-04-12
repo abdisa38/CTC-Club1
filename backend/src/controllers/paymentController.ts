@@ -176,7 +176,6 @@ const buildPremiumReturnUrl = (txRef: string) => {
     }
   }
 
-  targetUrl.searchParams.set('premium', 'verify');
   targetUrl.searchParams.set('tx_ref', txRef);
   return targetUrl.toString();
 };
@@ -197,7 +196,6 @@ const buildCourseReturnUrl = (courseId: string, txRef: string) => {
     }
   }
 
-  targetUrl.searchParams.set('payment', 'verify');
   targetUrl.searchParams.set('tx_ref', txRef);
   return targetUrl.toString();
 };
