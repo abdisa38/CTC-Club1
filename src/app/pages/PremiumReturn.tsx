@@ -16,14 +16,13 @@ export function PremiumReturn() {
 
   const targetUrl = useMemo(() => {
     if (!txRef) {
-      return "/app/profile?section=settings";
+      return "/app/settings";
     }
 
     const target = new URLSearchParams();
-    target.set("section", "settings");
     target.set("premium", "verify");
     target.set("tx_ref", txRef);
-    return `/app/profile?${target.toString()}`;
+    return `/app/settings?${target.toString()}`;
   }, [txRef]);
 
   const statusLabel = status === "success" || status === "successful"

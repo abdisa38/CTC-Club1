@@ -286,7 +286,7 @@ export function AppLayout() {
 
       <div className="border-t border-slate-100 dark:border-slate-800/50 p-3 shrink-0 space-y-0.5">
         <Link
-          to="/app/profile?section=settings"
+          to="/app/settings"
           className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-50 dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/5 transition-all duration-200"
         >
           <Settings className="h-[18px] w-[18px] text-slate-400" />
@@ -517,8 +517,8 @@ export function AppLayout() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild className="rounded-lg"><Link to="/app/profile">Profile</Link></DropdownMenuItem>
-                <DropdownMenuItem asChild className="rounded-lg"><Link to="/app/profile?section=settings">Settings</Link></DropdownMenuItem>
+                <DropdownMenuItem asChild className="rounded-lg"><Link to="/app/settings">Profile</Link></DropdownMenuItem>
+                <DropdownMenuItem asChild className="rounded-lg"><Link to="/app/settings">Settings</Link></DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
                   onClick={() => logout()} 
@@ -555,7 +555,7 @@ export function AppLayout() {
           );
         })}
         <Link
-          to="/app/profile?section=settings"
+          to="/app/settings"
           className="flex flex-col items-center gap-1 p-2 rounded-xl text-[10px] font-medium text-slate-400 transition-all"
         >
           <Settings className="h-5 w-5" />
