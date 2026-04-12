@@ -27,6 +27,8 @@ export interface IUser extends Document {
       theme?: 'system' | 'light' | 'dark';
     };
   };
+  isPremium: boolean;
+  premiumActivatedAt?: Date;
   xp: number;
   level: number;
   badges: mongoose.Types.ObjectId[];
@@ -120,6 +122,14 @@ const userSchema = new Schema<IUser>(
           default: 'system',
         },
       },
+    },
+    isPremium: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    premiumActivatedAt: {
+      type: Date,
     },
     xp: {
       type: Number,
