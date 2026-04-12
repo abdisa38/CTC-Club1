@@ -105,7 +105,7 @@ const requireChapaSecretKey = (res) => {
     return key;
 };
 const buildPremiumReturnUrl = (txRef) => {
-    const fallback = new URL('/app/settings', getClientUrl());
+    const fallback = new URL('/app/premium-return', getClientUrl());
     const configured = String(process.env.CHAPA_RETURN_URL || '').trim();
     let targetUrl = fallback;
     if (configured) {
