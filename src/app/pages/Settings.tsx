@@ -61,6 +61,34 @@ const formatPremiumDate = (value?: string) => {
   return date.toLocaleDateString();
 };
 
+const extractErrorMessage = (error: any, fallback: string) => {
+  const responseData = error?.response?.data;
+  const candidate = responseData?.message ?? responseData?.error ?? responseData;
+
+  if (typeof candidate === "string" && candidate.trim()) {
+    return candidate;
+  }
+
+  if (candidate && typeof candidate === "object") {
+    const nestedMessage = (candidate as any).message;
+    if (typeof nestedMessage === "string" && nestedMessage.trim()) {
+      return nestedMessage;
+    }
+
+    try {
+      return JSON.stringify(candidate);
+    } catch {
+      return fallback;
+    }
+  }
+
+  if (typeof error?.message === "string" && error.message.trim()) {
+    return error.message;
+  }
+
+  return fallback;
+};
+
 export function Settings() {
   const { user, login, logout } = useAuth();
   const [activeTab, setActiveTab] = useState("profile");
@@ -151,9 +179,7 @@ export function Settings() {
       } catch (error: any) {
         if (!ignore) {
           console.error('Settings load error:', error);
-          const errData = error?.response?.data;
-          const msg = errData?.message || error?.message || "Failed to load account settings.";
-          setErrorMsg(typeof msg === 'string' ? msg : JSON.stringify(msg));
+          setErrorMsg(extractErrorMessage(error, "Failed to load account settings."));
         }
       } finally {
         if (!ignore) {
@@ -208,9 +234,7 @@ export function Settings() {
       } catch (error: any) {
         if (!ignore) {
           console.error('Settings init/verify error:', error);
-          const errData = error?.response?.data;
-          const msg = errData?.message || error?.message || "Failed to verify premium payment.";
-          setErrorMsg(typeof msg === 'string' ? msg : JSON.stringify(msg));
+          setErrorMsg(extractErrorMessage(error, "Failed to verify premium payment."));
         }
       } finally {
         if (!ignore) {
@@ -250,7 +274,7 @@ export function Settings() {
       hydrateSettingsForm(updatedUser);
       setSuccessMsg(successText);
     } catch (error: any) {
-      setErrorMsg(error?.response?.data?.message || "Failed to update profile settings.");
+      setErrorMsg(extractErrorMessage(error, "Failed to update profile settings."));
     } finally {
       setIsSavingProfile(false);
     }
@@ -320,7 +344,7 @@ export function Settings() {
       setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
       setSuccessMsg("Password changed successfully.");
     } catch (error: any) {
-      setErrorMsg(error?.response?.data?.message || "Failed to change password.");
+      setErrorMsg(extractErrorMessage(error, "Failed to change password."));
     } finally {
       setIsSavingPassword(false);
     }
@@ -351,7 +375,7 @@ export function Settings() {
       hydrateSettingsForm(updatedUser);
       setSuccessMsg("Email updated successfully.");
     } catch (error: any) {
-      setErrorMsg(error?.response?.data?.message || "Failed to update email.");
+      setErrorMsg(extractErrorMessage(error, "Failed to update email."));
     } finally {
       setIsSavingEmail(false);
     }
@@ -378,7 +402,7 @@ export function Settings() {
 
       setSuccessMsg("Notification preferences saved.");
     } catch (error: any) {
-      setErrorMsg(error?.response?.data?.message || "Failed to save notification preferences.");
+      setErrorMsg(extractErrorMessage(error, "Failed to save notification preferences."));
     } finally {
       setIsSavingNotifications(false);
     }
@@ -414,7 +438,7 @@ export function Settings() {
     } catch (error: any) {
       setThemePreference(previousTheme);
       applyThemePreference(previousTheme);
-      setErrorMsg(error?.response?.data?.message || "Failed to update theme preference.");
+      setErrorMsg(extractErrorMessage(error, "Failed to update theme preference."));
     } finally {
       setIsSavingTheme(false);
     }
@@ -448,7 +472,7 @@ export function Settings() {
 
       window.location.href = init.checkoutUrl;
     } catch (error: any) {
-      setErrorMsg(error?.response?.data?.message || error?.message || "Failed to start premium checkout.");
+      setErrorMsg(extractErrorMessage(error, "Failed to start premium checkout."));
     } finally {
       setIsStartingPremiumPayment(false);
     }
