@@ -11,6 +11,12 @@ import { sendSuccess } from '../utils/apiResponse';
 // @access  Private/Instructor
 export const createCourse = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { title, description, coverImage, category, price } = req.body;
+  const normalizedPrice = Number(price ?? 0);
+
+  if (!Number.isFinite(normalizedPrice) || normalizedPrice < 0) {
+    res.status(400);
+    throw new Error('Price must be a valid non-negative number');
+  }
 
   const course = await Course.create({
     title,
@@ -18,7 +24,8 @@ export const createCourse = asyncHandler(async (req: AuthRequest, res: Response)
     instructor: req.user._id, // the user creating it is an instructor
     coverImage,
     category,
-    price,
+    price: normalizedPrice,
+    currency: 'ETB',
     isPublished: true,
     status: 'published',
   });
@@ -111,7 +118,19 @@ export const updateCourse = asyncHandler(async (req: AuthRequest, res: Response)
   course.description = description || course.description;
   course.coverImage = coverImage || course.coverImage;
   course.category = category || course.category;
-  course.price = price !== undefined ? price : course.price;
+
+  if (price !== undefined) {
+    const normalizedPrice = Number(price);
+    if (!Number.isFinite(normalizedPrice) || normalizedPrice < 0) {
+      res.status(400);
+      throw new Error('Price must be a valid non-negative number');
+    }
+
+    course.price = normalizedPrice;
+  }
+
+  // Course checkout supports ETB in this flow.
+  course.currency = 'ETB';
 
   const updatedCourse = await course.save();
   sendSuccess(res, updatedCourse, { message: 'Course updated successfully' });

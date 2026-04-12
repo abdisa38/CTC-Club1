@@ -642,6 +642,7 @@ export const apiService = {
     description: string;
     category: string;
     price: number;
+    currency?: string;
     coverImage?: string;
   }): Promise<Course> {
     const res = await api.post("/courses", input);
@@ -655,6 +656,7 @@ export const apiService = {
       description: string;
       category: string;
       price: number;
+      currency?: string;
       coverImage?: string;
     }>
   ): Promise<Course> {
