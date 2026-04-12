@@ -704,6 +704,113 @@ export function Settings({ embedded = false }: { embedded?: boolean }) {
                   </Button>
                 </CardFooter>
               </Card>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Platform Status</CardTitle>
+                    <CardDescription>Your learning progress and account activity.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-5">
+                    <div>
+                      <div className="flex justify-between items-center text-sm font-medium mb-2">
+                        <span className="text-slate-900 dark:text-white flex items-center gap-2">
+                          <Award className="h-4 w-4 text-indigo-500" />
+                          Level {level}
+                        </span>
+                        <span className="text-indigo-600">{xp.toLocaleString()} XP</span>
+                      </div>
+                      <Progress value={xpProgress} className="h-2" />
+                      <p className="text-xs text-slate-500 mt-2 text-right">
+                        {Math.max(0, xpTarget - xp).toLocaleString()} XP to Level {level + 1}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-center dark:border-slate-800 dark:bg-slate-900/40">
+                        <span className="block text-2xl font-bold text-slate-900 dark:text-white">{enrolledCourses}</span>
+                        <span className="text-xs text-slate-500 font-medium">Enrolled</span>
+                      </div>
+                      <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-center dark:border-slate-800 dark:bg-slate-900/40">
+                        <span className="block text-2xl font-bold text-slate-900 dark:text-white">{completedCourses}</span>
+                        <span className="text-xs text-slate-500 font-medium">Completed</span>
+                      </div>
+                      <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-center dark:border-slate-800 dark:bg-slate-900/40">
+                        <span className="block text-2xl font-bold text-slate-900 dark:text-white">{activeCoursesCount}</span>
+                        <span className="text-xs text-slate-500 font-medium">Active</span>
+                      </div>
+                      <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-center dark:border-slate-800 dark:bg-slate-900/40">
+                        <span className="block text-2xl font-bold text-slate-900 dark:text-white">{completionRate}%</span>
+                        <span className="text-xs text-slate-500 font-medium">Completion</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>About</CardTitle>
+                    <CardDescription>How your public profile appears to others.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap">
+                      {profileForm.bio || "No bio added yet. Add your short description above in Personal Information."}
+                    </p>
+                    <div className="text-xs text-slate-500">
+                      Headline: <span className="font-medium text-slate-700 dark:text-slate-300">{profileForm.headline || "Not set"}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Briefcase className="h-5 w-5 text-indigo-600" />
+                    Recent Project Submissions
+                  </CardTitle>
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link to="/app/projects">View All</Link>
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {recentSubmissions.length === 0 ? (
+                    <div className="rounded-lg border border-dashed border-slate-300 p-5 text-sm text-slate-500 dark:border-slate-700">
+                      No project submissions yet.
+                    </div>
+                  ) : (
+                    recentSubmissions.map((submission) => {
+                      const projectTitle = typeof submission.project === "string"
+                        ? "Project"
+                        : submission.project?.title || "Project";
+                      const courseTitle = typeof submission.course === "string"
+                        ? "Course"
+                        : submission.course?.title || "Course";
+
+                      return (
+                        <div key={submission._id} className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
+                          <div className="flex items-center justify-between gap-2">
+                            <h4 className="font-semibold text-slate-900 dark:text-white">{projectTitle}</h4>
+                            <Badge className={statusBadgeClass(submission.status)}>
+                              {submission.status.replace("_", " ")}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-slate-500 mt-1">{courseTitle}</p>
+                          <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                            <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {formatDate(submission.updatedAt || submission.createdAt)}</span>
+                            {typeof submission.grade === "number" ? (
+                              <span className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Grade: {submission.grade}</span>
+                            ) : null}
+                            {typeof submission.xpEarned === "number" ? (
+                              <span className="flex items-center gap-1"><Award className="h-3 w-3" /> +{submission.xpEarned} XP</span>
+                            ) : null}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
 
             <TabsContent value="account" className="mt-0 space-y-6">
