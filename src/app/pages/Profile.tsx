@@ -86,7 +86,7 @@ export function Profile() {
           </Card>
         </div>
 
-        {/* Right Column (Activity & Certificates) */}
+        {/* Right Column (Activity) */}
         <div className="space-y-6 md:col-span-2">
           
           {/* Portfolio / Projects */}
@@ -116,32 +116,6 @@ export function Profile() {
                   </div>
                 </div>
               ))}
-            </CardContent>
-          </Card>
-
-          {/* Certificates */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Certificates & Badges</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {[
-                  { title: "Advanced React Patterns", issuer: "CTC Club", date: "Oct 2026", color: "from-blue-500 to-indigo-500" },
-                  { title: "Data Structures Mastery", issuer: "Computer Science Dept", date: "May 2026", color: "from-emerald-500 to-teal-500" }
-                ].map((cert, i) => (
-                  <div key={i} className="flex gap-4 items-center p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
-                    <div className={`h-16 w-16 shrink-0 rounded-lg bg-gradient-to-br ${cert.color} flex items-center justify-center shadow-inner`}>
-                      <Award className="h-8 w-8 text-white opacity-90" />
-                    </div>
-                    <div>
-                      <h5 className="font-semibold text-sm text-slate-900 dark:text-white line-clamp-1">{cert.title}</h5>
-                      <p className="text-xs text-slate-500">{cert.issuer}</p>
-                      <p className="text-xs text-slate-400 mt-1">{cert.date}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
             </CardContent>
           </Card>
 
