@@ -30,3 +30,47 @@ export const resetPasswordSchema = z.object({
     newPassword: z.string().min(6, 'Password must be at least 6 characters'),
   }),
 });
+
+const optionalUrl = z
+  .string()
+  .trim()
+  .optional()
+  .refine((value) => !value || /^https?:\/\/.+/i.test(value), 'Invalid URL');
+
+export const updateProfileSettingsSchema = z.object({
+  body: z.object({
+    name: z.string().trim().min(2).max(80).optional(),
+    firstName: z.string().trim().max(40).optional(),
+    lastName: z.string().trim().max(40).optional(),
+    headline: z.string().trim().max(120).optional(),
+    bio: z.string().trim().max(2000).optional(),
+    avatar: optionalUrl,
+    socialLinks: z.object({
+      github: optionalUrl,
+      linkedin: optionalUrl,
+      website: optionalUrl,
+    }).optional(),
+  }),
+});
+
+export const changePasswordSchema = z.object({
+  body: z.object({
+    currentPassword: z.string().min(1, 'Current password is required'),
+    newPassword: z.string().min(6, 'New password must be at least 6 characters'),
+  }),
+});
+
+export const updateNotificationPreferencesSchema = z.object({
+  body: z.object({
+    courseUpdates: z.boolean().optional(),
+    assignmentFeedback: z.boolean().optional(),
+    communityMentions: z.boolean().optional(),
+    weeklySummary: z.boolean().optional(),
+  }),
+});
+
+export const updateAppearancePreferenceSchema = z.object({
+  body: z.object({
+    theme: z.enum(['system', 'light', 'dark']),
+  }),
+});

@@ -9,6 +9,24 @@ export interface IUser extends Document {
   role: 'student' | 'instructor' | 'admin';
   oauthProvider?: 'google' | 'github';
   avatar?: string;
+  headline?: string;
+  bio?: string;
+  socialLinks?: {
+    github?: string;
+    linkedin?: string;
+    website?: string;
+  };
+  preferences?: {
+    notifications?: {
+      courseUpdates?: boolean;
+      assignmentFeedback?: boolean;
+      communityMentions?: boolean;
+      weeklySummary?: boolean;
+    };
+    appearance?: {
+      theme?: 'system' | 'light' | 'dark';
+    };
+  };
   xp: number;
   level: number;
   badges: mongoose.Types.ObjectId[];
@@ -60,6 +78,48 @@ const userSchema = new Schema<IUser>(
     avatar: {
       type: String,
       default: 'https://icon-library.com/images/anonymous-avatar-icon/anonymous-avatar-icon-25.jpg',
+    },
+    headline: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    bio: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    socialLinks: {
+      github: {
+        type: String,
+        trim: true,
+        default: '',
+      },
+      linkedin: {
+        type: String,
+        trim: true,
+        default: '',
+      },
+      website: {
+        type: String,
+        trim: true,
+        default: '',
+      },
+    },
+    preferences: {
+      notifications: {
+        courseUpdates: { type: Boolean, default: true },
+        assignmentFeedback: { type: Boolean, default: true },
+        communityMentions: { type: Boolean, default: false },
+        weeklySummary: { type: Boolean, default: true },
+      },
+      appearance: {
+        theme: {
+          type: String,
+          enum: ['system', 'light', 'dark'],
+          default: 'system',
+        },
+      },
     },
     xp: {
       type: Number,
