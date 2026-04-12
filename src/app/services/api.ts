@@ -8,8 +8,34 @@ export interface AuthUser {
   email: string;
   role: Role;
   avatar?: string;
+  headline?: string;
+  bio?: string;
+  socialLinks?: SocialLinks;
+  preferences?: UserPreferences;
   xp?: number;
   level?: number;
+}
+
+export type ThemePreference = "system" | "light" | "dark";
+
+export interface SocialLinks {
+  github?: string;
+  linkedin?: string;
+  website?: string;
+}
+
+export interface NotificationPreferences {
+  courseUpdates: boolean;
+  assignmentFeedback: boolean;
+  communityMentions: boolean;
+  weeklySummary: boolean;
+}
+
+export interface UserPreferences {
+  notifications?: NotificationPreferences;
+  appearance?: {
+    theme?: ThemePreference;
+  };
 }
 
 export interface Course {
@@ -466,6 +492,33 @@ export const apiService = {
   async getCurrentUser(): Promise<AuthUser> {
     const res = await api.get("/auth/profile");
     return pickData<AuthUser>(res.data);
+  },
+
+  async updateCurrentUserProfile(input: {
+    name?: string;
+    firstName?: string;
+    lastName?: string;
+    headline?: string;
+    bio?: string;
+    avatar?: string;
+    socialLinks?: SocialLinks;
+  }): Promise<AuthUser> {
+    const res = await api.put("/auth/profile", input);
+    return pickData<AuthUser>(res.data);
+  },
+
+  async changeCurrentUserPassword(input: { currentPassword: string; newPassword: string }): Promise<void> {
+    await api.put("/auth/password/change", input);
+  },
+
+  async updateNotificationPreferences(input: Partial<NotificationPreferences>): Promise<NotificationPreferences> {
+    const res = await api.put("/auth/preferences/notifications", input);
+    return pickData<NotificationPreferences>(res.data);
+  },
+
+  async updateAppearancePreference(theme: ThemePreference): Promise<{ theme: ThemePreference }> {
+    const res = await api.put("/auth/preferences/appearance", { theme });
+    return pickData<{ theme: ThemePreference }>(res.data);
   },
 
   async requestPasswordResetCode(email: string): Promise<PasswordResetRequestResult> {
