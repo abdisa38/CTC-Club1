@@ -137,7 +137,6 @@ const buildPremiumReturnUrl = (txRef) => {
             targetUrl = fallback;
         }
     }
-    targetUrl.searchParams.set('premium', 'verify');
     targetUrl.searchParams.set('tx_ref', txRef);
     return targetUrl.toString();
 };
@@ -156,7 +155,6 @@ const buildCourseReturnUrl = (courseId, txRef) => {
             targetUrl = defaultTarget;
         }
     }
-    targetUrl.searchParams.set('payment', 'verify');
     targetUrl.searchParams.set('tx_ref', txRef);
     return targetUrl.toString();
 };

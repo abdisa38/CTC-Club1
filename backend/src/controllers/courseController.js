@@ -14,13 +14,19 @@ const apiResponse_1 = require("../utils/apiResponse");
 // @access  Private/Instructor
 exports.createCourse = (0, express_async_handler_1.default)(async (req, res) => {
     const { title, description, coverImage, category, price } = req.body;
+    const normalizedPrice = Number(price ?? 0);
+    if (!Number.isFinite(normalizedPrice) || normalizedPrice < 0) {
+        res.status(400);
+        throw new Error('Price must be a valid non-negative number');
+    }
     const course = await courseModel_1.default.create({
         title,
         description,
         instructor: req.user._id, // the user creating it is an instructor
         coverImage,
         category,
-        price,
+        price: normalizedPrice,
+        currency: 'ETB',
         isPublished: true,
         status: 'published',
     });
@@ -100,7 +106,16 @@ exports.updateCourse = (0, express_async_handler_1.default)(async (req, res) => 
     course.description = description || course.description;
     course.coverImage = coverImage || course.coverImage;
     course.category = category || course.category;
-    course.price = price !== undefined ? price : course.price;
+    if (price !== undefined) {
+        const normalizedPrice = Number(price);
+        if (!Number.isFinite(normalizedPrice) || normalizedPrice < 0) {
+            res.status(400);
+            throw new Error('Price must be a valid non-negative number');
+        }
+        course.price = normalizedPrice;
+    }
+    // Course checkout supports ETB in this flow.
+    course.currency = 'ETB';
     const updatedCourse = await course.save();
     (0, apiResponse_1.sendSuccess)(res, updatedCourse, { message: 'Course updated successfully' });
 });
