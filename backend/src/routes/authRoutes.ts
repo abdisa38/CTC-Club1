@@ -23,6 +23,7 @@ import {
 	resetPasswordWithCode,
 	updateUserProfile,
 	changeUserPassword,
+	changeUserEmail,
 	updateNotificationPreferences,
 	updateAppearancePreferences,
 } from '../controllers/authController';
@@ -35,6 +36,7 @@ import {
 	resetPasswordSchema,
 	updateProfileSettingsSchema,
 	changePasswordSchema,
+	changeEmailSchema,
 	updateNotificationPreferencesSchema,
 	updateAppearancePreferenceSchema,
 } from '../validators/authValidator';
@@ -53,6 +55,7 @@ router.post('/logout', logoutUser);
 router.get('/profile', protect as any, getUserProfile as any);
 router.put('/profile', protect as any, validateRequest(updateProfileSettingsSchema), updateUserProfile as any);
 router.put('/password/change', protect as any, validateRequest(changePasswordSchema), changeUserPassword as any);
+router.put('/email/change', protect as any, validateRequest(changeEmailSchema), changeUserEmail as any);
 router.put('/preferences/notifications', protect as any, validateRequest(updateNotificationPreferencesSchema), updateNotificationPreferences as any);
 router.put('/preferences/appearance', protect as any, validateRequest(updateAppearancePreferenceSchema), updateAppearancePreferences as any);
 router.get('/favorites/courses', protect as any, getFavoriteCourses as any);
