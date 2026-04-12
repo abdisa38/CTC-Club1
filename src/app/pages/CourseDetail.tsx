@@ -256,7 +256,11 @@ export function CourseDetail() {
       return String(student) === user._id;
     });
 
-  const canAccessLessons = isEnrolled || isInstructor;
+  const coursePrice = Number(course?.price || 0);
+  const courseCurrency = String(course?.currency || "ETB").toUpperCase();
+  const isPaidCourse = coursePrice > 0;
+
+  const canAccessLessons = isEnrolled || isInstructor || !isPaidCourse;
   const selectedLessonIndex = selectedLesson ? visibleLessons.findIndex((lesson) => lesson._id === selectedLesson._id) : -1;
   const completedCount = canAccessLessons && selectedLessonIndex >= 0 ? selectedLessonIndex + 1 : 0;
   const progress = visibleLessons.length > 0 ? Math.round((completedCount / visibleLessons.length) * 100) : 0;
@@ -353,6 +357,67 @@ export function CourseDetail() {
       cancelled = true;
     };
   }, [id, role, user?._id]);
+
+  useEffect(() => {
+    if (!id || !user) {
+      return;
+    }
+
+    let ignore = false;
+    const params = new URLSearchParams(window.location.search);
+    const shouldVerify = params.get("payment") === "verify";
+    const txRef = (params.get("tx_ref") || "").trim();
+
+    if (!shouldVerify || !txRef) {
+      return;
+    }
+
+    const verifyCourseCheckout = async () => {
+      setIsVerifyingCoursePayment(true);
+      setError("");
+      setSuccessMsg("");
+
+      try {
+        const verification = await apiService.verifyCoursePayment(id, txRef);
+
+        if (ignore) {
+          return;
+        }
+
+        const refreshedCourse = await apiService.getCourseById(id);
+        if (ignore) {
+          return;
+        }
+
+        setCourse(refreshedCourse);
+
+        if (verification.paymentVerified && verification.isEnrolled) {
+          setSuccessMsg("Payment verified. Course access unlocked.");
+        } else {
+          setError(verification.reason || "Payment has not completed yet. Please try again in a few seconds.");
+        }
+      } catch (verificationError: any) {
+        if (!ignore) {
+          setError(extractErrorMessage(verificationError, "Failed to verify course payment."));
+        }
+      } finally {
+        if (!ignore) {
+          setIsVerifyingCoursePayment(false);
+        }
+
+        const cleanUrl = new URL(window.location.href);
+        cleanUrl.searchParams.delete("payment");
+        cleanUrl.searchParams.delete("tx_ref");
+        window.history.replaceState({}, "", `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`);
+      }
+    };
+
+    void verifyCourseCheckout();
+
+    return () => {
+      ignore = true;
+    };
+  }, [id, user?._id]);
 
   const handleEnroll = async () => {
     if (!user) {
