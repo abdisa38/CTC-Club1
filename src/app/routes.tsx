@@ -47,7 +47,6 @@ export const router = createBrowserRouter([
       { path: "community", lazy: lazyComponent(() => import("./pages/Community"), "Community") },
       { path: "leaderboard", lazy: lazyComponent(() => import("./pages/Leaderboard"), "Leaderboard") },
       { path: "favorites", lazy: lazyComponent(() => import("./pages/student/Favorites"), "Favorites") },
-      { path: "certificates", lazy: lazyComponent(() => import("./pages/student/Certificates"), "Certificates") },
       { path: "notifications", lazy: lazyComponent(() => import("./pages/student/Notifications"), "Notifications") },
       // Admin routes
       { path: "admin", lazy: lazyComponent(() => import("./pages/admin/AdminDashboard"), "AdminDashboard") },

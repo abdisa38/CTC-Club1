@@ -160,7 +160,7 @@ type HomeEvent = {
 const features = [
   { title: "Structured Courses", desc: "Follow curated learning paths with video lessons, quizzes, and hands-on labs.", icon: BookOpen, color: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50 dark:bg-blue-500/10" },
   { title: "Track Progress", desc: "XP system, daily streaks, and detailed analytics to keep you motivated.", icon: TrendingUp, color: "from-emerald-500 to-teal-600", lightBg: "bg-emerald-50 dark:bg-emerald-500/10" },
-  { title: "Earn Certificates", desc: "Get verified certificates upon completion to showcase your skills.", icon: Award, color: "from-amber-500 to-orange-600", lightBg: "bg-amber-50 dark:bg-amber-500/10" },
+  { title: "Mentor Feedback", desc: "Get practical project feedback from mentors and improve faster.", icon: MessageSquare, color: "from-amber-500 to-orange-600", lightBg: "bg-amber-50 dark:bg-amber-500/10" },
   { title: "Submit Projects", desc: "Build real-world projects and submit via GitHub for review.", icon: GitMerge, color: "from-violet-500 to-purple-600", lightBg: "bg-violet-50 dark:bg-violet-500/10" },
   { title: "Get Support", desc: "24/7 support tickets, discussion forums, and peer-to-peer help.", icon: LifeBuoy, color: "from-rose-500 to-pink-600", lightBg: "bg-rose-50 dark:bg-rose-500/10" },
   { title: "Role-Based Access", desc: "Tailored dashboards for students, instructors, and admins.", icon: Shield, color: "from-indigo-500 to-blue-600", lightBg: "bg-indigo-50 dark:bg-indigo-500/10" },
@@ -171,7 +171,7 @@ const howItWorks = [
   { step: 2, title: "Enroll", desc: "Browse and join courses that interest you", icon: BookOpen },
   { step: 3, title: "Learn & Practice", desc: "Watch lessons, take quizzes, build projects", icon: Code2 },
   { step: 4, title: "Complete Projects", desc: "Submit real projects via GitHub", icon: GitMerge },
-  { step: 5, title: "Get Certified", desc: "Earn certificates and level up", icon: Award },
+  { step: 5, title: "Join Community", desc: "Get mentor feedback and keep improving", icon: Users },
 ];
 
 export function Home() {
@@ -186,7 +186,6 @@ export function Home() {
     activeStudents: 0,
     videoCourses: 0,
     instructors: 0,
-    certificates: 0
   });
 
   const toNumber = (value: unknown, fallback = 0) => {
@@ -210,7 +209,6 @@ export function Home() {
             activeStudents: toNumber(payload?.activeStudents, prev.activeStudents),
             videoCourses: toNumber(payload?.videoCourses, prev.videoCourses),
             instructors: toNumber(payload?.instructors, prev.instructors),
-            certificates: toNumber(payload?.certificates, prev.certificates),
           }));
         }
 
@@ -365,7 +363,7 @@ export function Home() {
                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}
                 className="mt-6 text-lg text-slate-500 dark:text-slate-400 max-w-xl mx-auto lg:mx-0 leading-relaxed"
               >
-                The ultimate learning platform for university students. Access structured courses, earn certificates, build portfolio projects, and join a thriving tech community.
+                The ultimate learning platform for university students. Access structured courses, build portfolio projects, and join a thriving tech community.
               </motion.p>
 
               <motion.div
@@ -455,11 +453,11 @@ export function Home() {
                   className="absolute -top-3 -right-3 bg-white/90 dark:bg-[#131827]/90 backdrop-blur-xl rounded-xl shadow-lg shadow-black/5 border border-slate-200/40 dark:border-white/[0.06] p-3.5 flex items-center gap-3"
                 >
                   <div className="h-9 w-9 rounded-lg bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center">
-                    <Award className="h-4 w-4 text-amber-600" />
+                    <GitMerge className="h-4 w-4 text-amber-600" />
                   </div>
                   <div>
-                    <p className="text-[13px] font-semibold text-slate-900 dark:text-white">Certificate Earned</p>
-                    <p className="text-[11px] text-slate-500">Web Development</p>
+                    <p className="text-[13px] font-semibold text-slate-900 dark:text-white">Project Submitted</p>
+                    <p className="text-[11px] text-slate-500">Awaiting mentor review</p>
                   </div>
                 </motion.div>
               </div>
@@ -471,12 +469,11 @@ export function Home() {
       {/* ═══ 2. TRUSTED BY / STATS ═══ */}
       <section className="py-20 bg-slate-50/50 dark:bg-[#0c0f1a] border-y border-slate-100 dark:border-white/[0.04]">
         <div className="max-w-[1200px] mx-auto px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 lg:gap-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 lg:gap-12">
             {[
               { value: stats.activeStudents, suffix: "+", label: "Active Students", icon: Users, color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-50 dark:bg-indigo-500/10" },
               { value: stats.videoCourses, suffix: "+", label: "Video Courses", icon: BookOpen, color: "text-violet-600 dark:text-violet-400", bg: "bg-violet-50 dark:bg-violet-500/10" },
               { value: stats.instructors, suffix: "+", label: "Expert Instructors", icon: Award, color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-500/10" },
-              { value: stats.certificates, suffix: "+", label: "Certificates Issued", icon: CheckCircle2, color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-500/10" },
             ].map((stat, i) => (
               <AnimatedSection key={i} delay={i * 0.08}>
                 <div className="flex flex-col items-center text-center gap-3">
@@ -571,8 +568,8 @@ export function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             {[
-              { title: "Frontend Developer", steps: ["HTML & CSS", "JavaScript ES6+", "React & Next.js", "UI/UX Design", "Portfolio Projects"], color: "from-blue-500 to-indigo-600", icon: Monitor },
-              { title: "Backend Developer", steps: ["Python Fundamentals", "Databases & SQL", "REST APIs", "Node.js & Express", "DevOps & Deployment"], color: "from-emerald-500 to-teal-600", icon: Terminal },
+              { title: "Frontend Developer", steps: ["HTML", "CSS", "JavaScript", "React", "Bootstrap"], color: "from-blue-500 to-indigo-600", icon: Monitor },
+              { title: "Backend Developer", steps: ["Node.js", "Express.js", "MySQL", "REST API"], color: "from-emerald-500 to-teal-600", icon: Terminal },
             ].map((path, i) => (
               <AnimatedSection key={i} delay={i * 0.12}>
                 <PremiumCard className="overflow-hidden">
@@ -610,7 +607,7 @@ export function Home() {
               badge="How It Works"
               title="Your Learning"
               highlight="Journey"
-              description="From sign up to certification in 5 simple steps."
+              description="From sign up to real projects in 5 simple steps."
             />
           </AnimatedSection>
 
@@ -836,28 +833,28 @@ export function Home() {
               badge="Pricing"
               title="Simple, Transparent"
               highlight="Pricing"
-              description="100% free for university students."
+              description="Frontend track is completely free. Backend track costs 200 ETB."
             />
           </AnimatedSection>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             <AnimatedSection>
               <PremiumCard hover={false} className="p-8 h-full">
-                <h3 className="text-xl font-bold text-slate-900 dark:text-white">Student</h3>
-                <p className="mt-2 text-sm text-slate-500">Perfect for individual learning.</p>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white">Frontend Track</h3>
+                <p className="mt-2 text-sm text-slate-500">HTML, CSS, JavaScript, React, and Bootstrap.</p>
                 <div className="my-8 flex items-baseline gap-1">
-                  <span className="text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight">$0</span>
+                  <span className="text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight">Free</span>
                   <span className="text-base text-slate-500 ml-1">/ forever</span>
                 </div>
                 <ul className="space-y-3.5 mb-8">
-                  {["All basic courses", "Community access", "GitHub project submissions", "Support tickets", "Certificates"].map((item, i) => (
+                  {["Frontend learning path", "Community access", "GitHub project submissions", "Support tickets", "Beginner-friendly roadmap"].map((item, i) => (
                     <li key={i} className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400">
                       <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" /> {item}
                     </li>
                   ))}
                 </ul>
                 <Button className="w-full rounded-xl h-11 font-semibold" variant="outline" asChild>
-                  <Link to="/register">Get Started Free</Link>
+                  <Link to="/register">Start Frontend Free</Link>
                 </Button>
               </PremiumCard>
             </AnimatedSection>
@@ -868,20 +865,21 @@ export function Home() {
                     Most Popular
                   </Badge>
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 dark:text-white">University Partner</h3>
-                <p className="mt-2 text-sm text-slate-500">For institutions and large clubs.</p>
-                <div className="my-8">
-                  <span className="text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight">Custom</span>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white">Backend Track</h3>
+                <p className="mt-2 text-sm text-slate-500">Node.js, Express.js, MySQL, and REST API training.</p>
+                <div className="my-8 flex items-baseline gap-1">
+                  <span className="text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight">200 ETB</span>
+                  <span className="text-base text-slate-500 ml-1">/ backend track</span>
                 </div>
                 <ul className="space-y-3.5 mb-8">
-                  {["Unlimited student accounts", "Custom course creation", "Advanced analytics", "Priority 24/7 support", "Custom branding", "Admin dashboard"].map((item, i) => (
+                  {["Backend learning path", "Hands-on API projects", "MySQL database modules", "Priority mentor feedback", "Backend assessment support"].map((item, i) => (
                     <li key={i} className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400">
                       <CheckCircle2 className="h-4 w-4 text-indigo-500 shrink-0" /> {item}
                     </li>
                   ))}
                 </ul>
-                <Button className="w-full rounded-xl h-11 font-semibold bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 shadow-sm shadow-indigo-500/20">
-                  Contact Sales
+                <Button className="w-full rounded-xl h-11 font-semibold bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 shadow-sm shadow-indigo-500/20" asChild>
+                  <Link to="/register">Enroll Backend Track</Link>
                 </Button>
               </div>
             </AnimatedSection>
@@ -903,7 +901,7 @@ export function Home() {
                 Start Your Journey Today<br />with CTC Club
               </h2>
               <p className="text-indigo-100/80 text-lg mb-10 leading-relaxed">
-                Join thousands of students who are building their tech careers with us.
+                Be among the first students building tech careers with us.
               </p>
               <div className="flex flex-col sm:flex-row items-center gap-3 justify-center">
                 <Button size="lg" className="bg-white text-indigo-700 hover:bg-white/90 px-8 h-12 rounded-xl font-semibold shadow-lg shadow-black/10 transition-all duration-300" asChild>

@@ -3,7 +3,7 @@ import {
   LayoutDashboard, BookOpen, FileText, CheckSquare,
   MessageSquare, Trophy, Settings, Bell, Search, Menu, Focus,
   Users, BarChart3, HelpCircle, Shield, PlusCircle, Star,
-  Megaphone, CalendarDays, Activity, Flag, Database, Heart, Award, GraduationCap, X, LogOut, ChevronRight
+  Megaphone, CalendarDays, Activity, Flag, Database, Heart, Award, X, LogOut, ChevronRight
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
@@ -183,7 +183,6 @@ export function AppLayout() {
       { title: "Support", href: "/app/support", icon: HelpCircle },
       { title: "Leaderboard", href: "/app/leaderboard", icon: Trophy },
       { title: "Favorites", href: "/app/favorites", icon: Heart },
-      { title: "Certificates", href: "/app/certificates", icon: GraduationCap },
     ],
     instructor: [
       { title: "Dashboard", href: "/app/dashboard", icon: LayoutDashboard },
