@@ -220,7 +220,6 @@ export interface DashboardPublicStats {
   activeStudents: number;
   videoCourses: number;
   instructors: number;
-  certificates: number;
 }
 
 export interface FavoriteCourseMutationResult {
