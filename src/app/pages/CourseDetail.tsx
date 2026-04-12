@@ -700,6 +700,22 @@ export function CourseDetail() {
                 <Button variant="destructive" size="sm">Delete Course</Button>
               ) : (
                 <>
+                  {role === "student" && !canAccessLessons ? (
+                    <Button
+                      size="sm"
+                      onClick={() => void handleEnroll()}
+                      disabled={isEnrolling || isStartingCoursePayment || isVerifyingCoursePayment}
+                    >
+                      {isStartingCoursePayment
+                        ? "Opening Checkout..."
+                        : isEnrolling
+                          ? "Enrolling..."
+                          : isPaidCourse
+                            ? `Pay ${coursePrice.toFixed(2)} ${courseCurrency}`
+                            : "Enroll Free"}
+                    </Button>
+                  ) : null}
+
                   {role === "student" ? (
                     <Button variant="outline" size="icon" onClick={() => void handleToggleFavorite()} disabled={favoriteBusy}>
                       <Heart className={`h-5 w-5 ${isFavorite ? "text-red-500 fill-red-500" : ""}`} />

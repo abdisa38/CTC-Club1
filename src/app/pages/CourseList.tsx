@@ -11,6 +11,23 @@ import apiService, { Course as ApiCourse } from "../services/api";
 
 type CourseType = ApiCourse;
 
+const extractErrorMessage = (error: any, fallback: string) => {
+  const candidate = error?.response?.data?.message ?? error?.message;
+  if (typeof candidate === "string" && candidate.trim()) {
+    return candidate;
+  }
+
+  if (candidate && typeof candidate === "object") {
+    try {
+      return JSON.stringify(candidate);
+    } catch {
+      return fallback;
+    }
+  }
+
+  return fallback;
+};
+
 export function CourseList() {
   const { role, user } = useAuth();
   const isAdmin = role === 'admin';
@@ -26,6 +43,7 @@ export function CourseList() {
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [favoritingIds, setFavoritingIds] = useState<Set<string>>(new Set());
   const [enrollingId, setEnrollingId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState("");
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -121,30 +139,57 @@ export function CourseList() {
     });
   };
 
-  const handleEnroll = async (id: string) => {
+  const markCourseEnrolledLocally = (id: string) => {
+    if (!user) return;
+
+    setCourses((prevCourses) =>
+      prevCourses.map((course) => {
+        if (course._id !== id) return course;
+
+        const students = Array.isArray(course.students) ? course.students : [];
+        const alreadyEnrolled = students.some((student: any) =>
+          typeof student === "string" ? student === user._id : student?._id === user._id
+        );
+
+        if (alreadyEnrolled) return course;
+
+        return {
+          ...course,
+          students: [...students, user._id],
+        };
+      })
+    );
+  };
+
+  const handleEnroll = async (course: CourseType) => {
     if (!user) return; // need to be logged in
+    setActionError("");
+
+    const id = course._id;
+    const isPaidCourse = Number(course.price || 0) > 0;
+
     setEnrollingId(id);
     try {
+      if (isPaidCourse) {
+        const init = await apiService.initializeCoursePayment(id);
+
+        if (init.isEnrolled || init.alreadyEnrolled || init.requiresPayment === false) {
+          markCourseEnrolledLocally(id);
+          return;
+        }
+
+        if (!init.checkoutUrl) {
+          throw new Error("Checkout URL was not returned by the server.");
+        }
+
+        window.location.href = init.checkoutUrl;
+        return;
+      }
+
       await apiService.enrollCourse(id);
-      // Update local state to reflect enrollment
-      setCourses((prevCourses) =>
-        prevCourses.map((course) => {
-          if (course._id !== id) return course;
-
-          const students = Array.isArray(course.students) ? course.students : [];
-          const alreadyEnrolled = students.some((student: any) =>
-            typeof student === "string" ? student === user._id : student?._id === user._id
-          );
-
-          if (alreadyEnrolled) return course;
-
-          return {
-            ...course,
-            students: [...students, user._id],
-          };
-        })
-      );
+      markCourseEnrolledLocally(id);
     } catch (error) {
+      setActionError(extractErrorMessage(error, "Failed to start enrollment/checkout."));
       console.error("Failed to enroll:", error);
     } finally {
       setEnrollingId(null);
@@ -250,6 +295,12 @@ export function CourseList() {
         </CardContent>
       </Card>
 
+      {actionError ? (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {actionError}
+        </div>
+      ) : null}
+
       {filteredCourses.length === 0 ? (
         <div className="text-center py-20 px-4 border border-dashed border-slate-300 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-900/50">
           <Search className="mx-auto h-12 w-12 text-slate-400 mb-4" />
@@ -318,6 +369,11 @@ export function CourseList() {
                       <Badge variant="secondary" className="text-xs px-2 py-0.5">
                         {course.category}
                       </Badge>
+                      <Badge className={`text-xs px-2 py-0.5 ${Number(course.price || 0) > 0 ? "bg-indigo-100 text-indigo-700" : "bg-emerald-100 text-emerald-700"}`}>
+                        {Number(course.price || 0) > 0
+                          ? `${Number(course.price || 0).toFixed(2)} ${(course.currency || "ETB").toUpperCase()}`
+                          : "Free"}
+                      </Badge>
                     </div>
 
                     <div className="flex items-center justify-between text-sm text-slate-500 pt-4 border-t border-slate-100 dark:border-slate-800">
@@ -330,10 +386,14 @@ export function CourseList() {
                           size="sm"
                           variant="outline"
                           className="h-8 text-xs"
-                          onClick={() => handleEnroll(course._id)}
+                          onClick={() => handleEnroll(course)}
                           disabled={enrollingId === course._id}
                         >
-                          {enrollingId === course._id ? "Enrolling..." : "Enroll"}
+                          {enrollingId === course._id
+                            ? (Number(course.price || 0) > 0 ? "Opening checkout..." : "Enrolling...")
+                            : (Number(course.price || 0) > 0
+                              ? `Pay ${Number(course.price || 0).toFixed(0)} ${(course.currency || "ETB").toUpperCase()}`
+                              : "Enroll Free")}
                         </Button>
                       ) : null}
                     </div>
