@@ -54,6 +54,33 @@ const parseOptionalDate = (value: unknown): Date | undefined => {
   return date;
 };
 
+const formatProviderMessage = (value: unknown): string => {
+  if (typeof value === 'string') {
+    return value.trim();
+  }
+
+  if (Array.isArray(value)) {
+    const parts = value
+      .map((item) => formatProviderMessage(item))
+      .filter(Boolean);
+
+    return parts.join(', ');
+  }
+
+  if (value && typeof value === 'object') {
+    const entries = Object.entries(value as Record<string, unknown>)
+      .map(([key, entryValue]) => {
+        const formatted = formatProviderMessage(entryValue);
+        return formatted ? `${key}: ${formatted}` : '';
+      })
+      .filter(Boolean);
+
+    return entries.join('; ');
+  }
+
+  return '';
+};
+
 const splitName = (fullName: string) => {
   const parts = String(fullName || '').trim().split(/\s+/).filter(Boolean);
   const firstName = parts[0] || 'Student';
@@ -352,8 +379,9 @@ export const initializePremiumPayment = asyncHandler(async (req: AuthRequest, re
   const checkoutUrl = String(payloadData.checkout_url || '').trim();
 
   if (!response.ok || normalizeStatus(payloadRecord.status) !== 'success' || !checkoutUrl) {
-    const providerMessage = String(payloadRecord.message || 'Chapa failed to initialize payment.');
-    res.status(502);
+    const providerMessage = formatProviderMessage(payloadRecord.message) || 'Chapa failed to initialize payment.';
+    const statusCode = response.status >= 400 && response.status < 500 ? 400 : 502;
+    res.status(statusCode);
     throw new Error(providerMessage);
   }
 
