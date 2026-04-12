@@ -5,11 +5,11 @@ import { Input } from "../components/ui/Input";
 import { Card, CardContent, CardFooter } from "../components/ui/Card";
 import ctcLogo from "../../assets/f6c46c16a776a1f63a42e49b36947669f8dcc942.png";
 import { motion } from "motion/react";
-import { ArrowRight, Github } from "lucide-react";
+import { ArrowRight, Github, Mail } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import apiService from "../services/api";
 
-type OAuthProvider = "github";
+type OAuthProvider = "google" | "github";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const normalizeEmail = (value: string) => value.trim().toLowerCase();
@@ -277,7 +277,7 @@ export function Auth() {
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4 pt-6">
               {/* Social login buttons */}
-              <div className="grid grid-cols-1 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <Button
                   type="button"
                   variant="outline"
@@ -287,6 +287,16 @@ export function Auth() {
                 >
                   <Github className="h-4 w-4 mr-2" />
                   {socialLoadingProvider === "github" ? "Connecting..." : "GitHub"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10 rounded-xl text-[13px] font-semibold"
+                  onClick={() => handleOAuth("google")}
+                  disabled={Boolean(socialLoadingProvider)}
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  {socialLoadingProvider === "google" ? "Connecting..." : "Google"}
                 </Button>
               </div>
 
