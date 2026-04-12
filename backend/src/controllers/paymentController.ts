@@ -89,7 +89,14 @@ const splitName = (fullName: string) => {
   return { firstName, lastName };
 };
 
-const createPremiumTxRef = (userId: string) => `premium-${userId}-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+const createPremiumTxRef = (userId: string) => {
+  const safeUserSuffix = String(userId || '').replace(/[^a-zA-Z0-9]/g, '').slice(-6) || 'user';
+  const timePart = Date.now().toString(36);
+  const randomPart = crypto.randomBytes(3).toString('hex');
+
+  // Chapa enforces a 50-char limit for tx_ref.
+  return `ctcpr-${safeUserSuffix}-${timePart}-${randomPart}`.slice(0, 50);
+};
 
 const mapProviderStatusToPaymentStatus = (status: string): PaymentStatus => {
   const normalized = normalizeStatus(status);
@@ -124,7 +131,7 @@ const requireChapaSecretKey = (res: Response) => {
 };
 
 const buildPremiumReturnUrl = (txRef: string) => {
-  const fallback = new URL('/settings', getClientUrl());
+  const fallback = new URL('/app/settings', getClientUrl());
   const configured = String(process.env.CHAPA_RETURN_URL || '').trim();
   let targetUrl = fallback;
 
