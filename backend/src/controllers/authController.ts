@@ -693,6 +693,34 @@ export const changeUserPassword = asyncHandler(async (req: AuthRequest, res: Res
   sendSuccess(res, null, { message: 'Password updated successfully' });
 });
 
+// @desc    Change current user email
+// @route   PUT /api/auth/email/change
+// @access  Private
+export const changeUserEmail = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const email = normalizeEmail(req.body?.email);
+  if (!email) {
+    res.status(400);
+    throw new Error('Valid email is required');
+  }
+
+  const existing = await User.findOne({ email, _id: { $ne: req.user._id } }).select('_id');
+  if (existing) {
+    res.status(400);
+    throw new Error('This email is already in use');
+  }
+
+  const user = await User.findById(req.user._id).select('-password');
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  user.email = email;
+  await user.save();
+
+  sendSuccess(res, user, { message: 'Email updated successfully' });
+});
+
 // @desc    Update notification preferences
 // @route   PUT /api/auth/preferences/notifications
 // @access  Private
