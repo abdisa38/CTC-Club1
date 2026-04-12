@@ -425,16 +425,46 @@ export function CourseDetail() {
       return;
     }
 
-    if (!id) return;
+    if (!id || !course) return;
+
+    setError("");
+    setSuccessMsg("");
+
+    if (isPaidCourse) {
+      setIsStartingCoursePayment(true);
+
+      try {
+        const init = await apiService.initializeCoursePayment(id);
+
+        if (init.isEnrolled || init.alreadyEnrolled || init.requiresPayment === false) {
+          const updatedCourse = await apiService.getCourseById(id);
+          setCourse(updatedCourse);
+          setSuccessMsg("Course access activated.");
+          return;
+        }
+
+        if (!init.checkoutUrl) {
+          throw new Error("Checkout URL was not returned by the server.");
+        }
+
+        window.location.href = init.checkoutUrl;
+      } catch (checkoutError: any) {
+        setError(extractErrorMessage(checkoutError, "Failed to start course checkout."));
+      } finally {
+        setIsStartingCoursePayment(false);
+      }
+
+      return;
+    }
 
     setIsEnrolling(true);
-    setError("");
     try {
       await apiService.enrollCourse(id);
       const updatedCourse = await apiService.getCourseById(id);
       setCourse(updatedCourse);
+      setSuccessMsg("Successfully enrolled. Start learning now.");
     } catch (enrollError: any) {
-      setError(enrollError?.response?.data?.message || "Failed to enroll in this course");
+      setError(extractErrorMessage(enrollError, "Failed to enroll in this course"));
     } finally {
       setIsEnrolling(false);
     }
@@ -544,15 +574,27 @@ export function CourseDetail() {
                 <div className="text-center">
                   <div className="bg-black/60 backdrop-blur-sm p-6 rounded-2xl border border-white/10 text-white max-w-sm">
                     <Lock className="h-8 w-8 mx-auto mb-3 opacity-80" />
-                    <h3 className="font-bold text-xl mb-2">Enroll to Start Learning</h3>
-                    <p className="text-sm opacity-80 mb-4">This lesson video is available after enrollment.</p>
+                    <h3 className="font-bold text-xl mb-2">{isPaidCourse ? "Purchase to Start Learning" : "Enroll to Start Learning"}</h3>
+                    <p className="text-sm opacity-80 mb-4">
+                      {isPaidCourse
+                        ? `This paid course unlocks after checkout (${coursePrice.toFixed(2)} ${courseCurrency}).`
+                        : "This lesson video is available after free enrollment."}
+                    </p>
                     <Button
                       className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold"
                       size="lg"
                       onClick={() => void handleEnroll()}
-                      disabled={isEnrolling}
+                      disabled={isEnrolling || isStartingCoursePayment || isVerifyingCoursePayment}
                     >
-                      {isEnrolling ? "Enrolling..." : "Enroll Now"}
+                      {isVerifyingCoursePayment
+                        ? "Verifying Payment..."
+                        : isStartingCoursePayment
+                          ? "Opening Checkout..."
+                          : isEnrolling
+                            ? "Enrolling..."
+                            : isPaidCourse
+                              ? `Pay ${coursePrice.toFixed(2)} ${courseCurrency}`
+                              : "Enroll Free"}
                     </Button>
                   </div>
                 </div>
@@ -598,6 +640,19 @@ export function CourseDetail() {
             </div>
           ) : null}
 
+          {successMsg ? (
+            <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+              {successMsg}
+            </div>
+          ) : null}
+
+          {isVerifyingCoursePayment ? (
+            <div className="mb-4 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-700 flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Verifying your payment and unlocking course access...
+            </div>
+          ) : null}
+
           <div className="flex justify-between items-start gap-4 mb-6">
             <div>
               <div className="flex items-center gap-3 mb-2">
@@ -617,6 +672,9 @@ export function CourseDetail() {
                   {reviewCount > 0 ? `${ratingValue.toFixed(1)} (${reviewCount} reviews)` : "No ratings yet"}
                 </span>
                 <span>{Array.isArray(course.students) ? course.students.length : 0} students</span>
+                <span className={`font-semibold ${isPaidCourse ? "text-indigo-600 dark:text-indigo-400" : "text-emerald-600 dark:text-emerald-400"}`}>
+                  {isPaidCourse ? `${coursePrice.toFixed(2)} ${courseCurrency}` : "Free"}
+                </span>
               </div>
               {role === "student" && isEnrolled ? (
                 <div className="mt-3 flex flex-wrap items-center gap-2">
