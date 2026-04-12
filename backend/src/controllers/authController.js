@@ -36,7 +36,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getActivityLogs = exports.softDeleteUser = exports.updateUserStatus = exports.updateUserRole = exports.getUsers = exports.removeFavoriteResource = exports.addFavoriteResource = exports.getFavoriteResources = exports.removeFavoriteCourse = exports.addFavoriteCourse = exports.getFavoriteCourses = exports.updateAppearancePreferences = exports.updateNotificationPreferences = exports.changeUserPassword = exports.updateUserProfile = exports.getUserProfile = exports.logoutUser = exports.resetPasswordWithCode = exports.requestPasswordResetCode = exports.githubOAuthCallback = exports.startGitHubOAuth = exports.googleOAuthCallback = exports.startGoogleOAuth = exports.loginUser = exports.registerUser = void 0;
+exports.getActivityLogs = exports.softDeleteUser = exports.updateUserStatus = exports.updateUserRole = exports.getUsers = exports.removeFavoriteResource = exports.addFavoriteResource = exports.getFavoriteResources = exports.removeFavoriteCourse = exports.addFavoriteCourse = exports.getFavoriteCourses = exports.updateAppearancePreferences = exports.updateNotificationPreferences = exports.changeUserEmail = exports.changeUserPassword = exports.updateUserProfile = exports.getUserProfile = exports.logoutUser = exports.resetPasswordWithCode = exports.requestPasswordResetCode = exports.githubOAuthCallback = exports.startGitHubOAuth = exports.googleOAuthCallback = exports.startGoogleOAuth = exports.loginUser = exports.registerUser = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const crypto_1 = __importDefault(require("crypto"));
@@ -601,6 +601,29 @@ exports.changeUserPassword = (0, express_async_handler_1.default)(async (req, re
     user.password = newPassword;
     await user.save();
     (0, apiResponse_1.sendSuccess)(res, null, { message: 'Password updated successfully' });
+});
+// @desc    Change current user email
+// @route   PUT /api/auth/email/change
+// @access  Private
+exports.changeUserEmail = (0, express_async_handler_1.default)(async (req, res) => {
+    const email = normalizeEmail(req.body?.email);
+    if (!email) {
+        res.status(400);
+        throw new Error('Valid email is required');
+    }
+    const existing = await userModel_1.default.findOne({ email, _id: { $ne: req.user._id } }).select('_id');
+    if (existing) {
+        res.status(400);
+        throw new Error('This email is already in use');
+    }
+    const user = await userModel_1.default.findById(req.user._id).select('-password');
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found');
+    }
+    user.email = email;
+    await user.save();
+    (0, apiResponse_1.sendSuccess)(res, user, { message: 'Email updated successfully' });
 });
 // @desc    Update notification preferences
 // @route   PUT /api/auth/preferences/notifications

@@ -55,6 +55,7 @@ export function Settings() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
+  const [isSavingEmail, setIsSavingEmail] = useState(false);
   const [isSavingNotifications, setIsSavingNotifications] = useState(false);
   const [isSavingTheme, setIsSavingTheme] = useState(false);
 
@@ -242,6 +243,37 @@ export function Settings() {
       setErrorMsg(error?.response?.data?.message || "Failed to change password.");
     } finally {
       setIsSavingPassword(false);
+    }
+  };
+
+  const handleChangeEmail = async () => {
+    const currentEmail = user?.email || "";
+    const nextEmail = window.prompt("Enter your new email address", currentEmail);
+
+    if (nextEmail === null) {
+      return;
+    }
+
+    const trimmedEmail = nextEmail.trim();
+    if (!trimmedEmail) {
+      setErrorMsg("Email cannot be empty.");
+      setSuccessMsg("");
+      return;
+    }
+
+    setIsSavingEmail(true);
+    setErrorMsg("");
+    setSuccessMsg("");
+
+    try {
+      const updatedUser = await apiService.changeCurrentUserEmail(trimmedEmail);
+      login(updatedUser as any);
+      hydrateSettingsForm(updatedUser);
+      setSuccessMsg("Email updated successfully.");
+    } catch (error: any) {
+      setErrorMsg(error?.response?.data?.message || "Failed to update email.");
+    } finally {
+      setIsSavingEmail(false);
     }
   };
 
@@ -493,10 +525,13 @@ export function Settings() {
                 <CardContent>
                   <div className="flex flex-col sm:flex-row gap-4 items-center">
                     <Input value={user?.email || ""} readOnly disabled className="bg-slate-50" />
-                    <Button variant="outline" className="w-full sm:w-auto shrink-0" disabled>Change Email</Button>
+                    <Button variant="outline" className="w-full sm:w-auto shrink-0" onClick={handleChangeEmail} disabled={isSavingEmail}>
+                      {isSavingEmail ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                      Change Email
+                    </Button>
                   </div>
                   <p className="text-sm text-amber-600 mt-2 flex items-center gap-1">
-                    <AlertCircle className="h-4 w-4" /> Changing email requires verification.
+                    <AlertCircle className="h-4 w-4" /> Make sure you enter an email you can access.
                   </p>
                 </CardContent>
               </Card>

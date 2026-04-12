@@ -45,6 +45,11 @@ export declare const changePasswordSchema: z.ZodObject<{
         newPassword: z.ZodString;
     }, z.core.$strip>;
 }, z.core.$strip>;
+export declare const changeEmailSchema: z.ZodObject<{
+    body: z.ZodObject<{
+        email: z.ZodString;
+    }, z.core.$strip>;
+}, z.core.$strip>;
 export declare const updateNotificationPreferencesSchema: z.ZodObject<{
     body: z.ZodObject<{
         courseUpdates: z.ZodOptional<z.ZodBoolean>;

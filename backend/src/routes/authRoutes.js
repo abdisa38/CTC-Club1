@@ -21,6 +21,7 @@ router.post('/logout', authController_1.logoutUser);
 router.get('/profile', authMiddleware_1.protect, authController_1.getUserProfile);
 router.put('/profile', authMiddleware_1.protect, (0, validateMiddleware_1.validateRequest)(authValidator_1.updateProfileSettingsSchema), authController_1.updateUserProfile);
 router.put('/password/change', authMiddleware_1.protect, (0, validateMiddleware_1.validateRequest)(authValidator_1.changePasswordSchema), authController_1.changeUserPassword);
+router.put('/email/change', authMiddleware_1.protect, (0, validateMiddleware_1.validateRequest)(authValidator_1.changeEmailSchema), authController_1.changeUserEmail);
 router.put('/preferences/notifications', authMiddleware_1.protect, (0, validateMiddleware_1.validateRequest)(authValidator_1.updateNotificationPreferencesSchema), authController_1.updateNotificationPreferences);
 router.put('/preferences/appearance', authMiddleware_1.protect, (0, validateMiddleware_1.validateRequest)(authValidator_1.updateAppearancePreferenceSchema), authController_1.updateAppearancePreferences);
 router.get('/favorites/courses', authMiddleware_1.protect, authController_1.getFavoriteCourses);

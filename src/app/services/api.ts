@@ -511,6 +511,11 @@ export const apiService = {
     await api.put("/auth/password/change", input);
   },
 
+  async changeCurrentUserEmail(email: string): Promise<AuthUser> {
+    const res = await api.put("/auth/email/change", { email });
+    return pickData<AuthUser>(res.data);
+  },
+
   async updateNotificationPreferences(input: Partial<NotificationPreferences>): Promise<NotificationPreferences> {
     const res = await api.put("/auth/preferences/notifications", input);
     return pickData<NotificationPreferences>(res.data);
