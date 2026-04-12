@@ -7,8 +7,10 @@ import { Badge } from "../../components/ui/Badge";
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/Avatar";
 import { Loader2, PlayCircle, Clock, Bell, Trophy, Sparkles, GraduationCap, BookOpen, ChevronRight } from "lucide-react";
 import apiService, { Course, LeaderboardEntry } from "../../services/api";
+import { useAuth } from "../../context/AuthContext";
 
 export function StudentDashboard({ metrics }: { metrics?: any }) {
+  const { user } = useAuth();
   const [loadingExtras, setLoadingExtras] = useState(true);
   const [extraError, setExtraError] = useState("");
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
@@ -79,6 +81,7 @@ export function StudentDashboard({ metrics }: { metrics?: any }) {
   }, [activeCourses]);
 
   const topStudents = leaderboard.slice(0, 5);
+  const firstName = user?.name?.trim().split(" ")[0] || "there";
 
   if (loadingExtras) {
     return (
@@ -92,7 +95,7 @@ export function StudentDashboard({ metrics }: { metrics?: any }) {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Welcome back</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Welcome back, {firstName}</h1>
           <p className="text-slate-500 dark:text-slate-400">Your learning progress and live platform updates.</p>
         </div>
         <div className="flex gap-3">

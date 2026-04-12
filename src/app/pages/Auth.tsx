@@ -5,11 +5,15 @@ import { Input } from "../components/ui/Input";
 import { Card, CardContent, CardFooter } from "../components/ui/Card";
 import ctcLogo from "../../assets/f6c46c16a776a1f63a42e49b36947669f8dcc942.png";
 import { motion } from "motion/react";
-import { ArrowRight, Github, Mail } from "lucide-react";
+import { ArrowRight, Github } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import apiService from "../services/api";
 
-type OAuthProvider = "google" | "github";
+type OAuthProvider = "github";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const normalizeEmail = (value: string) => value.trim().toLowerCase();
+const isValidEmail = (value: string) => EMAIL_REGEX.test(normalizeEmail(value));
 
 export function Auth() {
   const { pathname, search } = useLocation();
@@ -91,18 +95,30 @@ export function Auth() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const normalizedEmail = normalizeEmail(formData.email);
+
+    if (!isValidEmail(normalizedEmail)) {
+      setErrorMsg("Please enter a valid email address.");
+      return;
+    }
+
+    if (!isLogin && !formData.name.trim()) {
+      setErrorMsg("Please enter your full name.");
+      return;
+    }
+
     setIsLoading(true);
     setErrorMsg("");
 
     try {
       if (isLogin) {
-        const user = await apiService.loginUser(formData.email, formData.password);
+        const user = await apiService.loginUser(normalizedEmail, formData.password);
         login(user);
         redirectByRole(user.role);
       } else {
         const user = await apiService.registerUser({
-          name: formData.name,
-          email: formData.email,
+          name: formData.name.trim(),
+          email: normalizedEmail,
           password: formData.password,
         });
         login(user);
@@ -146,8 +162,15 @@ export function Auth() {
   };
 
   const handleSendResetCode = async () => {
-    if (!forgotFormData.email.trim()) {
+    const normalizedEmail = normalizeEmail(forgotFormData.email);
+
+    if (!normalizedEmail) {
       setErrorMsg("Please enter your email address first.");
+      return;
+    }
+
+    if (!isValidEmail(normalizedEmail)) {
+      setErrorMsg("Please enter a valid email address.");
       return;
     }
 
@@ -156,7 +179,7 @@ export function Auth() {
     setIsSendingResetCode(true);
 
     try {
-      await apiService.requestPasswordResetCode(forgotFormData.email.trim());
+      await apiService.requestPasswordResetCode(normalizedEmail);
       setForgotMsg("Reset code sent. Check your email and enter the code below.");
     } catch (error: any) {
       setErrorMsg(error.response?.data?.message || "Failed to send reset code. Please try again.");
@@ -166,8 +189,15 @@ export function Auth() {
   };
 
   const handleResetPassword = async () => {
-    if (!forgotFormData.email.trim() || !forgotFormData.code.trim() || !forgotFormData.newPassword.trim()) {
+    const normalizedEmail = normalizeEmail(forgotFormData.email);
+
+    if (!normalizedEmail || !forgotFormData.code.trim() || !forgotFormData.newPassword.trim()) {
       setErrorMsg("Email, reset code, and new password are required.");
+      return;
+    }
+
+    if (!isValidEmail(normalizedEmail)) {
+      setErrorMsg("Please enter a valid email address.");
       return;
     }
 
@@ -177,7 +207,7 @@ export function Auth() {
 
     try {
       const user = await apiService.resetPasswordWithCode({
-        email: forgotFormData.email.trim(),
+        email: normalizedEmail,
         code: forgotFormData.code.trim(),
         newPassword: forgotFormData.newPassword,
       });
@@ -247,7 +277,7 @@ export function Auth() {
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4 pt-6">
               {/* Social login buttons */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3">
                 <Button
                   type="button"
                   variant="outline"
@@ -257,16 +287,6 @@ export function Auth() {
                 >
                   <Github className="h-4 w-4 mr-2" />
                   {socialLoadingProvider === "github" ? "Connecting..." : "GitHub"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-10 rounded-xl text-[13px] font-semibold"
-                  onClick={() => handleOAuth("google")}
-                  disabled={Boolean(socialLoadingProvider)}
-                >
-                  <Mail className="h-4 w-4 mr-2" />
-                  {socialLoadingProvider === "google" ? "Connecting..." : "Google"}
                 </Button>
               </div>
 
@@ -306,6 +326,7 @@ export function Auth() {
                   onChange={handleInputChange}
                   placeholder="student@university.edu" 
                   autoComplete="email"
+                  pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$"
                   required 
                   className="h-10 rounded-xl" 
                 />
@@ -361,6 +382,7 @@ export function Auth() {
                       onChange={handleForgotInputChange}
                       placeholder="student@university.edu"
                       autoComplete="email"
+                      pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$"
                       className="h-9 rounded-lg"
                     />
                   </div>
