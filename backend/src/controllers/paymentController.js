@@ -68,6 +68,19 @@ const formatProviderMessage = (value) => {
     }
     return '';
 };
+const sanitizeChapaCustomizationText = (value, options) => {
+    const maxLength = Number(options?.maxLength || 64);
+    const fallback = String(options?.fallback || 'CTC Payment').trim() || 'CTC Payment';
+    const normalized = String(value || '')
+        .replace(/[^a-zA-Z0-9._\- ]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    const safeValue = normalized.slice(0, maxLength).trim();
+    if (safeValue) {
+        return safeValue;
+    }
+    return fallback.slice(0, maxLength).trim() || 'CTC Payment';
+};
 const splitName = (fullName) => {
     const parts = String(fullName || '').trim().split(/\s+/).filter(Boolean);
     const firstName = parts[0] || 'Student';
@@ -329,6 +342,14 @@ exports.initializePremiumPayment = (0, express_async_handler_1.default)(async (r
     const secretKey = requireChapaSecretKey(res);
     const txRef = createPremiumTxRef(String(user._id));
     const { firstName, lastName } = splitName(user.name);
+    const premiumTitle = sanitizeChapaCustomizationText('CTC Premium', {
+        maxLength: 16,
+        fallback: 'CTC Premium',
+    });
+    const premiumDescription = sanitizeChapaCustomizationText(`${PREMIUM_AMOUNT_ETB} ETB premium upgrade`, {
+        maxLength: 64,
+        fallback: 'Premium payment',
+    });
     const initializePayload = {
         amount: PREMIUM_AMOUNT_ETB.toFixed(2),
         currency: PREMIUM_CURRENCY,
@@ -339,8 +360,8 @@ exports.initializePremiumPayment = (0, express_async_handler_1.default)(async (r
         callback_url: getChapaCallbackUrl(),
         return_url: buildPremiumReturnUrl(txRef),
         customization: {
-            title: 'CTC Club Premium',
-            description: `${PREMIUM_AMOUNT_ETB} ETB premium upgrade`,
+            title: premiumTitle,
+            description: premiumDescription,
         },
         meta: {
             userId: String(user._id),
@@ -411,7 +432,7 @@ exports.initializeCoursePayment = (0, express_async_handler_1.default)(async (re
             alreadyEnrolled: true,
             isEnrolled: true,
             amount: Number(course.price || 0),
-            currency: normalizeUpperText(course.currency || 'ETB') || 'ETB',
+            currency: 'ETB',
         }, { message: 'Course access is already active for this user.' });
         return;
     }
@@ -422,8 +443,7 @@ exports.initializeCoursePayment = (0, express_async_handler_1.default)(async (re
     }
     const courseCurrency = normalizeUpperText(course.currency || 'ETB') || 'ETB';
     if (courseCurrency !== 'ETB') {
-        res.status(400);
-        throw new Error('Only ETB paid courses are currently supported for checkout.');
+        await courseModel_1.default.findByIdAndUpdate(course._id, { currency: 'ETB' });
     }
     if (coursePrice === 0) {
         await ensureCourseEnrollment(String(user._id), String(course._id));
@@ -440,6 +460,14 @@ exports.initializeCoursePayment = (0, express_async_handler_1.default)(async (re
     const secretKey = requireChapaSecretKey(res);
     const txRef = createCourseTxRef(String(course._id), String(user._id));
     const { firstName, lastName } = splitName(user.name);
+    const courseTitleForCheckout = sanitizeChapaCustomizationText(course.title, {
+        maxLength: 16,
+        fallback: 'CTC Course',
+    });
+    const courseDescriptionForCheckout = sanitizeChapaCustomizationText(`${coursePrice.toFixed(2)} ETB course payment`, {
+        maxLength: 64,
+        fallback: 'Course payment',
+    });
     const initializePayload = {
         amount: coursePrice.toFixed(2),
         currency: 'ETB',
@@ -450,8 +478,8 @@ exports.initializeCoursePayment = (0, express_async_handler_1.default)(async (re
         callback_url: getChapaCallbackUrl(),
         return_url: buildCourseReturnUrl(String(course._id), txRef),
         customization: {
-            title: course.title,
-            description: `Course purchase (${coursePrice.toFixed(2)} ETB)`,
+            title: courseTitleForCheckout,
+            description: courseDescriptionForCheckout,
         },
         meta: {
             userId: String(user._id),

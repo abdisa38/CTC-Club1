@@ -91,7 +91,7 @@ const courseSchema = new mongoose_1.Schema({
     },
     currency: {
         type: String,
-        default: 'USD',
+        default: 'ETB',
     },
     isPublished: {
         type: Boolean,

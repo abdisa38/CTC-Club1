@@ -82,6 +82,29 @@ const formatProviderMessage = (value: unknown): string => {
   return '';
 };
 
+const sanitizeChapaCustomizationText = (
+  value: string,
+  options?: {
+    maxLength?: number;
+    fallback?: string;
+  }
+) => {
+  const maxLength = Number(options?.maxLength || 64);
+  const fallback = String(options?.fallback || 'CTC Payment').trim() || 'CTC Payment';
+
+  const normalized = String(value || '')
+    .replace(/[^a-zA-Z0-9._\- ]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const safeValue = normalized.slice(0, maxLength).trim();
+  if (safeValue) {
+    return safeValue;
+  }
+
+  return fallback.slice(0, maxLength).trim() || 'CTC Payment';
+};
+
 const splitName = (fullName: string) => {
   const parts = String(fullName || '').trim().split(/\s+/).filter(Boolean);
   const firstName = parts[0] || 'Student';
@@ -425,6 +448,14 @@ export const initializePremiumPayment = asyncHandler(async (req: AuthRequest, re
   const secretKey = requireChapaSecretKey(res);
   const txRef = createPremiumTxRef(String(user._id));
   const { firstName, lastName } = splitName(user.name);
+  const premiumTitle = sanitizeChapaCustomizationText('CTC Premium', {
+    maxLength: 16,
+    fallback: 'CTC Premium',
+  });
+  const premiumDescription = sanitizeChapaCustomizationText(`${PREMIUM_AMOUNT_ETB} ETB premium upgrade`, {
+    maxLength: 64,
+    fallback: 'Premium payment',
+  });
 
   const initializePayload = {
     amount: PREMIUM_AMOUNT_ETB.toFixed(2),
@@ -436,8 +467,8 @@ export const initializePremiumPayment = asyncHandler(async (req: AuthRequest, re
     callback_url: getChapaCallbackUrl(),
     return_url: buildPremiumReturnUrl(txRef),
     customization: {
-      title: 'CTC Club Premium',
-      description: `${PREMIUM_AMOUNT_ETB} ETB premium upgrade`,
+      title: premiumTitle,
+      description: premiumDescription,
     },
     meta: {
       userId: String(user._id),
@@ -551,6 +582,14 @@ export const initializeCoursePayment = asyncHandler(async (req: AuthRequest, res
   const secretKey = requireChapaSecretKey(res);
   const txRef = createCourseTxRef(String(course._id), String(user._id));
   const { firstName, lastName } = splitName(user.name);
+  const courseTitleForCheckout = sanitizeChapaCustomizationText(course.title, {
+    maxLength: 16,
+    fallback: 'CTC Course',
+  });
+  const courseDescriptionForCheckout = sanitizeChapaCustomizationText(`${coursePrice.toFixed(2)} ETB course payment`, {
+    maxLength: 64,
+    fallback: 'Course payment',
+  });
 
   const initializePayload = {
     amount: coursePrice.toFixed(2),
@@ -562,8 +601,8 @@ export const initializeCoursePayment = asyncHandler(async (req: AuthRequest, res
     callback_url: getChapaCallbackUrl(),
     return_url: buildCourseReturnUrl(String(course._id), txRef),
     customization: {
-      title: course.title,
-      description: `Course purchase (${coursePrice.toFixed(2)} ETB)`,
+      title: courseTitleForCheckout,
+      description: courseDescriptionForCheckout,
     },
     meta: {
       userId: String(user._id),

@@ -46,6 +46,18 @@ app.use((0, cors_1.default)({
 app.get('/api', (req, res) => {
     res.json({ message: 'Welcome to the CTC Club API' });
 });
+if (process.env.NODE_ENV === 'development') {
+    app.get('/api/debug/routes/payments', (req, res) => {
+        const stack = paymentRoutes_1.default?.stack || [];
+        const routes = stack
+            .filter((layer) => layer.route)
+            .map((layer) => ({
+            methods: Object.keys(layer.route.methods || {}).map((method) => method.toUpperCase()),
+            path: layer.route.path,
+        }));
+        res.json({ routes });
+    });
+}
 // Routes
 app.use('/api/auth', authRoutes_1.default);
 app.use('/api/courses', courseRoutes_1.default);
