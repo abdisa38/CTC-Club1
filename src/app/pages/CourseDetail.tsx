@@ -257,7 +257,7 @@ export function CourseDetail() {
     });
 
   const coursePrice = Number(course?.price || 0);
-  const courseCurrency = String(course?.currency || "ETB").toUpperCase();
+  const courseCurrency = "ETB";
   const isPaidCourse = coursePrice > 0;
 
   const canAccessLessons = isEnrolled || isInstructor || !isPaidCourse;
@@ -365,8 +365,8 @@ export function CourseDetail() {
 
     let ignore = false;
     const params = new URLSearchParams(window.location.search);
-    const shouldVerify = params.get("payment") === "verify";
-    const txRef = (params.get("tx_ref") || "").trim();
+    const shouldVerify = params.get("payment") === "verify" || params.has("tx_ref") || params.has("amp;tx_ref");
+    const txRef = (params.get("tx_ref") || params.get("amp;tx_ref") || "").trim();
 
     if (!shouldVerify || !txRef) {
       return;
@@ -407,7 +407,9 @@ export function CourseDetail() {
 
         const cleanUrl = new URL(window.location.href);
         cleanUrl.searchParams.delete("payment");
+        cleanUrl.searchParams.delete("amp;payment");
         cleanUrl.searchParams.delete("tx_ref");
+        cleanUrl.searchParams.delete("amp;tx_ref");
         window.history.replaceState({}, "", `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`);
       }
     };
