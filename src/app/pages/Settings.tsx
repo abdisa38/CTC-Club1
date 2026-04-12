@@ -89,7 +89,7 @@ const extractErrorMessage = (error: any, fallback: string) => {
   return fallback;
 };
 
-export function Settings() {
+export function Settings({ embedded = false }: { embedded?: boolean }) {
   const { user, login, logout } = useAuth();
   const [activeTab, setActiveTab] = useState("profile");
 
@@ -124,6 +124,8 @@ export function Settings() {
 
   const [notificationForm, setNotificationForm] = useState<NotificationPreferences>(DEFAULT_NOTIFICATION_PREFERENCES);
   const [themePreference, setThemePreference] = useState<ThemePreference>("system");
+
+  const containerClassName = embedded ? "space-y-6" : "max-w-4xl mx-auto space-y-6";
 
   const profileInitials = useMemo(() => {
     const base = `${profileForm.firstName} ${profileForm.lastName}`.trim() || user?.name || user?.email || "U";
@@ -480,11 +482,13 @@ export function Settings() {
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Account Settings</h1>
-          <p className="text-slate-500 dark:text-slate-400">Loading your settings...</p>
-        </div>
+      <div className={containerClassName}>
+        {!embedded ? (
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Account Settings</h1>
+            <p className="text-slate-500 dark:text-slate-400">Loading your settings...</p>
+          </div>
+        ) : null}
         <Card>
           <CardContent className="py-10 flex items-center gap-3 text-slate-500">
             <Loader2 className="h-5 w-5 animate-spin" />
@@ -496,11 +500,13 @@ export function Settings() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Account Settings</h1>
-        <p className="text-slate-500 dark:text-slate-400">Manage your profile, preferences, and security.</p>
-      </div>
+    <div className={containerClassName}>
+      {!embedded ? (
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Account Settings</h1>
+          <p className="text-slate-500 dark:text-slate-400">Manage your profile, preferences, and security.</p>
+        </div>
+      ) : null}
 
       {errorMsg && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">

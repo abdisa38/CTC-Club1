@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useLocation } from "react-router";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import apiService, { AuthUser, ProjectSubmission } from "../services/api";
+import { Settings } from "./Settings";
 
 const formatDate = (value?: string) => {
   if (!value) return "N/A";
@@ -67,7 +68,9 @@ type ProfileAccount = Partial<AuthUser> & {
 };
 
 export function Profile() {
+  const location = useLocation();
   const { user } = useAuth();
+  const settingsSectionRef = useRef<HTMLDivElement | null>(null);
   const [profile, setProfile] = useState<AuthUser | null>(null);
   const [metrics, setMetrics] = useState<any>(null);
   const [submissions, setSubmissions] = useState<ProjectSubmission[]>([]);
@@ -137,6 +140,27 @@ export function Profile() {
     return list.slice(0, 4);
   }, [metrics]);
 
+  const jumpToSettings = () => {
+    settingsSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const shouldJumpToSettings = params.get("section") === "settings" || location.hash === "#settings";
+
+    if (!shouldJumpToSettings || isLoading) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      settingsSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [location.search, location.hash, isLoading]);
+
   if (isLoading && !account) {
     return (
       <div className="flex h-[40vh] items-center justify-center">
@@ -196,8 +220,8 @@ export function Profile() {
                     </a>
                   </Button>
                 ) : null}
-                <Button asChild>
-                  <Link to="/app/settings">Edit Profile</Link>
+                <Button type="button" onClick={jumpToSettings}>
+                  Edit Profile
                 </Button>
               </div>
             </div>
@@ -355,6 +379,14 @@ export function Profile() {
           </Card>
         </div>
       </div>
+
+      <section id="settings" ref={settingsSectionRef} className="space-y-3 pt-2">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Profile & Account Settings</h2>
+          <p className="text-slate-500 dark:text-slate-400">All edit tools are now merged here on the same profile page.</p>
+        </div>
+        <Settings embedded />
+      </section>
     </div>
   );
 }
