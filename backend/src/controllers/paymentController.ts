@@ -3,6 +3,7 @@ import asyncHandler from 'express-async-handler';
 import crypto from 'crypto';
 import PaymentTransaction, { PaymentStatus } from '../models/paymentTransactionModel';
 import User from '../models/userModel';
+import Course from '../models/courseModel';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { sendSuccess } from '../utils/apiResponse';
 
@@ -98,6 +99,15 @@ const createPremiumTxRef = (userId: string) => {
   return `ctcpr-${safeUserSuffix}-${timePart}-${randomPart}`.slice(0, 50);
 };
 
+const createCourseTxRef = (courseId: string, userId: string) => {
+  const safeCourseSuffix = String(courseId || '').replace(/[^a-zA-Z0-9]/g, '').slice(-6) || 'course';
+  const safeUserSuffix = String(userId || '').replace(/[^a-zA-Z0-9]/g, '').slice(-6) || 'user';
+  const timePart = Date.now().toString(36);
+  const randomPart = crypto.randomBytes(3).toString('hex');
+
+  return `ctccr-${safeCourseSuffix}-${safeUserSuffix}-${timePart}-${randomPart}`.slice(0, 50);
+};
+
 const mapProviderStatusToPaymentStatus = (status: string): PaymentStatus => {
   const normalized = normalizeStatus(status);
 
@@ -144,6 +154,27 @@ const buildPremiumReturnUrl = (txRef: string) => {
   }
 
   targetUrl.searchParams.set('premium', 'verify');
+  targetUrl.searchParams.set('tx_ref', txRef);
+  return targetUrl.toString();
+};
+
+const buildCourseReturnUrl = (courseId: string, txRef: string) => {
+  const defaultTarget = new URL(`/app/courses/${courseId}`, getClientUrl());
+  const configured = String(process.env.CHAPA_COURSE_RETURN_URL || '').trim();
+  let targetUrl = defaultTarget;
+
+  if (configured) {
+    try {
+      const expanded = configured.includes('{courseId}')
+        ? configured.replace('{courseId}', encodeURIComponent(courseId))
+        : configured;
+      targetUrl = new URL(expanded, getClientUrl());
+    } catch {
+      targetUrl = defaultTarget;
+    }
+  }
+
+  targetUrl.searchParams.set('payment', 'verify');
   targetUrl.searchParams.set('tx_ref', txRef);
   return targetUrl.toString();
 };
@@ -208,10 +239,38 @@ const verifyTransactionWithChapa = async (txRef: string, secretKey: string) => {
   return parseChapaVerificationSnapshot(payload);
 };
 
-const finalizePremiumActivation = async (txRef: string, secretKey: string, userId?: string) => {
+const ensureCourseEnrollment = async (userId: string, courseId: string) => {
+  await Course.findByIdAndUpdate(
+    courseId,
+    { $addToSet: { students: userId } },
+    { new: false }
+  );
+
+  await User.findByIdAndUpdate(
+    userId,
+    { $addToSet: { enrolledCourses: courseId } },
+    { new: false }
+  );
+};
+
+const finalizePaymentTransaction = async (
+  txRef: string,
+  secretKey: string,
+  options?: {
+    userId?: string;
+    expectedType?: 'premium' | 'course';
+    expectedCourseId?: string;
+  }
+) => {
   const filter: Record<string, unknown> = { txRef };
-  if (userId) {
-    filter.user = userId;
+  if (options?.userId) {
+    filter.user = options.userId;
+  }
+  if (options?.expectedType) {
+    filter.transactionType = options.expectedType;
+  }
+  if (options?.expectedCourseId) {
+    filter.course = options.expectedCourseId;
   }
 
   const transaction = await PaymentTransaction.findOne(filter);
@@ -219,6 +278,7 @@ const finalizePremiumActivation = async (txRef: string, secretKey: string, userI
     return {
       transaction: null,
       user: null,
+      course: null,
       verified: false,
       reason: 'Transaction not found.',
     };
@@ -260,12 +320,25 @@ const finalizePremiumActivation = async (txRef: string, secretKey: string, userI
 
   await transaction.save();
 
-  const user = await User.findById(transaction.user).select('-password');
+  if (isVerifiedSuccess) {
+    if (transaction.transactionType === 'premium') {
+      const premiumUser = await User.findById(transaction.user);
+      if (premiumUser && !premiumUser.isPremium) {
+        premiumUser.isPremium = true;
+        premiumUser.premiumActivatedAt = new Date();
+        await premiumUser.save();
+      }
+    }
 
-  if (isVerifiedSuccess && user && !user.isPremium) {
-    user.isPremium = true;
-    user.premiumActivatedAt = new Date();
-    await user.save();
+    if (transaction.transactionType === 'course' && transaction.course) {
+      await ensureCourseEnrollment(String(transaction.user), String(transaction.course));
+    }
+  }
+
+  const user = await User.findById(transaction.user).select('-password');
+  let course = null;
+  if (transaction.transactionType === 'course' && transaction.course) {
+    course = await Course.findById(transaction.course).select('_id title price currency students instructor');
   }
 
   let reason = '';
@@ -286,6 +359,7 @@ const finalizePremiumActivation = async (txRef: string, secretKey: string, userI
   return {
     transaction,
     user,
+    course,
     verified: isVerifiedSuccess,
     reason,
   };
@@ -394,6 +468,7 @@ export const initializePremiumPayment = asyncHandler(async (req: AuthRequest, re
 
   await PaymentTransaction.create({
     user: user._id,
+    transactionType: 'premium',
     txRef,
     amount: PREMIUM_AMOUNT_ETB,
     currency: PREMIUM_CURRENCY,
@@ -410,6 +485,138 @@ export const initializePremiumPayment = asyncHandler(async (req: AuthRequest, re
   }, { message: 'Premium checkout initialized.' });
 });
 
+// @desc    Initialize a paid course checkout (free courses enroll directly)
+// @route   POST /api/payments/courses/:courseId/initialize
+// @access  Private
+export const initializeCoursePayment = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const courseId = String(req.params.courseId || '').trim();
+  if (!courseId) {
+    res.status(400);
+    throw new Error('Course ID is required');
+  }
+
+  const user = await User.findById(req.user?._id).select('name email role');
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  const course = await Course.findById(courseId).select('title price currency status students instructor');
+  if (!course) {
+    res.status(404);
+    throw new Error('Course not found');
+  }
+
+  const isInstructorOwner = String(course.instructor) === String(user._id);
+  const isAdmin = user.role === 'admin';
+  const isAlreadyEnrolled = Array.isArray(course.students)
+    && course.students.some((studentId: any) => String(studentId) === String(user._id));
+
+  if (isAlreadyEnrolled || isInstructorOwner || isAdmin) {
+    sendSuccess(res, {
+      courseId: String(course._id),
+      alreadyEnrolled: true,
+      isEnrolled: true,
+      amount: Number(course.price || 0),
+      currency: normalizeUpperText(course.currency || 'ETB') || 'ETB',
+    }, { message: 'Course access is already active for this user.' });
+    return;
+  }
+
+  const coursePrice = Number(course.price || 0);
+  if (!Number.isFinite(coursePrice) || coursePrice < 0) {
+    res.status(400);
+    throw new Error('Invalid course price.');
+  }
+
+  const courseCurrency = normalizeUpperText(course.currency || 'ETB') || 'ETB';
+  if (courseCurrency !== 'ETB') {
+    res.status(400);
+    throw new Error('Only ETB paid courses are currently supported for checkout.');
+  }
+
+  if (coursePrice === 0) {
+    await ensureCourseEnrollment(String(user._id), String(course._id));
+
+    sendSuccess(res, {
+      courseId: String(course._id),
+      alreadyEnrolled: false,
+      isEnrolled: true,
+      requiresPayment: false,
+      amount: 0,
+      currency: 'ETB',
+    }, { message: 'Free course enrolled successfully.' });
+    return;
+  }
+
+  const secretKey = requireChapaSecretKey(res);
+  const txRef = createCourseTxRef(String(course._id), String(user._id));
+  const { firstName, lastName } = splitName(user.name);
+
+  const initializePayload = {
+    amount: coursePrice.toFixed(2),
+    currency: 'ETB',
+    email: user.email,
+    first_name: firstName,
+    last_name: lastName,
+    tx_ref: txRef,
+    callback_url: getChapaCallbackUrl(),
+    return_url: buildCourseReturnUrl(String(course._id), txRef),
+    customization: {
+      title: course.title,
+      description: `Course purchase (${coursePrice.toFixed(2)} ETB)`,
+    },
+    meta: {
+      userId: String(user._id),
+      courseId: String(course._id),
+      purpose: 'course-purchase',
+    },
+  };
+
+  const response = await fetch(`${CHAPA_API_BASE_URL}/v1/transaction/initialize`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${secretKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(initializePayload),
+  });
+
+  const payload = await response.json().catch(() => null);
+  const payloadRecord = asRecord(payload);
+  const payloadData = asRecord(payloadRecord.data);
+  const checkoutUrl = String(payloadData.checkout_url || '').trim();
+
+  if (!response.ok || normalizeStatus(payloadRecord.status) !== 'success' || !checkoutUrl) {
+    const providerMessage = formatProviderMessage(payloadRecord.message) || 'Chapa failed to initialize course payment.';
+    const statusCode = response.status >= 400 && response.status < 500 ? 400 : 502;
+    res.status(statusCode);
+    throw new Error(providerMessage);
+  }
+
+  await PaymentTransaction.create({
+    user: user._id,
+    transactionType: 'course',
+    course: course._id,
+    txRef,
+    amount: coursePrice,
+    currency: 'ETB',
+    status: 'initialized',
+    checkoutUrl,
+    rawInitializeResponse: payload,
+  });
+
+  sendSuccess(res, {
+    courseId: String(course._id),
+    txRef,
+    checkoutUrl,
+    amount: coursePrice,
+    currency: 'ETB',
+    requiresPayment: true,
+    isEnrolled: false,
+  }, { message: 'Course checkout initialized.' });
+});
+
 // @desc    Verify a premium payment and activate membership
 // @route   GET /api/payments/premium/verify/:txRef
 // @access  Private
@@ -421,7 +628,10 @@ export const verifyPremiumPayment = asyncHandler(async (req: AuthRequest, res: R
   }
 
   const secretKey = requireChapaSecretKey(res);
-  const result = await finalizePremiumActivation(txRef, secretKey, String(req.user?._id || ''));
+  const result = await finalizePaymentTransaction(txRef, secretKey, {
+    userId: String(req.user?._id || ''),
+    expectedType: 'premium',
+  });
 
   if (!result.transaction) {
     res.status(404);
@@ -450,6 +660,59 @@ export const verifyPremiumPayment = asyncHandler(async (req: AuthRequest, res: R
   }, { message: 'Premium access activated successfully.' });
 });
 
+// @desc    Verify a paid course transaction and activate course enrollment
+// @route   GET /api/payments/courses/:courseId/verify/:txRef
+// @access  Private
+export const verifyCoursePayment = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const courseId = String(req.params.courseId || '').trim();
+  const txRef = String(req.params.txRef || '').trim();
+
+  if (!courseId) {
+    res.status(400);
+    throw new Error('Course ID is required');
+  }
+
+  if (!txRef) {
+    res.status(400);
+    throw new Error('Transaction reference is required');
+  }
+
+  const secretKey = requireChapaSecretKey(res);
+  const result = await finalizePaymentTransaction(txRef, secretKey, {
+    userId: String(req.user?._id || ''),
+    expectedType: 'course',
+    expectedCourseId: courseId,
+  });
+
+  if (!result.transaction) {
+    res.status(404);
+    throw new Error('Course payment transaction not found');
+  }
+
+  const isEnrolled = Boolean(result.course && Array.isArray(result.course.students)
+    && result.course.students.some((studentId: any) => String(studentId) === String(req.user?._id || '')));
+
+  if (!result.verified) {
+    sendSuccess(res, {
+      courseId,
+      txRef,
+      status: result.transaction.status,
+      paymentVerified: false,
+      isEnrolled,
+      reason: result.reason,
+    }, { message: 'Course payment is not completed yet.' });
+    return;
+  }
+
+  sendSuccess(res, {
+    courseId,
+    txRef,
+    status: result.transaction.status,
+    paymentVerified: true,
+    isEnrolled,
+  }, { message: 'Course access activated successfully.' });
+});
+
 // @desc    Handle Chapa callback (best-effort transaction update)
 // @route   GET /api/payments/chapa/callback
 // @access  Public
@@ -474,7 +737,7 @@ export const chapaCallback = asyncHandler(async (req: Request, res: Response) =>
       const secretKey = String(process.env.CHAPA_SECRET_KEY || '').trim();
       if (secretKey) {
         try {
-          await finalizePremiumActivation(txRef, secretKey);
+          await finalizePaymentTransaction(txRef, secretKey);
         } catch (error) {
           console.error('Failed to auto-verify callback transaction', error);
         }
@@ -518,7 +781,7 @@ export const chapaWebhook = asyncHandler(async (req: Request, res: Response) => 
     const secretKey = String(process.env.CHAPA_SECRET_KEY || '').trim();
     if (secretKey) {
       try {
-        await finalizePremiumActivation(txRef, secretKey);
+        await finalizePaymentTransaction(txRef, secretKey);
       } catch (error) {
         console.error('Failed to verify webhook transaction', error);
       }
