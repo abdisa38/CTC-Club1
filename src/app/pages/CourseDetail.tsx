@@ -1,17 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
 import { Progress } from "../components/ui/Progress";
 import { Textarea } from "../components/ui/Textarea";
+import { Input } from "../components/ui/Input";
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/Avatar";
 import {
   PlayCircle,
   CheckCircle,
   Lock,
+  HelpCircle,
   MessageSquare,
   FileText,
   Download,
+  FolderKanban,
+  GraduationCap,
+  Plus,
+  Trash2,
   ChevronRight,
   Star,
   Share2,
@@ -22,7 +28,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { CourseEditor } from "./instructor/CourseEditor";
-import apiService, { CommunityPost, Course, Lesson } from "../services/api";
+import apiService, { CommunityPost, Course, Lesson, Project, ProjectSubmission, Quiz, QuizResultItem } from "../services/api";
 
 const FALLBACK_COVER_IMAGE = "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80&w=1200";
 
