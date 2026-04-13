@@ -346,19 +346,19 @@ export function Home() {
     <div className="home-shell home-copy flex-1 overflow-x-hidden">
 
       {/* ═══ 1. HERO SECTION ═══ */}
-      <section className="relative overflow-hidden bg-white pt-16 pb-24 lg:pt-24 lg:pb-32 dark:bg-[#0c0f1a]">
+      <section className="relative overflow-hidden pt-16 pb-24 lg:pt-24 lg:pb-32">
         {/* Subtle grid */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#8882_1px,transparent_1px),linear-gradient(to_bottom,#8882_1px,transparent_1px)] bg-[size:60px_60px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,black_70%,transparent_100%)]" />
+        <div className="home-hero-grid absolute inset-0 [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,black_70%,transparent_100%)]" />
         {/* Glow orbs */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-gradient-to-br from-indigo-400/15 via-violet-400/10 to-transparent rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-purple-400/5 rounded-full blur-3xl" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[860px] h-[520px] bg-gradient-to-br from-sky-400/20 via-cyan-300/10 to-transparent rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-0 w-[440px] h-[420px] bg-emerald-400/10 rounded-full blur-3xl" />
 
         <div className="max-w-[1200px] relative mx-auto px-6 lg:px-8">
           <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-20">
             {/* Left content */}
             <div className="flex-1 text-center lg:text-left max-w-2xl lg:max-w-none">
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-                <Badge variant="outline" className="mb-8 py-1.5 px-4 text-[13px] font-semibold bg-indigo-50/80 text-indigo-700 border-indigo-200/60 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/20 backdrop-blur-sm">
+                <Badge variant="outline" className="mb-8 py-1.5 px-4 text-[13px] font-semibold bg-cyan-50/90 text-cyan-700 border-cyan-200/70 dark:bg-cyan-500/10 dark:text-cyan-300 dark:border-cyan-500/20 backdrop-blur-sm">
                   <Sparkles className="h-3.5 w-3.5 mr-1.5" />
                   Spring 2026 Registration Open
                 </Badge>
@@ -366,16 +366,16 @@ export function Home() {
 
               <motion.h1
                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}
-                className="text-4xl sm:text-5xl lg:text-[56px] font-extrabold tracking-tight text-slate-900 dark:text-white leading-[1.1]"
+                className="home-display text-4xl sm:text-5xl lg:text-[58px] font-extrabold tracking-tight text-slate-900 dark:text-white leading-[1.05]"
               >
                 Learn Tech Skills.{" "}
-                <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 bg-clip-text text-transparent">Build Real Projects.</span>{" "}
+                <span className="bg-gradient-to-r from-sky-600 via-cyan-500 to-emerald-500 bg-clip-text text-transparent">Build Real Projects.</span>{" "}
                 Grow Your Career.
               </motion.h1>
 
               <motion.p
                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}
-                className="mt-6 text-lg text-slate-500 dark:text-slate-400 max-w-xl mx-auto lg:mx-0 leading-relaxed"
+                className="mt-6 text-lg text-slate-600 dark:text-slate-300 max-w-xl mx-auto lg:mx-0 leading-relaxed"
               >
                 The ultimate learning platform for university students. Access structured courses, build portfolio projects, and join a thriving tech community.
               </motion.p>
@@ -384,12 +384,12 @@ export function Home() {
                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }}
                 className="mt-10 flex flex-col sm:flex-row items-center gap-3 justify-center lg:justify-start"
               >
-                <Button size="lg" className="w-full sm:w-auto px-8 h-12 text-[15px] font-semibold bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-all duration-300 rounded-xl" asChild>
+                <Button size="lg" className="w-full sm:w-auto px-8 h-12 text-[15px] font-semibold bg-gradient-to-r from-sky-600 to-cyan-500 hover:from-sky-700 hover:to-cyan-600 shadow-lg shadow-cyan-500/25 hover:shadow-xl hover:shadow-cyan-500/30 transition-all duration-300 rounded-xl" asChild>
                   <Link to="/register">
                     Start Learning Free <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
-                <Button size="lg" variant="outline" className="w-full sm:w-auto px-8 h-12 text-[15px] font-semibold border-slate-200 dark:border-white/10 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-all duration-300" asChild>
+                <Button size="lg" variant="outline" className="w-full sm:w-auto px-8 h-12 text-[15px] font-semibold border-slate-300/80 dark:border-white/20 rounded-xl bg-white/70 dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 transition-all duration-300" asChild>
                   <Link to="/app/courses">Browse Courses</Link>
                 </Button>
               </motion.div>
@@ -403,7 +403,7 @@ export function Home() {
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <Input
                     placeholder="Search courses, topics..."
-                    className="pl-11 pr-4 h-12 rounded-xl border-slate-200/60 bg-white/80 backdrop-blur-sm shadow-sm dark:bg-white/5 dark:border-white/10 focus-visible:ring-indigo-500/20 focus-visible:border-indigo-400"
+                    className="pl-11 pr-4 h-12 rounded-xl border-slate-300/70 bg-white/85 backdrop-blur-sm shadow-sm dark:bg-slate-900/70 dark:border-white/10 focus-visible:ring-cyan-500/20 focus-visible:border-cyan-400"
                     value={searchQuery}
                     onChange={(e) => { setSearchQuery(e.target.value); setShowSearchSuggestions(true); }}
                     onBlur={() => setTimeout(() => setShowSearchSuggestions(false), 200)}
@@ -411,7 +411,7 @@ export function Home() {
                   />
                 </div>
                 {showSearchSuggestions && searchSuggestions.length > 0 && (
-                  <div className="absolute top-full mt-2 w-full bg-white dark:bg-[#131827] border border-slate-200/60 dark:border-white/10 rounded-xl shadow-lg shadow-black/5 z-50 overflow-hidden">
+                  <div className="absolute top-full mt-2 w-full bg-white/95 dark:bg-[#131827]/95 border border-slate-200/70 dark:border-white/10 rounded-xl shadow-lg shadow-black/10 z-50 overflow-hidden backdrop-blur-md">
                     {searchSuggestions.map((s, i) => (
                       <Link key={i} to="/app/courses" className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors text-sm text-slate-600 dark:text-slate-400">
                         <Search className="h-3.5 w-3.5 text-slate-400" />
@@ -429,7 +429,7 @@ export function Home() {
               >
                 <div className="flex -space-x-2">
                   {["photo-1535713875002-d1d0cf377fde", "photo-1573497620166-aef748c8c792", "photo-1568880893176-fb2bdab44e41", "photo-1472099645785-5658abf4ff4e"].map((id, i) => (
-                    <img key={i} src={`https://images.unsplash.com/${id}?w=40&h=40&fit=crop&crop=face`} alt="" className="h-8 w-8 rounded-full border-2 border-white dark:border-[#0c0f1a] object-cover" />
+                    <img key={i} src={`https://images.unsplash.com/${id}?w=40&h=40&fit=crop&crop=face`} alt="" className="h-8 w-8 rounded-full border-2 border-white dark:border-slate-900 object-cover" />
                   ))}
                 </div>
                 <div className="text-sm">
@@ -445,14 +445,14 @@ export function Home() {
               className="flex-1 relative hidden lg:block"
             >
               <div className="relative">
-                <div className="absolute -inset-4 bg-gradient-to-br from-indigo-500/10 to-violet-500/10 rounded-3xl blur-2xl" />
+                  <div className="absolute -inset-4 bg-gradient-to-br from-sky-500/15 to-emerald-500/10 rounded-3xl blur-2xl" />
                 <div className="relative rounded-2xl overflow-hidden border border-slate-200/40 dark:border-white/[0.06] shadow-2xl shadow-slate-900/10">
                   <ImageWithFallback src="https://images.unsplash.com/photo-1753613648137-602c669cbe07?w=700&h=500&fit=crop" alt="Students learning" className="w-full h-auto" />
                 </div>
                 {/* Floating cards */}
                 <motion.div
                   animate={{ y: [0, -8, 0] }} transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-                  className="absolute -bottom-5 -left-5 bg-white/90 dark:bg-[#131827]/90 backdrop-blur-xl rounded-xl shadow-lg shadow-black/5 border border-slate-200/40 dark:border-white/[0.06] p-3.5 flex items-center gap-3"
+                  className="absolute -bottom-5 -left-5 bg-white/95 dark:bg-[#131827]/90 backdrop-blur-xl rounded-xl shadow-lg shadow-black/10 border border-slate-200/60 dark:border-white/[0.08] p-3.5 flex items-center gap-3"
                 >
                   <div className="h-9 w-9 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center">
                     <TrendingUp className="h-4 w-4 text-emerald-600" />
@@ -464,7 +464,7 @@ export function Home() {
                 </motion.div>
                 <motion.div
                   animate={{ y: [0, 8, 0] }} transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-                  className="absolute -top-3 -right-3 bg-white/90 dark:bg-[#131827]/90 backdrop-blur-xl rounded-xl shadow-lg shadow-black/5 border border-slate-200/40 dark:border-white/[0.06] p-3.5 flex items-center gap-3"
+                  className="absolute -top-3 -right-3 bg-white/95 dark:bg-[#131827]/90 backdrop-blur-xl rounded-xl shadow-lg shadow-black/10 border border-slate-200/60 dark:border-white/[0.08] p-3.5 flex items-center gap-3"
                 >
                   <div className="h-9 w-9 rounded-lg bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center">
                     <GitMerge className="h-4 w-4 text-amber-600" />
