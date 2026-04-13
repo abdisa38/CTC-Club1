@@ -1612,6 +1612,536 @@ export function CourseDetail() {
               )
             ) : null}
 
+            {activeTab === "quizzes" ? (
+              <div className="space-y-6">
+                {isCourseContentLoading ? (
+                  <div className="text-sm text-slate-500">Loading quizzes...</div>
+                ) : null}
+
+                {isInstructor ? (
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950 space-y-4">
+                    <div className="flex items-center gap-2">
+                      <GraduationCap className="h-4 w-4 text-indigo-600" />
+                      <h3 className="font-semibold text-slate-900 dark:text-white">Create Quiz In This Course</h3>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2 sm:col-span-2">
+                        <label className="text-xs font-medium text-slate-500">Quiz title</label>
+                        <Input
+                          value={quizForm.title}
+                          onChange={(event) => setQuizForm((prev) => ({ ...prev, title: event.target.value }))}
+                          placeholder="Module 1 Knowledge Check"
+                        />
+                      </div>
+                      <div className="space-y-2 sm:col-span-2">
+                        <label className="text-xs font-medium text-slate-500">Description</label>
+                        <Textarea
+                          value={quizForm.description}
+                          onChange={(event) => setQuizForm((prev) => ({ ...prev, description: event.target.value }))}
+                          placeholder="Short context for learners"
+                          rows={2}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium text-slate-500">Passing score (%)</label>
+                        <Input
+                          type="number"
+                          min={0}
+                          max={100}
+                          value={quizForm.passingScore}
+                          onChange={(event) => setQuizForm((prev) => ({ ...prev, passingScore: event.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium text-slate-500">Time limit (min)</label>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={quizForm.timeLimit}
+                          onChange={(event) => setQuizForm((prev) => ({ ...prev, timeLimit: event.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium text-slate-500">Max attempts</label>
+                        <Input
+                          type="number"
+                          min={1}
+                          value={quizForm.maxAttempts}
+                          onChange={(event) => setQuizForm((prev) => ({ ...prev, maxAttempts: event.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium text-slate-500">XP reward</label>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={quizForm.xpReward}
+                          onChange={(event) => setQuizForm((prev) => ({ ...prev, xpReward: event.target.value }))}
+                        />
+                      </div>
+                      <label className="sm:col-span-2 inline-flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                        <input
+                          type="checkbox"
+                          checked={quizForm.isPublished}
+                          onChange={(event) => setQuizForm((prev) => ({ ...prev, isPublished: event.target.checked }))}
+                        />
+                        Publish immediately
+                      </label>
+                    </div>
+
+                    <div className="flex justify-end">
+                      <Button onClick={() => void handleCreateCourseQuiz()} disabled={contentActionBusy}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create Quiz
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
+
+                {isInstructor && courseQuizzes.length > 0 ? (
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950 space-y-4">
+                    <h3 className="font-semibold text-slate-900 dark:text-white">Add Question To Quiz</h3>
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-slate-500">Target quiz</label>
+                      <select
+                        className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm dark:border-slate-800 dark:bg-slate-950"
+                        value={questionQuizId}
+                        onChange={(event) => setQuestionQuizId(event.target.value)}
+                      >
+                        <option value="">Select quiz</option>
+                        {courseQuizzes.map((quiz) => (
+                          <option key={quiz._id} value={quiz._id}>{quiz.title}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-slate-500">Question</label>
+                      <Textarea
+                        value={quizQuestionForm.questionText}
+                        onChange={(event) => setQuizQuestionForm((prev) => ({ ...prev, questionText: event.target.value }))}
+                        rows={2}
+                      />
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-3">
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium text-slate-500">Type</label>
+                        <select
+                          className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm dark:border-slate-800 dark:bg-slate-950"
+                          value={quizQuestionForm.type}
+                          onChange={(event) => setQuizQuestionForm((prev) => ({ ...prev, type: event.target.value as CourseQuizQuestionForm["type"] }))}
+                        >
+                          <option value="multiple-choice">Multiple choice</option>
+                          <option value="true-false">True / False</option>
+                          <option value="short-answer">Short answer</option>
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium text-slate-500">Points</label>
+                        <Input
+                          type="number"
+                          min={1}
+                          value={quizQuestionForm.points}
+                          onChange={(event) => setQuizQuestionForm((prev) => ({ ...prev, points: event.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium text-slate-500">Correct index</label>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={quizQuestionForm.correctAnswerIndex}
+                          onChange={(event) => setQuizQuestionForm((prev) => ({ ...prev, correctAnswerIndex: event.target.value }))}
+                          disabled={quizQuestionForm.type === "short-answer"}
+                        />
+                      </div>
+                    </div>
+
+                    {quizQuestionForm.type === "short-answer" ? (
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium text-slate-500">Correct answer text</label>
+                        <Input
+                          value={quizQuestionForm.correctAnswerText}
+                          onChange={(event) => setQuizQuestionForm((prev) => ({ ...prev, correctAnswerText: event.target.value }))}
+                          placeholder="Expected student answer"
+                        />
+                      </div>
+                    ) : (
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {quizQuestionForm.options.map((option, index) => (
+                          <Input
+                            key={`option-${index}`}
+                            value={option}
+                            onChange={(event) => {
+                              const nextOptions = [...quizQuestionForm.options];
+                              nextOptions[index] = event.target.value;
+                              setQuizQuestionForm((prev) => ({ ...prev, options: nextOptions }));
+                            }}
+                            placeholder={`Option ${index + 1}`}
+                          />
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex justify-end">
+                      <Button onClick={() => void handleAddQuestionToCourseQuiz()} disabled={contentActionBusy}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Question
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
+
+                {quizMode === "taking" && activeQuiz && activeQuizQuestion ? (
+                  <div className="rounded-xl border border-indigo-200 bg-white p-4 dark:border-indigo-800/50 dark:bg-slate-950 space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <h3 className="font-semibold text-slate-900 dark:text-white">{activeQuiz.title}</h3>
+                      <span className={`text-sm font-mono ${quizTimeLeft <= 60 ? "text-red-500" : "text-slate-500"}`}>
+                        Time left: {formatQuizTimer(quizTimeLeft)}
+                      </span>
+                    </div>
+
+                    <Progress
+                      value={((activeQuizQuestionIndex + 1) / Math.max(activeQuiz.questions.length, 1)) * 100}
+                      className="h-2"
+                    />
+
+                    <div className="space-y-3">
+                      <p className="text-sm text-slate-500">
+                        Question {activeQuizQuestionIndex + 1} of {activeQuiz.questions.length}
+                      </p>
+                      <p className="font-medium text-slate-900 dark:text-white">{activeQuizQuestion.questionText}</p>
+
+                      {activeQuizQuestion.type === "short-answer" ? (
+                        <Textarea
+                          value={typeof quizAnswerMap[activeQuizQuestionIndex] === "string" ? String(quizAnswerMap[activeQuizQuestionIndex]) : ""}
+                          onChange={(event) => setQuizAnswerMap((prev) => ({
+                            ...prev,
+                            [activeQuizQuestionIndex]: event.target.value,
+                          }))}
+                          placeholder="Type your answer"
+                        />
+                      ) : (
+                        <div className="space-y-2">
+                          {activeQuizQuestion.options?.map((option, index) => {
+                            const selectedValue = quizAnswerMap[activeQuizQuestionIndex];
+                            const isSelected = Number(selectedValue) === index;
+
+                            return (
+                              <button
+                                key={`${activeQuizQuestion._id || activeQuizQuestionIndex}-option-${index}`}
+                                type="button"
+                                onClick={() => setQuizAnswerMap((prev) => ({
+                                  ...prev,
+                                  [activeQuizQuestionIndex]: index,
+                                }))}
+                                className={`w-full rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
+                                  isSelected
+                                    ? "border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300"
+                                    : "border-slate-200 text-slate-700 hover:border-slate-300 dark:border-slate-800 dark:text-slate-200"
+                                }`}
+                              >
+                                {option}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <Button
+                        variant="outline"
+                        onClick={() => setActiveQuizQuestionIndex((prev) => Math.max(0, prev - 1))}
+                        disabled={activeQuizQuestionIndex === 0}
+                      >
+                        Previous
+                      </Button>
+                      <Button onClick={() => void handleNextQuizQuestion()} disabled={contentActionBusy}>
+                        {activeQuizQuestionIndex === activeQuiz.questions.length - 1 ? "Submit Quiz" : "Next Question"}
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
+
+                {quizMode === "results" && activeQuiz && quizResult ? (
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50/40 p-4 dark:border-emerald-900/40 dark:bg-emerald-950/10 space-y-4">
+                    <h3 className="font-semibold text-slate-900 dark:text-white">Quiz Complete</h3>
+                    <p className="text-sm text-slate-600 dark:text-slate-300">
+                      Score: <span className="font-semibold">{Math.round(quizResult.percentage || 0)}%</span>
+                      {quizResult.xpEarned > 0 ? ` • XP earned: ${quizResult.xpEarned}` : ""}
+                    </p>
+                    <div className="flex gap-2">
+                      <Button variant="outline" onClick={resetQuizExperience}>Back to quiz list</Button>
+                      <Button onClick={() => void startCourseQuiz(activeQuiz._id)}>Retake quiz</Button>
+                    </div>
+                  </div>
+                ) : null}
+
+                {(quizMode === "list" || isInstructor) ? (
+                  courseQuizzes.length > 0 ? (
+                    <div className="space-y-3">
+                      {courseQuizzes.map((quiz) => (
+                        <div key={quiz._id} className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <Badge variant={quiz.isPublished ? "outline" : "secondary"}>
+                                  {quiz.isPublished ? "Published" : "Draft"}
+                                </Badge>
+                                <span className="text-xs text-slate-500">{quiz.questions?.length || 0} questions</span>
+                              </div>
+                              <p className="font-medium text-slate-900 dark:text-white">{quiz.title}</p>
+                              {quiz.description ? (
+                                <p className="text-sm text-slate-500 mt-1">{quiz.description}</p>
+                              ) : null}
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-2">
+                              {isStudent ? (
+                                <Button onClick={() => void startCourseQuiz(quiz._id)} disabled={contentActionBusy || !quiz.isPublished}>
+                                  Start Quiz
+                                </Button>
+                              ) : (
+                                <>
+                                  <Button variant="outline" onClick={() => void handleToggleQuizPublish(quiz)} disabled={contentActionBusy}>
+                                    {quiz.isPublished ? "Move to Draft" : "Publish"}
+                                  </Button>
+                                  <Button variant="destructive" onClick={() => void handleDeleteCourseQuiz(quiz._id)} disabled={contentActionBusy}>
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
+                      {isInstructor
+                        ? "No quizzes yet. Create the first quiz for this course above."
+                        : "No quizzes are available for this course yet."}
+                    </div>
+                  )
+                ) : null}
+              </div>
+            ) : null}
+
+            {activeTab === "projects" ? (
+              <div className="space-y-6">
+                {isCourseContentLoading ? (
+                  <div className="text-sm text-slate-500">Loading projects...</div>
+                ) : null}
+
+                {isInstructor ? (
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950 space-y-4">
+                    <div className="flex items-center gap-2">
+                      <FolderKanban className="h-4 w-4 text-indigo-600" />
+                      <h3 className="font-semibold text-slate-900 dark:text-white">Create Project In This Course</h3>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2 sm:col-span-2">
+                        <label className="text-xs font-medium text-slate-500">Project title</label>
+                        <Input
+                          value={projectForm.title}
+                          onChange={(event) => setProjectForm((prev) => ({ ...prev, title: event.target.value }))}
+                          placeholder="Build a portfolio website"
+                        />
+                      </div>
+                      <div className="space-y-2 sm:col-span-2">
+                        <label className="text-xs font-medium text-slate-500">Description</label>
+                        <Textarea
+                          value={projectForm.description}
+                          onChange={(event) => setProjectForm((prev) => ({ ...prev, description: event.target.value }))}
+                          rows={2}
+                        />
+                      </div>
+                      <div className="space-y-2 sm:col-span-2">
+                        <label className="text-xs font-medium text-slate-500">Instructions</label>
+                        <Textarea
+                          value={projectForm.instructions}
+                          onChange={(event) => setProjectForm((prev) => ({ ...prev, instructions: event.target.value }))}
+                          rows={3}
+                        />
+                      </div>
+                      <div className="space-y-2 sm:col-span-2">
+                        <label className="text-xs font-medium text-slate-500">Requirements (one per line)</label>
+                        <Textarea
+                          value={projectForm.requirements}
+                          onChange={(event) => setProjectForm((prev) => ({ ...prev, requirements: event.target.value }))}
+                          rows={3}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium text-slate-500">XP reward</label>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={projectForm.xpReward}
+                          onChange={(event) => setProjectForm((prev) => ({ ...prev, xpReward: event.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium text-slate-500">Max points</label>
+                        <Input
+                          type="number"
+                          min={1}
+                          value={projectForm.maxPoints}
+                          onChange={(event) => setProjectForm((prev) => ({ ...prev, maxPoints: event.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium text-slate-500">Deadline</label>
+                        <Input
+                          type="datetime-local"
+                          value={projectForm.deadline}
+                          onChange={(event) => setProjectForm((prev) => ({ ...prev, deadline: event.target.value }))}
+                        />
+                      </div>
+                      <label className="inline-flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                        <input
+                          type="checkbox"
+                          checked={projectForm.isPublished}
+                          onChange={(event) => setProjectForm((prev) => ({ ...prev, isPublished: event.target.checked }))}
+                        />
+                        Publish immediately
+                      </label>
+                    </div>
+
+                    <div className="flex justify-end">
+                      <Button onClick={() => void handleCreateCourseProject()} disabled={contentActionBusy}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create Project
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
+
+                {courseProjects.length > 0 ? (
+                  <div className="space-y-3">
+                    {courseProjects.map((project) => {
+                      const submission = projectSubmissionByProjectId.get(project._id);
+                      const submissionDraft = projectSubmissionDrafts[project._id] || {
+                        repoUrl: submission?.repoUrl || "",
+                        liveUrl: submission?.liveUrl || "",
+                        comments: submission?.comments || "",
+                      };
+
+                      return (
+                        <div key={project._id} className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950 space-y-3">
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <Badge variant={project.isPublished ? "outline" : "secondary"}>
+                                  {project.isPublished ? "Published" : "Draft"}
+                                </Badge>
+                                {project.deadline ? (
+                                  <span className="text-xs text-slate-500">Due {new Date(project.deadline).toLocaleDateString()}</span>
+                                ) : null}
+                              </div>
+                              <p className="font-medium text-slate-900 dark:text-white">{project.title}</p>
+                              <p className="text-sm text-slate-500 mt-1">{project.description}</p>
+                            </div>
+
+                            {isInstructor ? (
+                              <div className="flex flex-wrap items-center gap-2">
+                                <Button variant="outline" onClick={() => void handleToggleProjectPublish(project)} disabled={contentActionBusy}>
+                                  {project.isPublished ? "Move to Draft" : "Publish"}
+                                </Button>
+                                <Button variant="destructive" onClick={() => void handleDeleteCourseProject(project._id)} disabled={contentActionBusy}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ) : null}
+                          </div>
+
+                          {!isInstructor ? (
+                            <div className="space-y-2 border-t border-slate-100 pt-3 dark:border-slate-800">
+                              <div className="flex items-center justify-between text-xs text-slate-500">
+                                <span>Status: {submission?.status || "pending"}</span>
+                                {submission?.grade !== undefined ? <span>Grade: {submission.grade}</span> : null}
+                              </div>
+                              <Input
+                                placeholder="Repository URL"
+                                value={submissionDraft.repoUrl}
+                                onChange={(event) => updateProjectSubmissionDraft(project._id, "repoUrl", event.target.value)}
+                              />
+                              <Input
+                                placeholder="Live URL (optional)"
+                                value={submissionDraft.liveUrl}
+                                onChange={(event) => updateProjectSubmissionDraft(project._id, "liveUrl", event.target.value)}
+                              />
+                              <Textarea
+                                placeholder="Comments for instructor"
+                                rows={2}
+                                value={submissionDraft.comments}
+                                onChange={(event) => updateProjectSubmissionDraft(project._id, "comments", event.target.value)}
+                              />
+                              <Button onClick={() => void handleSubmitCourseProject(project._id)} disabled={contentActionBusy || submission?.status === "graded"}>
+                                {submission ? "Update Submission" : "Submit Project"}
+                              </Button>
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
+                    {isInstructor
+                      ? "No projects yet. Create the first project for this course above."
+                      : "No projects are available for this course yet."}
+                  </div>
+                )}
+
+                {isInstructor ? (
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Submissions Needing Review</h3>
+                    {pendingProjectSubmissions.length > 0 ? (
+                      pendingProjectSubmissions.map((submission) => {
+                        const draft = gradingDrafts[submission._id] || { grade: "", feedback: "" };
+                        const projectTitle = typeof submission.project === "string"
+                          ? "Project"
+                          : submission.project?.title || "Project";
+
+                        return (
+                          <div key={submission._id} className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950 space-y-2">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                              <p className="font-medium text-slate-900 dark:text-white">{projectTitle}</p>
+                              <span className="text-xs text-slate-500">{submission.student?.name || "Student"}</span>
+                            </div>
+                            <div className="grid gap-2 sm:grid-cols-2">
+                              <Input
+                                type="number"
+                                min={0}
+                                placeholder="Grade"
+                                value={draft.grade}
+                                onChange={(event) => updateGradingDraft(submission._id, "grade", event.target.value)}
+                              />
+                              <Input
+                                placeholder="Feedback"
+                                value={draft.feedback}
+                                onChange={(event) => updateGradingDraft(submission._id, "feedback", event.target.value)}
+                              />
+                            </div>
+                            <Button onClick={() => void handleGradeCourseSubmission(submission._id)} disabled={contentActionBusy}>
+                              Grade Submission
+                            </Button>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="text-sm text-slate-500">No pending submissions right now.</div>
+                    )}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+
             {activeTab === "discussion" ? (
               <div className="space-y-6">
                 <div className="flex gap-4 items-start">
