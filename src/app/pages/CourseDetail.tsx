@@ -1560,7 +1560,7 @@ export function CourseDetail() {
 
           <div className="border-b border-slate-200 dark:border-slate-800 mb-6">
             <nav className="flex gap-6">
-              {["overview", "resources", "discussion"].map((tab) => (
+              {["overview", "resources", "quizzes", "projects", "discussion"].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
