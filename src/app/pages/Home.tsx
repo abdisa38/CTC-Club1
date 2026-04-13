@@ -366,31 +366,31 @@ export function Home() {
 
               <motion.h1
                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}
-                className="home-display text-4xl sm:text-5xl lg:text-[58px] font-extrabold tracking-tight text-slate-900 dark:text-white leading-[1.05]"
+                className="home-display text-4xl sm:text-5xl lg:text-[58px] font-extrabold tracking-tight text-white leading-[1.05]"
               >
                 Learn Tech Skills.{" "}
-                <span className="bg-gradient-to-r from-sky-600 via-cyan-500 to-emerald-500 bg-clip-text text-transparent">Build Real Projects.</span>{" "}
-                Grow Your Career.
+                <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">Build Real Projects.</span><br />
+                Become Future-Ready.
               </motion.h1>
 
               <motion.p
                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}
-                className="mt-6 text-lg text-slate-600 dark:text-slate-300 max-w-xl mx-auto lg:mx-0 leading-relaxed"
+                className="mt-6 text-lg text-slate-300 max-w-xl mx-auto lg:mx-0 leading-relaxed"
               >
-                The ultimate learning platform for university students. Access structured courses, build portfolio projects, and join a thriving tech community.
+                Experience a premium, immersive learning ecosystem. Master front-end, back-end, and everything in between with real-world projects and a thriving community of tech builders.
               </motion.p>
 
               <motion.div
                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }}
                 className="mt-10 flex flex-col sm:flex-row items-center gap-3 justify-center lg:justify-start"
               >
-                <Button size="lg" className="w-full sm:w-auto px-8 h-12 text-[15px] font-semibold bg-gradient-to-r from-sky-600 to-cyan-500 hover:from-sky-700 hover:to-cyan-600 shadow-lg shadow-cyan-500/25 hover:shadow-xl hover:shadow-cyan-500/30 transition-all duration-300 rounded-xl" asChild>
+                <Button size="lg" className="w-full sm:w-auto px-8 h-12 text-[15px] font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:shadow-[0_0_30px_rgba(139,92,246,0.5)] border border-purple-500/30 transition-all duration-300 rounded-xl text-white" asChild>
                   <Link to="/register">
-                    Start Learning Free <ArrowRight className="ml-2 h-4 w-4" />
+                    Start Learning <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
-                <Button size="lg" variant="outline" className="w-full sm:w-auto px-8 h-12 text-[15px] font-semibold border-slate-300/80 dark:border-white/20 rounded-xl bg-white/70 dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 transition-all duration-300" asChild>
-                  <Link to="/app/courses">Browse Courses</Link>
+                <Button size="lg" variant="outline" className="w-full sm:w-auto px-8 h-12 text-[15px] font-semibold border-white/20 rounded-xl bg-white/5 hover:bg-white/10 transition-all duration-300 text-white" asChild>
+                  <Link to="/app/courses">Explore Courses</Link>
                 </Button>
               </motion.div>
 
