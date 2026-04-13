@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { useNavigate, useParams } from "react-router";
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
@@ -834,6 +834,539 @@ export function CourseDetail() {
     } finally {
       setRatingBusy(false);
     }
+  };
+
+  const handleUploadNewLessonResources = async (event: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) {
+      return;
+    }
+
+    setIsUploadingLessonResources(true);
+    setError("");
+
+    const uploadedAttachments: NewLessonForm["attachments"] = [];
+
+    for (const file of files) {
+      try {
+        const uploaded = await apiService.uploadLessonResource(file);
+        uploadedAttachments.push({
+          title: uploaded.originalName || file.name,
+          url: uploaded.url,
+          fileType: uploaded.fileType || file.type || "file",
+        });
+      } catch (uploadError: any) {
+        setError(extractErrorMessage(uploadError, `Failed to upload resource: ${file.name}`));
+      }
+    }
+
+    if (uploadedAttachments.length > 0) {
+      setNewLessonForm((prev) => ({
+        ...prev,
+        attachments: [...prev.attachments, ...uploadedAttachments],
+      }));
+    }
+
+    setIsUploadingLessonResources(false);
+    event.target.value = "";
+  };
+
+  const handleCreateLessonInCourse = async () => {
+    if (!id) {
+      return;
+    }
+
+    if (!newLessonForm.title.trim()) {
+      setError("Lesson title is required");
+      return;
+    }
+
+    setContentActionBusy(true);
+    setError("");
+    setSuccessMsg("");
+
+    try {
+      const createdLesson = await apiService.createLesson(id, {
+        title: newLessonForm.title.trim(),
+        content: newLessonForm.title.trim(),
+        videoUrl: newLessonForm.videoUrl.trim() || undefined,
+        duration: parseDurationInput(newLessonForm.duration),
+        order: lessons.length,
+        isPublished: newLessonForm.isPublished,
+        attachments: newLessonForm.attachments,
+      });
+
+      setLessons((prev) => [...prev, createdLesson].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)));
+      setSelectedLessonId(createdLesson._id);
+      setShowLessonCreator(false);
+      setNewLessonForm(defaultLessonForm);
+      setSuccessMsg("Lesson and resources added inside this course.");
+    } catch (lessonSaveError: any) {
+      setError(extractErrorMessage(lessonSaveError, "Failed to create lesson"));
+    } finally {
+      setContentActionBusy(false);
+    }
+  };
+
+  const handleCreateCourseQuiz = async () => {
+    if (!id) {
+      return;
+    }
+
+    if (!quizForm.title.trim()) {
+      setError("Quiz title is required");
+      return;
+    }
+
+    setContentActionBusy(true);
+    setError("");
+
+    try {
+      const createdQuiz = await apiService.createQuiz({
+        title: quizForm.title.trim(),
+        description: quizForm.description.trim() || undefined,
+        courseId: id,
+        passingScore: Number(quizForm.passingScore) || 70,
+        timeLimit: Number(quizForm.timeLimit) || 30,
+        maxAttempts: Number(quizForm.maxAttempts) || 3,
+        xpReward: Number(quizForm.xpReward) || 10,
+        isPublished: quizForm.isPublished,
+      });
+
+      setCourseQuizzes((prev) => [createdQuiz, ...prev]);
+      setQuizForm(defaultQuizForm);
+      setSuccessMsg("Quiz created for this course.");
+    } catch (quizCreateError: any) {
+      setError(extractErrorMessage(quizCreateError, "Failed to create quiz"));
+    } finally {
+      setContentActionBusy(false);
+    }
+  };
+
+  const handleToggleQuizPublish = async (quiz: Quiz) => {
+    if (!id) {
+      return;
+    }
+
+    setContentActionBusy(true);
+    setError("");
+
+    try {
+      const updated = await apiService.updateQuiz(quiz._id, {
+        courseId: id,
+        isPublished: !quiz.isPublished,
+      });
+
+      setCourseQuizzes((prev) => prev.map((item) => (item._id === quiz._id ? updated : item)));
+      if (activeQuiz?._id === quiz._id) {
+        setActiveQuiz(updated);
+      }
+    } catch (quizUpdateError: any) {
+      setError(extractErrorMessage(quizUpdateError, "Failed to update quiz"));
+    } finally {
+      setContentActionBusy(false);
+    }
+  };
+
+  const handleDeleteCourseQuiz = async (quizId: string) => {
+    if (!confirm("Delete this quiz?")) {
+      return;
+    }
+
+    setContentActionBusy(true);
+    setError("");
+
+    try {
+      await apiService.deleteQuiz(quizId);
+      setCourseQuizzes((prev) => prev.filter((quiz) => quiz._id !== quizId));
+
+      if (activeQuiz?._id === quizId) {
+        setActiveQuiz(null);
+        setQuizMode("list");
+        setQuizResult(null);
+      }
+
+      if (questionQuizId === quizId) {
+        setQuestionQuizId("");
+        setQuizQuestionForm(defaultQuestionForm);
+      }
+    } catch (quizDeleteError: any) {
+      setError(extractErrorMessage(quizDeleteError, "Failed to delete quiz"));
+    } finally {
+      setContentActionBusy(false);
+    }
+  };
+
+  const buildQuizQuestionPayload = () => {
+    if (!quizQuestionForm.questionText.trim()) {
+      throw new Error("Question text is required");
+    }
+
+    const normalizedPoints = Math.max(1, Number(quizQuestionForm.points) || 1);
+
+    if (quizQuestionForm.type === "short-answer") {
+      if (!quizQuestionForm.correctAnswerText.trim()) {
+        throw new Error("Short-answer questions require a correct answer");
+      }
+
+      return {
+        questionText: quizQuestionForm.questionText.trim(),
+        type: quizQuestionForm.type,
+        correctAnswerText: quizQuestionForm.correctAnswerText.trim(),
+        points: normalizedPoints,
+      };
+    }
+
+    if (quizQuestionForm.type === "true-false") {
+      const correctAnswerIndex = Number(quizQuestionForm.correctAnswerIndex);
+      if (![0, 1].includes(correctAnswerIndex)) {
+        throw new Error("True/false questions require answer index 0 or 1");
+      }
+
+      return {
+        questionText: quizQuestionForm.questionText.trim(),
+        type: quizQuestionForm.type,
+        correctAnswerIndex,
+        points: normalizedPoints,
+      };
+    }
+
+    const options = quizQuestionForm.options
+      .map((option) => option.trim())
+      .filter(Boolean);
+
+    if (options.length < 2) {
+      throw new Error("Multiple-choice questions require at least 2 options");
+    }
+
+    const correctAnswerIndex = Number(quizQuestionForm.correctAnswerIndex);
+    if (!Number.isInteger(correctAnswerIndex) || correctAnswerIndex < 0 || correctAnswerIndex >= options.length) {
+      throw new Error("Select a valid correct answer option");
+    }
+
+    return {
+      questionText: quizQuestionForm.questionText.trim(),
+      type: quizQuestionForm.type,
+      options,
+      correctAnswerIndex,
+      points: normalizedPoints,
+    };
+  };
+
+  const handleAddQuestionToCourseQuiz = async () => {
+    if (!questionQuizId) {
+      setError("Select a quiz before adding a question");
+      return;
+    }
+
+    setContentActionBusy(true);
+    setError("");
+
+    try {
+      const payload = buildQuizQuestionPayload();
+      const updatedQuiz = await apiService.addQuizQuestion(questionQuizId, payload);
+
+      setCourseQuizzes((prev) => prev.map((quiz) => (quiz._id === questionQuizId ? updatedQuiz : quiz)));
+      if (activeQuiz?._id === questionQuizId) {
+        setActiveQuiz(updatedQuiz);
+      }
+
+      setQuizQuestionForm(defaultQuestionForm);
+      setSuccessMsg("Question added to quiz.");
+    } catch (questionError: any) {
+      setError(extractErrorMessage(questionError, "Failed to add question"));
+    } finally {
+      setContentActionBusy(false);
+    }
+  };
+
+  const startCourseQuiz = async (quizId: string) => {
+    setContentActionBusy(true);
+    setError("");
+
+    try {
+      const quiz = await apiService.getQuizById(quizId);
+      setActiveQuiz(quiz);
+      setQuizMode("taking");
+      setActiveQuizQuestionIndex(0);
+      setQuizAnswerMap({});
+      setQuizResult(null);
+      setQuizTimeLeft((Number(quiz.timeLimit) || 10) * 60);
+    } catch (startError: any) {
+      setError(extractErrorMessage(startError, "Failed to start quiz"));
+    } finally {
+      setContentActionBusy(false);
+    }
+  };
+
+  const resetQuizExperience = () => {
+    setQuizMode("list");
+    setActiveQuiz(null);
+    setActiveQuizQuestionIndex(0);
+    setQuizAnswerMap({});
+    setQuizResult(null);
+    setQuizTimeLeft(0);
+  };
+
+  const handleSubmitActiveQuiz = async () => {
+    if (!activeQuiz) {
+      return;
+    }
+
+    setContentActionBusy(true);
+    setError("");
+
+    try {
+      const totalTime = (Number(activeQuiz.timeLimit) || 10) * 60;
+      const answers = activeQuiz.questions.map((question, index) => {
+        const userAnswer = quizAnswerMap[index];
+
+        if (question.type === "short-answer") {
+          return {
+            questionId: question._id,
+            userAnswerText: typeof userAnswer === "string" ? userAnswer : "",
+          };
+        }
+
+        const parsedIndex = typeof userAnswer === "number" ? userAnswer : Number(userAnswer);
+        return {
+          questionId: question._id,
+          userAnswerIndex: Number.isInteger(parsedIndex) ? parsedIndex : undefined,
+        };
+      });
+
+      const result = await apiService.submitQuiz(activeQuiz._id, {
+        answers,
+        timeSpent: Math.max(0, totalTime - quizTimeLeft),
+      });
+
+      setQuizResult(result);
+      setQuizMode("results");
+    } catch (submitError: any) {
+      setError(extractErrorMessage(submitError, "Failed to submit quiz"));
+      setQuizMode("list");
+    } finally {
+      setContentActionBusy(false);
+    }
+  };
+
+  const handleNextQuizQuestion = async () => {
+    if (!activeQuiz) {
+      return;
+    }
+
+    const lastQuestionIndex = activeQuiz.questions.length - 1;
+    if (activeQuizQuestionIndex >= lastQuestionIndex) {
+      await handleSubmitActiveQuiz();
+      return;
+    }
+
+    setActiveQuizQuestionIndex((prev) => prev + 1);
+  };
+
+  const handleCreateCourseProject = async () => {
+    if (!id) {
+      return;
+    }
+
+    if (!projectForm.title.trim() || !projectForm.description.trim()) {
+      setError("Project title and description are required");
+      return;
+    }
+
+    setContentActionBusy(true);
+    setError("");
+
+    try {
+      const createdProject = await apiService.createProject({
+        title: projectForm.title.trim(),
+        description: projectForm.description.trim(),
+        courseId: id,
+        instructions: projectForm.instructions.trim() || undefined,
+        requirements: projectForm.requirements
+          .split("\n")
+          .map((value) => value.trim())
+          .filter(Boolean),
+        xpReward: Math.max(0, Number(projectForm.xpReward) || 0),
+        maxPoints: Math.max(1, Number(projectForm.maxPoints) || 100),
+        deadline: projectForm.deadline ? new Date(projectForm.deadline).toISOString() : undefined,
+        isPublished: projectForm.isPublished,
+      });
+
+      const normalizedProject: Project = {
+        ...createdProject,
+        course: {
+          _id: id,
+          title: course?.title || (typeof createdProject.course === "string" ? "Course" : createdProject.course?.title || "Course"),
+        },
+      };
+
+      setCourseProjects((prev) => [normalizedProject, ...prev]);
+      setProjectForm(defaultProjectForm);
+      setSuccessMsg("Project created inside this course.");
+    } catch (projectCreateError: any) {
+      setError(extractErrorMessage(projectCreateError, "Failed to create project"));
+    } finally {
+      setContentActionBusy(false);
+    }
+  };
+
+  const handleToggleProjectPublish = async (project: Project) => {
+    setContentActionBusy(true);
+    setError("");
+
+    try {
+      const updated = await apiService.updateProject(project._id, {
+        isPublished: !project.isPublished,
+      });
+
+      setCourseProjects((prev) => prev.map((item) => (item._id === project._id ? updated : item)));
+    } catch (projectUpdateError: any) {
+      setError(extractErrorMessage(projectUpdateError, "Failed to update project"));
+    } finally {
+      setContentActionBusy(false);
+    }
+  };
+
+  const handleDeleteCourseProject = async (projectId: string) => {
+    if (!confirm("Delete this project?")) {
+      return;
+    }
+
+    setContentActionBusy(true);
+    setError("");
+
+    try {
+      await apiService.deleteProject(projectId);
+      setCourseProjects((prev) => prev.filter((project) => project._id !== projectId));
+      setCourseProjectSubmissions((prev) => prev.filter((submission) => getProjectRefId(submission.project) !== projectId));
+    } catch (projectDeleteError: any) {
+      setError(extractErrorMessage(projectDeleteError, "Failed to delete project"));
+    } finally {
+      setContentActionBusy(false);
+    }
+  };
+
+  const updateProjectSubmissionDraft = (projectId: string, field: "repoUrl" | "liveUrl" | "comments", value: string) => {
+    setProjectSubmissionDrafts((prev) => {
+      const existing = prev[projectId] || { repoUrl: "", liveUrl: "", comments: "" };
+      return {
+        ...prev,
+        [projectId]: {
+          ...existing,
+          [field]: value,
+        },
+      };
+    });
+  };
+
+  const handleSubmitCourseProject = async (projectId: string) => {
+    const draft = projectSubmissionDrafts[projectId] || { repoUrl: "", liveUrl: "", comments: "" };
+    const repoUrl = draft.repoUrl.trim();
+
+    if (!repoUrl) {
+      setError("Repository URL is required for project submission");
+      return;
+    }
+
+    setContentActionBusy(true);
+    setError("");
+
+    try {
+      const submission = await apiService.submitProject(projectId, {
+        repoUrl,
+        liveUrl: draft.liveUrl.trim() || undefined,
+        comments: draft.comments.trim() || undefined,
+      });
+
+      setCourseProjectSubmissions((prev) => {
+        const submittedProjectId = getProjectRefId(submission.project) || projectId;
+        const withoutCurrent = prev.filter((item) => {
+          const currentProjectId = getProjectRefId(item.project);
+          return currentProjectId !== submittedProjectId;
+        });
+
+        return [submission, ...withoutCurrent];
+      });
+
+      setProjectSubmissionDrafts((prev) => {
+        const next = { ...prev };
+        delete next[projectId];
+        return next;
+      });
+      setSuccessMsg("Project submission saved.");
+    } catch (submissionError: any) {
+      setError(extractErrorMessage(submissionError, "Failed to submit project"));
+    } finally {
+      setContentActionBusy(false);
+    }
+  };
+
+  const updateGradingDraft = (submissionId: string, field: "grade" | "feedback", value: string) => {
+    setGradingDrafts((prev) => {
+      const existing = prev[submissionId] || { grade: "", feedback: "" };
+      return {
+        ...prev,
+        [submissionId]: {
+          ...existing,
+          [field]: value,
+        },
+      };
+    });
+  };
+
+  const handleGradeCourseSubmission = async (submissionId: string) => {
+    const draft = gradingDrafts[submissionId] || { grade: "", feedback: "" };
+    const grade = Number(draft.grade);
+
+    if (!Number.isFinite(grade) || grade < 0) {
+      setError("Enter a valid numeric grade");
+      return;
+    }
+
+    if (!draft.feedback.trim()) {
+      setError("Feedback is required");
+      return;
+    }
+
+    setContentActionBusy(true);
+    setError("");
+
+    try {
+      const updated = await apiService.reviewProject(submissionId, {
+        grade,
+        feedback: draft.feedback.trim(),
+      });
+
+      setCourseProjectSubmissions((prev) => prev.map((submission) => (
+        submission._id === updated._id ? updated : submission
+      )));
+
+      setGradingDrafts((prev) => {
+        const next = { ...prev };
+        delete next[submissionId];
+        return next;
+      });
+      setSuccessMsg("Submission graded.");
+    } catch (gradingError: any) {
+      setError(extractErrorMessage(gradingError, "Failed to grade submission"));
+    } finally {
+      setContentActionBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    if (quizMode !== "taking" || quizTimeLeft > 0) {
+      return;
+    }
+
+    void handleSubmitActiveQuiz();
+  }, [quizMode, quizTimeLeft]);
+
+  const formatQuizTimer = (totalSeconds: number) => {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${String(seconds).padStart(2, "0")}`;
   };
 
   if (id === "new" && isInstructor) {
