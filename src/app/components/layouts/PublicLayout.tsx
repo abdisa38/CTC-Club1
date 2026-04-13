@@ -66,12 +66,12 @@ export function PublicLayout() {
   ];
 
   return (
-    <div className="flex min-h-screen flex-col bg-white dark:bg-[#0c0f1a]">
+    <div className="flex min-h-screen flex-col bg-[#050117] text-white">
       {!isAuthPage && (
         <header
           className={`sticky top-0 z-50 w-full transition-all duration-500 ${
             scrolled
-              ? "bg-white/80 backdrop-blur-xl shadow-[0_1px_3px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.03)] border-b border-slate-200/60 dark:bg-[#0c0f1a]/80 dark:border-slate-800/40 dark:shadow-[0_1px_3px_rgba(0,0,0,0.3)]"
+              ? "bg-[#08061a]/60 backdrop-blur-2xl border-b border-purple-500/10 shadow-[0_4px_30px_rgba(0,0,0,0.5)]"
               : "bg-transparent"
           }`}
         >
@@ -80,7 +80,7 @@ export function PublicLayout() {
               <div className="relative">
                 <img src={ctcLogo} alt="CTC Club" className="h-9 w-9 rounded-xl ring-1 ring-slate-200/50 dark:ring-slate-700/50 transition-transform duration-300 group-hover:scale-105" />
               </div>
-              <span className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+              <span className="text-xl font-extrabold tracking-tight text-white">
                 CTC <span className="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">Club</span>
               </span>
             </Link>
@@ -93,7 +93,7 @@ export function PublicLayout() {
                   className={`relative px-3.5 py-2 rounded-lg text-[13px] font-semibold tracking-wide transition-all duration-200 ${
                     location.pathname === link.to
                       ? "text-indigo-600 bg-indigo-50/80 dark:bg-indigo-500/10 dark:text-indigo-400"
-                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-50/80 dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/5"
+                      : "text-slate-300 hover:text-white hover:bg-white/5"
                   }`}
                 >
                   {link.label}
@@ -106,7 +106,7 @@ export function PublicLayout() {
                 variant="ghost"
                 size="sm"
                 asChild
-                className="hidden md:inline-flex font-semibold text-[13px] text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white h-9 px-4 rounded-lg"
+                className="hidden md:inline-flex font-semibold text-[13px] text-slate-300 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white h-9 px-4 rounded-lg"
               >
                 <Link to="/login">Log in</Link>
               </Button>
@@ -180,7 +180,7 @@ export function PublicLayout() {
                     CTC <span className="bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent">Club</span>
                   </span>
                 </Link>
-                <p className="text-sm leading-relaxed text-slate-500 mb-6">
+                <p className="text-sm leading-relaxed text-slate-400 mb-6">
                   The ultimate tech learning platform for university students. Learn, build, and grow your career.
                 </p>
                 <div className="flex gap-2">
@@ -211,7 +211,7 @@ export function PublicLayout() {
                     <li key={link}>
                       <Link
                         to={`/app/${link.toLowerCase()}`}
-                        className="text-sm text-slate-500 hover:text-white transition-colors duration-200 flex items-center gap-1.5 group"
+                        className="text-sm text-slate-400 hover:text-white transition-colors duration-200 flex items-center gap-1.5 group"
                       >
                         {link}
                         <ArrowUpRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -225,19 +225,19 @@ export function PublicLayout() {
               <div>
                 <h4 className="text-white text-sm font-semibold mb-5 tracking-wide">Company</h4>
                 <ul className="space-y-3">
-                  <li className="text-sm text-slate-500 leading-relaxed">
+                  <li className="text-sm text-slate-400 leading-relaxed">
                     <span className="text-slate-300 font-medium">About:</span> CTC Club helps students build practical tech skills with real projects and mentor support.
                   </li>
-                  <li className="text-sm text-slate-500 leading-relaxed">
+                  <li className="text-sm text-slate-400 leading-relaxed">
                     <span className="text-slate-300 font-medium">Privacy Policy:</span> We protect your personal information and only use it for learning platform services.
                   </li>
-                  <li className="text-sm text-slate-500 leading-relaxed">
+                  <li className="text-sm text-slate-400 leading-relaxed">
                     <span className="text-slate-300 font-medium">Terms of Service:</span> Use the platform respectfully, submit original work, and follow community guidelines.
                   </li>
-                  <li className="text-sm text-slate-500 leading-relaxed">
+                  <li className="text-sm text-slate-400 leading-relaxed">
                     <span className="text-slate-300 font-medium">Support:</span> For help with courses or your account, use the support page in your dashboard.
                   </li>
-                  <li className="text-sm text-slate-500 leading-relaxed">
+                  <li className="text-sm text-slate-400 leading-relaxed">
                     <span className="text-slate-300 font-medium">Contact:</span>{" "}
                     <a href="tel:0986182779" className="hover:text-white transition-colors">0986182779</a>
                     {" "}|{" "}
@@ -249,7 +249,7 @@ export function PublicLayout() {
               {/* Newsletter */}
               <div>
                 <h4 className="text-white text-sm font-semibold mb-5 tracking-wide">Stay Updated</h4>
-                <p className="text-sm text-slate-500 mb-4 leading-relaxed">
+                <p className="text-sm text-slate-400 mb-4 leading-relaxed">
                   Get the latest courses and events delivered to your inbox.
                 </p>
                 <form onSubmit={handleNewsletterSubmit} className="space-y-2">
@@ -257,7 +257,7 @@ export function PublicLayout() {
                     <Input
                       type="email"
                       placeholder="you@email.com"
-                      className="bg-white/5 border-white/10 text-white placeholder:text-slate-600 text-sm h-10 rounded-xl focus-visible:ring-indigo-500 focus-visible:border-indigo-500"
+                      className="bg-white/5 border-white/10 text-white placeholder:text-slate-300 text-sm h-10 rounded-xl focus-visible:ring-indigo-500 focus-visible:border-indigo-500"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                     />
@@ -275,12 +275,12 @@ export function PublicLayout() {
             </div>
 
             <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-              <p className="text-xs text-slate-600">
+              <p className="text-xs text-slate-300">
                 &copy; {new Date().getFullYear()} CTC Club Learning Platform. All rights reserved.
               </p>
               <div className="flex gap-6">
                 {["Privacy", "Terms", "Cookies"].map((link) => (
-                  <a key={link} href="#" className="text-xs text-slate-600 hover:text-slate-400 transition-colors">
+                  <a key={link} href="#" className="text-xs text-slate-300 hover:text-slate-400 transition-colors">
                     {link}
                   </a>
                 ))}
