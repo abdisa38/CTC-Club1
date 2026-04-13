@@ -1326,12 +1326,12 @@ export function CourseDetail() {
   };
 
   useEffect(() => {
-    if (quizMode !== "taking" || quizTimeLeft > 0) {
+    if (quizMode !== "taking" || quizTimeLeft > 0 || contentActionBusy) {
       return;
     }
 
     void handleSubmitActiveQuiz();
-  }, [quizMode, quizTimeLeft]);
+  }, [quizMode, quizTimeLeft, contentActionBusy]);
 
   const formatQuizTimer = (totalSeconds: number) => {
     const minutes = Math.floor(totalSeconds / 60);
