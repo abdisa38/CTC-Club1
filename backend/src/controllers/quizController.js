@@ -338,15 +338,29 @@ exports.getQuizResults = (0, express_async_handler_1.default)(async (req, res) =
     (0, apiResponse_1.sendSuccess)(res, results);
 });
 exports.getQuizzes = (0, express_async_handler_1.default)(async (req, res) => {
+    const requestedCourseId = typeof req.query.courseId === 'string' ? req.query.courseId : '';
     let filter = { isDeleted: false };
+    if (requestedCourseId) {
+        filter.course = requestedCourseId;
+    }
     if (req.user.role === 'student') {
         filter.isPublished = true;
     }
     else if (req.user.role === 'instructor') {
-        const instructorCourses = await courseModel_1.default.find({ instructor: req.user._id }).select('_id');
-        filter.course = { $in: instructorCourses.map(c => c._id) };
+        const instructorCourses = await courseModel_1.default.find({ instructor: req.user._id, isDeleted: false }).select('_id');
+        const instructorCourseIds = instructorCourses.map((course) => course._id.toString());
+        if (requestedCourseId) {
+            if (!instructorCourseIds.includes(requestedCourseId)) {
+                filter.course = null;
+            }
+        }
+        else {
+            filter.course = { $in: instructorCourses.map((course) => course._id) };
+        }
     }
-    const quizzes = await quizModel_1.Quiz.find(filter).populate('course', 'title coverImage').sort({ createdAt: -1 });
+    const quizzes = await quizModel_1.Quiz.find(filter)
+        .populate('course', 'title coverImage')
+        .sort({ createdAt: -1 });
     (0, apiResponse_1.sendSuccess)(res, quizzes);
 });
 exports.getQuizById = (0, express_async_handler_1.default)(async (req, res) => {
@@ -359,6 +373,10 @@ exports.getQuizById = (0, express_async_handler_1.default)(async (req, res) => {
     if (!quizDoc) {
         res.status(404);
         throw new Error('Quiz not found');
+    }
+    if (req.user.role === 'student' && !quizDoc.isPublished) {
+        res.status(403);
+        throw new Error('This quiz is not available yet');
     }
     const quiz = quizDoc.toObject();
     // Remove correct answers if student
