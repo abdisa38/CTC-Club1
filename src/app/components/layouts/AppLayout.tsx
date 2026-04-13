@@ -177,8 +177,6 @@ export function AppLayout() {
     student: [
       { title: "Dashboard", href: "/app/dashboard", icon: LayoutDashboard },
       { title: "Courses", href: "/app/courses", icon: BookOpen },
-      { title: "Resources", href: "/app/resources", icon: FileText },
-      { title: "Projects", href: "/app/projects", icon: Focus },
       { title: "Community", href: "/app/community", icon: MessageSquare },
       { title: "Support", href: "/app/support", icon: HelpCircle },
       { title: "Leaderboard", href: "/app/leaderboard", icon: Trophy },
@@ -187,13 +185,10 @@ export function AppLayout() {
     instructor: [
       { title: "Dashboard", href: "/app/dashboard", icon: LayoutDashboard },
       { title: "My Courses", href: "/app/instructor/courses", icon: BookOpen },
-      { title: "Quizzes", href: "/app/instructor/quizzes", icon: CheckSquare },
       { title: "Create Course", href: "/app/instructor/courses/new", icon: PlusCircle },
       { title: "Students", href: "/app/instructor/students", icon: Users },
-      { title: "Projects Review", href: "/app/instructor/projects", icon: CheckSquare },
       { title: "Discussions", href: "/app/instructor/comments", icon: MessageSquare },
       { title: "Analytics", href: "/app/instructor/analytics", icon: BarChart3 },
-      { title: "Resources", href: "/app/resources", icon: FileText },
     ],
     admin: [
       { title: "Dashboard", href: "/app/admin", icon: LayoutDashboard },

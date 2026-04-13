@@ -94,13 +94,11 @@ export function CourseEditor() {
         coverImage: coverImage.trim() || undefined,
       };
 
-      if (isEditing && id) {
-        await apiService.updateCourse(id, payload);
-      } else {
-        await apiService.createCourse(payload);
-      }
+      const savedCourse = isEditing && id
+        ? await apiService.updateCourse(id, payload)
+        : await apiService.createCourse(payload);
 
-      navigate("/app/instructor/courses");
+      navigate(`/app/courses/${savedCourse._id}`);
     } catch (err: any) {
       setError(err?.response?.data?.message || "Failed to save course");
     } finally {
@@ -124,7 +122,7 @@ export function CourseEditor() {
         </Button>
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{isEditing ? "Edit Course" : "Create New Course"}</h1>
-          <p className="text-slate-500 dark:text-slate-400">Save course metadata directly to the backend database.</p>
+          <p className="text-slate-500 dark:text-slate-400">Save course metadata, then continue inside the course page to add lessons, resources, quizzes, and projects.</p>
         </div>
       </div>
 
@@ -228,7 +226,7 @@ export function CourseEditor() {
           ) : (
             <>
               <Save className="mr-2 h-4 w-4" />
-              {isEditing ? "Update Course" : "Create Course"}
+              {isEditing ? "Update and Open Course" : "Create and Open Course"}
             </>
           )}
         </Button>
