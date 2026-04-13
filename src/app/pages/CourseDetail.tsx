@@ -303,6 +303,31 @@ export function CourseDetail() {
   const [successMsg, setSuccessMsg] = useState("");
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
+  const [courseQuizzes, setCourseQuizzes] = useState<Quiz[]>([]);
+  const [courseProjects, setCourseProjects] = useState<Project[]>([]);
+  const [courseProjectSubmissions, setCourseProjectSubmissions] = useState<ProjectSubmission[]>([]);
+  const [isCourseContentLoading, setIsCourseContentLoading] = useState(false);
+  const [contentActionBusy, setContentActionBusy] = useState(false);
+
+  const [showLessonCreator, setShowLessonCreator] = useState(false);
+  const [newLessonForm, setNewLessonForm] = useState<NewLessonForm>(defaultLessonForm);
+  const [isUploadingLessonResources, setIsUploadingLessonResources] = useState(false);
+  const lessonResourceInputRef = useRef<HTMLInputElement | null>(null);
+
+  const [quizForm, setQuizForm] = useState<CourseQuizForm>(defaultQuizForm);
+  const [questionQuizId, setQuestionQuizId] = useState("");
+  const [quizQuestionForm, setQuizQuestionForm] = useState<CourseQuizQuestionForm>(defaultQuestionForm);
+  const [quizMode, setQuizMode] = useState<"list" | "taking" | "results">("list");
+  const [activeQuiz, setActiveQuiz] = useState<Quiz | null>(null);
+  const [activeQuizQuestionIndex, setActiveQuizQuestionIndex] = useState(0);
+  const [quizAnswerMap, setQuizAnswerMap] = useState<Record<number, string | number>>({});
+  const [quizTimeLeft, setQuizTimeLeft] = useState(0);
+  const [quizResult, setQuizResult] = useState<QuizResultItem | null>(null);
+
+  const [projectForm, setProjectForm] = useState<CourseProjectForm>(defaultProjectForm);
+  const [projectSubmissionDrafts, setProjectSubmissionDrafts] = useState<Record<string, { repoUrl: string; liveUrl: string; comments: string }>>({});
+  const [gradingDrafts, setGradingDrafts] = useState<Record<string, { grade: string; feedback: string }>>({});
+
   useEffect(() => {
     if (id === "new") return;
 
