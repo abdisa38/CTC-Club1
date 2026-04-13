@@ -11,7 +11,7 @@ const COLORS = ['#10b981', '#6366f1', '#ef4444'];
 
 const formatCurrency = (value: number) => new Intl.NumberFormat('en-US', {
   style: 'currency',
-  currency: 'USD',
+  currency: 'ETB',
   maximumFractionDigits: 0,
 }).format(Number.isFinite(value) ? value : 0);
 
@@ -93,18 +93,6 @@ export function InstructorAnalytics() {
     return filtered.length > 0 ? filtered : analytics.trends;
   }, [analytics, timeRange]);
 
-  const rangeTotals = useMemo(() => {
-    return trendData.reduce(
-      (acc, item) => {
-        acc.revenue += item.revenue || 0;
-        acc.enrollments += item.enrollments || 0;
-        acc.completions += item.completions || 0;
-        return acc;
-      },
-      { revenue: 0, enrollments: 0, completions: 0 },
-    );
-  }, [trendData]);
-
   const progressStatus = useMemo(() => {
     if (!analytics?.progressStatus || analytics.progressStatus.length === 0) {
       return [
@@ -159,11 +147,10 @@ export function InstructorAnalytics() {
     URL.revokeObjectURL(url);
   };
 
-  const showAllRange = timeRange === 'all';
-  const summaryRevenue = showAllRange ? (analytics?.summary.totalRevenue || 0) : rangeTotals.revenue;
-  const summaryEnrollments = showAllRange ? (analytics?.summary.totalEnrollments || 0) : rangeTotals.enrollments;
-  const summaryCompletions = showAllRange ? (analytics?.summary.courseCompletions || 0) : rangeTotals.completions;
-  const summaryLabel = showAllRange ? 'All time' : 'Selected range';
+  const summaryRevenue = analytics?.summary.totalRevenue || 0;
+  const summaryEnrollments = analytics?.summary.totalEnrollments || 0;
+  const summaryCompletions = analytics?.summary.courseCompletions || 0;
+  const summaryLabel = 'All time';
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-10">
@@ -284,19 +271,26 @@ export function InstructorAnalytics() {
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                       <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                      <YAxis yAxisId="left" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
+                      <YAxis
+                        yAxisId="left"
+                        stroke="#94a3b8"
+                        fontSize={12}
+                        tickLine={false}
+                        axisLine={false}
+                        tickFormatter={(value) => formatNumber(value)}
+                      />
                       <YAxis yAxisId="right" orientation="right" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
                       <RechartsTooltip
                         contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                         formatter={(value: number, name: string) => {
-                          if (name === 'Revenue ($)') {
+                          if (name === 'Revenue (ETB)') {
                             return [formatCurrency(value), name];
                           }
                           return [formatNumber(value), name];
                         }}
                       />
                       <Legend verticalAlign="top" height={36}/>
-                      <Area yAxisId="left" type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" name="Revenue ($)" />
+                      <Area yAxisId="left" type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" name="Revenue (ETB)" />
                       <Area yAxisId="right" type="monotone" dataKey="enrollments" stroke="#6366f1" strokeWidth={2} fillOpacity={1} fill="url(#colorStudents)" name="New Enrollments" />
                     </AreaChart>
                   </ResponsiveContainer>

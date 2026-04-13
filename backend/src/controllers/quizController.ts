@@ -393,15 +393,33 @@ export const getQuizResults = asyncHandler(async (req: AuthRequest, res: Respons
 });
 
 export const getQuizzes = asyncHandler(async (req: AuthRequest, res: Response) => {
-    let filter: any = { isDeleted: false };
-    if (req.user.role === 'student') {
-        filter.isPublished = true;
-    } else if (req.user.role === 'instructor') {
-        const instructorCourses = await Course.find({ instructor: req.user._id }).select('_id');
-        filter.course = { $in: instructorCourses.map(c => c._id) };
+  const requestedCourseId = typeof req.query.courseId === 'string' ? req.query.courseId : '';
+  let filter: any = { isDeleted: false };
+
+  if (requestedCourseId) {
+    filter.course = requestedCourseId;
+  }
+
+  if (req.user.role === 'student') {
+    filter.isPublished = true;
+  } else if (req.user.role === 'instructor') {
+    const instructorCourses = await Course.find({ instructor: req.user._id, isDeleted: false }).select('_id');
+    const instructorCourseIds = instructorCourses.map((course) => course._id.toString());
+
+    if (requestedCourseId) {
+      if (!instructorCourseIds.includes(requestedCourseId)) {
+        filter.course = null;
+      }
+    } else {
+      filter.course = { $in: instructorCourses.map((course) => course._id) };
     }
-    const quizzes = await Quiz.find(filter).populate('course', 'title coverImage').sort({ createdAt: -1 });
-    sendSuccess(res, quizzes);
+  }
+
+  const quizzes = await Quiz.find(filter)
+    .populate('course', 'title coverImage')
+    .sort({ createdAt: -1 });
+
+  sendSuccess(res, quizzes);
 });
 
 export const getQuizById = asyncHandler(async (req: AuthRequest, res: Response) => {
