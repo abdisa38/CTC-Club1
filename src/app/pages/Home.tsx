@@ -234,8 +234,10 @@ export function Home() {
             instructor: c.instructor?.name || 'Instructor',
             rating: toNumber(c.rating, 0),
             numReviews: toNumber(c.numReviews, 0),
-            students: `${Array.isArray(c.students) ? c.students.length : 0}`,
+            students: Array.isArray(c.students) ? c.students.length : 0,
             category: c.category || 'Tech',
+            price: toNumber(c.price, 0),
+            currency: String(c.currency || 'ETB'),
             image: c.coverImage || 'https://images.unsplash.com/photo-1637937459053-c788742455be?w=600&h=340&fit=crop',
             description: c.shortDescription || c.description || ''
           }));
@@ -310,6 +312,10 @@ export function Home() {
       title: course.title,
       tech: `${course.category} • ${course.instructor}`,
       image: course.image,
+      price: Number(course.price || 0),
+      currency: String(course.currency || 'ETB'),
+      rating: Number(course.rating || 0),
+      numReviews: Number(course.numReviews || 0),
       href: typeof course.id === 'string' ? `/app/courses/${course.id}` : '/app/courses',
     }));
   }, [realCourses]);
