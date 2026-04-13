@@ -60,7 +60,7 @@ export function PublicLayout() {
   const navLinks = [
     { label: "Home", to: "/" },
     { label: "Courses", to: "/app/courses" },
-    { label: "Resources", to: "/app/resources" },
+    { label: "Learning", to: "/app/courses" },
     { label: "Community", to: "/app/community" },
     { label: "About", to: "/features" },
   ];

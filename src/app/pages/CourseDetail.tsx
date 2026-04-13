@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useLocation, useNavigate, useParams } from "react-router";
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
 import { Progress } from "../components/ui/Progress";
@@ -260,6 +260,7 @@ const defaultProjectForm: CourseProjectForm = {
 
 export function CourseDetail() {
   const { id } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const { role, user } = useAuth();
 
@@ -442,6 +443,22 @@ export function CourseDetail() {
       setActiveTab("overview");
     }
   }, [activeTab, canAccessLessons]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const requestedTab = params.get("tab");
+    if (!requestedTab) {
+      return;
+    }
+
+    const availableTabs = canAccessLessons
+      ? ["overview", "resources", "quizzes", "projects", "discussion"]
+      : ["overview"];
+
+    if (availableTabs.includes(requestedTab) && requestedTab !== activeTab) {
+      setActiveTab(requestedTab);
+    }
+  }, [location.search, canAccessLessons, activeTab]);
 
   useEffect(() => {
     if (!id || !canAccessLessons) {

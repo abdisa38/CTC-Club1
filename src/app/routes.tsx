@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from "react-router";
+import { createBrowserRouter, Navigate, useParams } from "react-router";
 import { AppLayout } from "./components/layouts/AppLayout";
 import { PublicLayout } from "./components/layouts/PublicLayout";
 
@@ -8,6 +8,11 @@ const lazyComponent = <T extends Record<string, any>>(loader: () => Promise<T>, 
     return { Component: module[exportName] };
   };
 };
+
+function RedirectLegacyInstructorLessons() {
+  const { id } = useParams();
+  return <Navigate to={id ? `/app/courses/${id}` : "/app/instructor/courses"} replace />;
+}
 
 export const router = createBrowserRouter([
   {
@@ -34,15 +39,15 @@ export const router = createBrowserRouter([
       { path: "instructor/courses", lazy: lazyComponent(() => import("./pages/instructor/InstructorCourses"), "InstructorCourses") },
       { path: "instructor/courses/new", lazy: lazyComponent(() => import("./pages/instructor/CourseEditor"), "CourseEditor") },
       { path: "instructor/courses/:id/edit", lazy: lazyComponent(() => import("./pages/instructor/CourseEditor"), "CourseEditor") },
-      { path: "instructor/courses/:id/lessons", lazy: lazyComponent(() => import("./pages/instructor/InstructorLessons"), "InstructorLessons") },
-      { path: "instructor/quizzes", lazy: lazyComponent(() => import("./pages/instructor/InstructorQuizzes"), "InstructorQuizzes") },
+      { path: "instructor/courses/:id/lessons", element: <RedirectLegacyInstructorLessons /> },
+      { path: "instructor/quizzes", element: <Navigate to="/app/instructor/courses" replace /> },
       { path: "instructor/comments", lazy: lazyComponent(() => import("./pages/instructor/InstructorComments"), "InstructorComments") },
       { path: "instructor/students", lazy: lazyComponent(() => import("./pages/instructor/InstructorStudents"), "InstructorStudents") },
-      { path: "instructor/projects", lazy: lazyComponent(() => import("./pages/instructor/InstructorProjects"), "InstructorProjects") },
+      { path: "instructor/projects", element: <Navigate to="/app/instructor/courses" replace /> },
       { path: "instructor/analytics", lazy: lazyComponent(() => import("./pages/instructor/InstructorAnalytics"), "InstructorAnalytics") },
-      { path: "resources", lazy: lazyComponent(() => import("./pages/Resources"), "Resources") },
-      { path: "quizzes", lazy: lazyComponent(() => import("./pages/Quizzes"), "Quizzes") },
-      { path: "projects", lazy: lazyComponent(() => import("./pages/Projects"), "Projects") },
+      { path: "resources", element: <Navigate to="/app/courses" replace /> },
+      { path: "quizzes", element: <Navigate to="/app/courses" replace /> },
+      { path: "projects", element: <Navigate to="/app/courses" replace /> },
       { path: "support", lazy: lazyComponent(() => import("./pages/Support"), "Support") },
       { path: "community", lazy: lazyComponent(() => import("./pages/Community"), "Community") },
       { path: "leaderboard", lazy: lazyComponent(() => import("./pages/Leaderboard"), "Leaderboard") },

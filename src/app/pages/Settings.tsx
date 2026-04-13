@@ -778,7 +778,7 @@ export function Settings({ embedded = false }: { embedded?: boolean }) {
                     Recent Project Submissions
                   </CardTitle>
                   <Button variant="ghost" size="sm" asChild>
-                    <Link to="/app/projects">View All</Link>
+                    <Link to="/app/courses">View Courses</Link>
                   </Button>
                 </CardHeader>
                 <CardContent className="space-y-3">

@@ -284,7 +284,7 @@ export const submitProject = asyncHandler(async (req: AuthRequest, res: Response
         message: `${req.user.name || 'A student'} updated submission for "${project.title}"`,
         type: 'message',
         relatedId: project._id as any,
-        link: '/app/instructor/projects',
+        link: `/app/courses/${course._id.toString()}?tab=projects`,
       });
     }
 
@@ -310,7 +310,7 @@ export const submitProject = asyncHandler(async (req: AuthRequest, res: Response
       message: `${req.user.name || 'A student'} submitted "${project.title}" for review`,
       type: 'message',
       relatedId: project._id as any,
-      link: '/app/instructor/projects',
+      link: `/app/courses/${course._id.toString()}?tab=projects`,
     });
   }
 
@@ -367,7 +367,7 @@ export const reviewProject = asyncHandler(async (req: AuthRequest, res: Response
     message: `Your submission for "${project.title}" has been graded${grade !== undefined ? ` (${grade}/${project.maxPoints || 100})` : ''}`,
     type: 'project_graded',
     relatedId: submission.project as any,
-    link: '/app/projects',
+    link: `/app/courses/${submission.course.toString()}?tab=projects`,
   });
 
   sendSuccess(res, submission, { message: 'Project reviewed successfully' });

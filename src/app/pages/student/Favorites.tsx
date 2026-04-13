@@ -249,8 +249,8 @@ export function Favorites() {
               icon={<FileText className="mx-auto h-12 w-12 text-slate-400 mb-4" />}
               title="No saved resources"
               subtitle="Resources from your lessons will appear here."
-              ctaHref="/app/resources"
-              ctaLabel="Browse Resources"
+              ctaHref="/app/courses"
+              ctaLabel="Browse Courses"
             />
           ) : (
             <div className="space-y-3">

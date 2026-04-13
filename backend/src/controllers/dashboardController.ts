@@ -1165,14 +1165,18 @@ export const getInstructorGlobalSearch = asyncHandler(async (req: AuthRequest, r
             type: 'project',
             title: item.title,
             subtitle: `${item.isPublished ? 'Published' : 'Draft'} • ${(item.course as any)?.title || 'Course Project'}`,
-            href: '/app/instructor/projects',
+            href: (item.course as any)?._id
+                ? `/app/courses/${(item.course as any)._id.toString()}?tab=projects`
+                : '/app/instructor/courses',
         })),
         ...submissions.map((item: any) => ({
             id: item._id.toString(),
             type: 'submission',
             title: `${item.student?.name || 'Student'} • ${item.project?.title || 'Project'}`,
             subtitle: `Submission • ${new Date(item.updatedAt).toLocaleString()}`,
-            href: '/app/instructor/projects',
+            href: item.course
+                ? `/app/courses/${item.course.toString()}?tab=projects`
+                : '/app/instructor/courses',
         })),
         ...discussions.map((item: any) => ({
             id: item._id.toString(),
@@ -1313,7 +1317,9 @@ export const getStudentGlobalSearch = asyncHandler(async (req: AuthRequest, res:
         type: 'project',
         title: item.title,
         subtitle: `${item.course?.title || 'Course'}${item.deadline ? ` • Due ${new Date(item.deadline).toLocaleDateString()}` : ''}`,
-        href: '/app/projects',
+        href: item.course?._id
+            ? `/app/courses/${item.course._id.toString()}?tab=projects`
+            : '/app/courses',
     }));
 
     const resourceItems = lessonsRaw
@@ -1341,7 +1347,9 @@ export const getStudentGlobalSearch = asyncHandler(async (req: AuthRequest, res:
                     type: 'resource',
                     title: attachment.title || lesson.title,
                     subtitle: `${lesson.course?.title || 'Course'} • ${attachment.fileType || 'file'}`,
-                    href: '/app/resources',
+                    href: lesson.course?._id
+                        ? `/app/courses/${lesson.course._id.toString()}?tab=resources`
+                        : '/app/courses',
                 }));
         })
         .slice(0, 6);

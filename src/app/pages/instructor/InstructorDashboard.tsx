@@ -167,9 +167,9 @@ export function InstructorDashboard({ metrics }: { metrics?: any }) {
               ))
             )}
             <Button variant="outline" className="w-full mt-2" asChild>
-              <Link to="/app/instructor/projects">
+              <Link to="/app/instructor/courses">
                 <MessageSquare className="h-4 w-4 mr-2" />
-                Review Projects
+                Open Course Workspaces
               </Link>
             </Button>
           </CardContent>
