@@ -581,8 +581,8 @@ export function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             {[
-              { title: "Frontend Developer", steps: ["HTML", "CSS", "JavaScript", "React", "Bootstrap"], color: "from-blue-500 to-indigo-600", icon: Monitor },
-              { title: "Backend Developer", steps: ["Node.js", "Express.js", "MySQL", "REST API"], color: "from-emerald-500 to-teal-600", icon: Terminal },
+              { title: "Frontend Developer", steps: ["HTML", "CSS", "JavaScript", "React", "Bootstrap"], color: "from-blue-500 to-indigo-600", icon: Monitor, price: 0, currency: "ETB" },
+              { title: "Backend Developer", steps: ["Node.js", "Express.js", "MySQL", "REST API"], color: "from-emerald-500 to-teal-600", icon: Terminal, price: 200, currency: "ETB" },
             ].map((path, i) => (
               <AnimatedSection key={i} delay={i * 0.12}>
                 <PremiumCard className="overflow-hidden">
@@ -591,6 +591,11 @@ export function Home() {
                     <h3 className="text-xl font-bold text-white">Become a {path.title}</h3>
                   </div>
                   <div className="p-6">
+                    <div className="mb-4">
+                      <Badge className={`text-[11px] font-bold border-0 shadow-sm ${path.price > 0 ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
+                        {path.price > 0 ? `PAID ${path.price.toFixed(2)} ${path.currency}` : "FREE"}
+                      </Badge>
+                    </div>
                     <div className="space-y-3">
                       {path.steps.map((step, j) => (
                         <div key={j} className="flex items-center gap-3">
@@ -601,8 +606,11 @@ export function Home() {
                         </div>
                       ))}
                     </div>
-                    <Button className="w-full mt-6 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 shadow-sm shadow-indigo-500/20" asChild>
-                      <Link to="/register">Start Path <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                    <Button
+                      className={`w-full mt-6 h-11 rounded-xl text-[13px] font-bold ${path.price > 0 ? "bg-gradient-to-r from-rose-600 to-orange-500 hover:from-rose-700 hover:to-orange-600 text-white" : "bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white"}`}
+                      asChild
+                    >
+                      <Link to="/app/courses">{path.price > 0 ? `Pay ${path.price.toFixed(2)} ${path.currency}` : "Enroll Free"} <ArrowRight className="ml-2 h-4 w-4" /></Link>
                     </Button>
                   </div>
                 </PremiumCard>

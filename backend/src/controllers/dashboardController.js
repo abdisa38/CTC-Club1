@@ -112,6 +112,34 @@ const buildAdminMetrics = async () => {
         courseModel_1.default.find({ isDeleted: false }).sort({ createdAt: -1 }).limit(8).populate('instructor', 'name'),
         ticketModel_1.default.find({ isDeleted: false }).sort({ createdAt: -1 }).limit(8).populate('user', 'name'),
     ]);
+    const ratingAggregate = await courseModel_1.default.aggregate([
+        { $match: { isDeleted: false, status: 'published' } },
+        {
+            $group: {
+                _id: null,
+                totalReviews: { $sum: { $ifNull: ['$numReviews', 0] } },
+                weightedRatingTotal: {
+                    $sum: {
+                        $multiply: [
+                            { $ifNull: ['$rating', 0] },
+                            { $ifNull: ['$numReviews', 0] },
+                        ],
+                    },
+                },
+                ratedCourses: {
+                    $sum: {
+                        $cond: [{ $gt: [{ $ifNull: ['$numReviews', 0] }, 0] }, 1, 0],
+                    },
+                },
+            },
+        },
+    ]);
+    const totalReviews = Number(ratingAggregate[0]?.totalReviews || 0);
+    const weightedRatingTotal = Number(ratingAggregate[0]?.weightedRatingTotal || 0);
+    const ratedCourses = Number(ratingAggregate[0]?.ratedCourses || 0);
+    const avgCourseRating = totalReviews > 0
+        ? Number((weightedRatingTotal / totalReviews).toFixed(2))
+        : 0;
     const activityLogs = [
         ...recentUsers.map((u) => ({
             id: `user-${u._id}`,
@@ -140,6 +168,11 @@ const buildAdminMetrics = async () => {
     return {
         totals: { users: totalUsers, courses: totalCourses },
         openTickets,
+        ratings: {
+            avgCourseRating,
+            totalReviews,
+            ratedCourses,
+        },
         // Real collected revenue requires payment transaction tracking.
         collectedRevenue: 0,
         totalRevenue: 0,
@@ -164,13 +197,22 @@ exports.getDashboardMetrics = (0, express_async_handler_1.default)(async (req, r
     if (role === 'instructor') {
         const totalCourses = await courseModel_1.default.countDocuments({ instructor: req.user._id, isDeleted: false });
         // Sum total students across all instructor courses
-        const instructorCourses = await courseModel_1.default.find({ instructor: req.user._id, isDeleted: false }).select('students price title');
+        const instructorCourses = await courseModel_1.default.find({ instructor: req.user._id, isDeleted: false }).select('students price title rating numReviews');
         let totalStudents = 0;
         let totalRevenue = 0;
+        let totalReviews = 0;
+        let weightedRatingTotal = 0;
         for (let c of instructorCourses) {
             totalStudents += c.students.length;
             totalRevenue += (c.students.length * c.price);
+            const reviewCount = Number(c.numReviews || 0);
+            const ratingValue = Number(c.rating || 0);
+            totalReviews += reviewCount;
+            weightedRatingTotal += (reviewCount * ratingValue);
         }
+        const avgCourseRating = totalReviews > 0
+            ? Number((weightedRatingTotal / totalReviews).toFixed(2))
+            : 0;
         // Submissions waiting to be graded
         const pendingSubmissions = await projectModel_1.ProjectSubmission.countDocuments({
             course: { $in: instructorCourses.map(c => c._id) },
@@ -187,12 +229,16 @@ exports.getDashboardMetrics = (0, express_async_handler_1.default)(async (req, r
             totalCourses,
             totalStudents,
             totalRevenue,
+            avgCourseRating,
+            totalReviews,
             pendingSubmissions,
             latestSubmissions,
             coursePerformance: instructorCourses.map((course) => ({
                 name: course.title,
                 students: course.students.length,
                 revenue: course.students.length * course.price,
+                rating: Number(course.rating || 0),
+                numReviews: Number(course.numReviews || 0),
             })),
         });
         return;
