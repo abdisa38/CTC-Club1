@@ -481,7 +481,7 @@ export function Home() {
       </section>
 
       {/* ═══ 2. TRUSTED BY / STATS ═══ */}
-      <section className="py-20 bg-slate-50/50 dark:bg-[#0c0f1a] border-y border-slate-100 dark:border-white/[0.04]">
+      <section className="py-20 bg-transparent border-y border-slate-100 dark:border-white/[0.04]">
         <div className="max-w-[1200px] mx-auto px-6 lg:px-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 lg:gap-12">
             {[
@@ -506,7 +506,7 @@ export function Home() {
       </section>
 
       {/* ═══ 3. FEATURE HIGHLIGHTS ═══ */}
-      <section id="features" className="py-24 lg:py-32 bg-white dark:bg-[#0c0f1a]">
+      <section id="features" className="py-24 lg:py-32 bg-transparent">
         <div className="max-w-[1200px] mx-auto px-6 lg:px-8">
           <AnimatedSection>
             <SectionHeader
@@ -534,7 +534,7 @@ export function Home() {
       </section>
 
       {/* ═══ 4. COURSE DISCOVERY ═══ */}
-      <section className="py-24 lg:py-32 bg-slate-50/50 dark:bg-[#0a0d17]">
+      <section className="py-24 lg:py-32 bg-transparent">
         <div className="max-w-[1200px] mx-auto px-6 lg:px-8">
           <AnimatedSection>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-14 gap-6">
@@ -568,7 +568,7 @@ export function Home() {
       </section>
 
       {/* ═══ 5. LEARNING PATHS ═══ */}
-      <section className="py-24 lg:py-32 bg-white dark:bg-[#0c0f1a]">
+      <section className="py-24 lg:py-32 bg-transparent">
         <div className="max-w-[1200px] mx-auto px-6 lg:px-8">
           <AnimatedSection>
             <SectionHeader
@@ -622,7 +622,7 @@ export function Home() {
       </section>
 
       {/* ═══ 6. HOW IT WORKS ═══ */}
-      <section className="py-24 lg:py-32 bg-slate-50/50 dark:bg-[#0a0d17]">
+      <section className="py-24 lg:py-32 bg-transparent">
         <div className="max-w-[1200px] mx-auto px-6 lg:px-8">
           <AnimatedSection>
             <SectionHeader
@@ -658,7 +658,7 @@ export function Home() {
       </section>
 
       {/* ═══ 7. TESTIMONIALS ═══ */}
-      <section className="py-24 lg:py-32 bg-white dark:bg-[#0c0f1a]">
+      <section className="py-24 lg:py-32 bg-transparent">
         <div className="max-w-[1200px] mx-auto px-6 lg:px-8">
           <AnimatedSection>
             <SectionHeader
@@ -695,7 +695,7 @@ export function Home() {
       </section>
 
       {/* ═══ 8. STUDENT PROJECTS ═══ */}
-      <section className="py-24 lg:py-32 bg-slate-50/50 dark:bg-[#0a0d17]">
+      <section className="py-24 lg:py-32 bg-transparent">
         <div className="max-w-[1200px] mx-auto px-6 lg:px-8">
           <AnimatedSection>
             <SectionHeader
@@ -792,7 +792,7 @@ export function Home() {
       </section>
 
       {/* ═══ 10. SUPPORT ═══ */}
-      <section className="py-24 lg:py-32 bg-white dark:bg-[#0c0f1a]">
+      <section className="py-24 lg:py-32 bg-transparent">
         <div className="max-w-[1200px] mx-auto px-6 lg:px-8">
           <AnimatedSection>
             <SectionHeader
@@ -828,7 +828,7 @@ export function Home() {
       </section>
 
       {/* ═══ 11. EVENTS ═══ */}
-      <section id="events" className="py-24 lg:py-32 bg-slate-50/50 dark:bg-[#0a0d17]">
+      <section id="events" className="py-24 lg:py-32 bg-transparent">
         <div className="max-w-[1200px] mx-auto px-6 lg:px-8">
           <AnimatedSection>
             <SectionHeader
@@ -866,7 +866,7 @@ export function Home() {
       </section>
 
       {/* ═══ 12. PRICING ═══ */}
-      <section id="pricing" className="py-24 lg:py-32 bg-white dark:bg-[#0c0f1a]">
+      <section id="pricing" className="py-24 lg:py-32 bg-transparent">
         <div className="max-w-[1200px] mx-auto px-6 lg:px-8">
           <AnimatedSection>
             <SectionHeader
@@ -938,7 +938,7 @@ export function Home() {
                 <img src={ctcLogo} alt="CTC Club" className="h-10 w-10 rounded-lg" />
               </div>
               <h2 className="home-display text-3xl sm:text-4xl lg:text-[42px] font-extrabold text-white mb-5 leading-tight tracking-tight">
-                Start Your Journey Today<br />with CTC Club
+                Start Your Tech Journey Today
               </h2>
               <p className="home-copy text-cyan-50/85 text-lg mb-10 leading-relaxed">
                 Be among the first students building tech careers with us.
