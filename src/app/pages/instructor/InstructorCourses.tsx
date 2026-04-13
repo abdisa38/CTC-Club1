@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
-import { PlusCircle, Search, Edit, Trash2, MoreVertical, Eye, FileVideo, Users, Loader2 } from "lucide-react";
+import { PlusCircle, Search, Edit, Trash2, MoreVertical, Eye, Users, Loader2 } from "lucide-react";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
@@ -83,7 +83,7 @@ export function InstructorCourses() {
           <p className="text-slate-500 dark:text-slate-400">
             {isAdminView
               ? "Manage all instructor courses across the platform."
-              : "Manage your created courses, lessons, and publication status."}
+              : "Manage your courses and build lessons, resources, quizzes, and projects directly inside each course."}
           </p>
         </div>
         <Button asChild className="bg-emerald-600 hover:bg-emerald-700 text-white">
@@ -155,13 +155,7 @@ export function InstructorCourses() {
                             <DropdownMenuItem asChild>
                               <Link to={`/app/courses/${course._id}`} className="cursor-pointer">
                                 <Eye className="mr-2 h-4 w-4 text-slate-500" />
-                                Preview
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
-                              <Link to={`/app/instructor/courses/${course._id}/lessons`} className="cursor-pointer">
-                                <FileVideo className="mr-2 h-4 w-4 text-slate-500" />
-                                Manage Lessons
+                                Open Course Workspace
                               </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem
@@ -201,7 +195,7 @@ export function InstructorCourses() {
                       </div>
                       <div className="flex items-end justify-end">
                         <Button variant="outline" asChild>
-                          <Link to={`/app/instructor/courses/${course._id}/edit`}>Edit Content</Link>
+                          <Link to={`/app/courses/${course._id}`}>Manage In Course</Link>
                         </Button>
                       </div>
                     </div>
