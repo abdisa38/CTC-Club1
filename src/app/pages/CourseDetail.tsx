@@ -40,6 +40,48 @@ type CourseResource = {
   lessonTitle: string;
 };
 
+type NewLessonForm = {
+  title: string;
+  videoUrl: string;
+  duration: string;
+  isPublished: boolean;
+  attachments: Array<{
+    title: string;
+    url: string;
+    fileType: string;
+  }>;
+};
+
+type CourseQuizForm = {
+  title: string;
+  description: string;
+  passingScore: string;
+  timeLimit: string;
+  maxAttempts: string;
+  xpReward: string;
+  isPublished: boolean;
+};
+
+type CourseQuizQuestionForm = {
+  questionText: string;
+  type: "multiple-choice" | "true-false" | "short-answer";
+  options: string[];
+  correctAnswerIndex: string;
+  correctAnswerText: string;
+  points: string;
+};
+
+type CourseProjectForm = {
+  title: string;
+  description: string;
+  instructions: string;
+  requirements: string;
+  xpReward: string;
+  maxPoints: string;
+  deadline: string;
+  isPublished: boolean;
+};
+
 const getEmbedVideoUrl = (url: string): string | null => {
   try {
     const parsed = new URL(url);
