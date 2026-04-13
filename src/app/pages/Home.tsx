@@ -67,7 +67,7 @@ function SectionHeader({ badge, badgeColor = "indigo", title, highlight, descrip
   };
   return (
     <div className="text-center max-w-3xl mx-auto mb-16">
-      <Badge variant="outline" className={`mb-5 py-1 px-3.5 text-xs font-semibold border ${colorMap[badgeColor] || colorMap.indigo}`}>
+      <Badge variant="outline" className="border-white/20 bg-white/5 hover:bg-white/10 text-white shadow-none" className={`mb-5 py-1 px-3.5 text-xs font-semibold border ${colorMap[badgeColor] || colorMap.indigo}`}>
         {badge}
       </Badge>
       <h2 className="home-display text-3xl sm:text-4xl lg:text-[42px] font-extrabold tracking-tight text-white leading-tight">
@@ -358,7 +358,7 @@ export function Home() {
             {/* Left content */}
             <div className="flex-1 text-center lg:text-left max-w-2xl lg:max-w-none">
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-                <Badge variant="outline" className="mb-8 py-1.5 px-4 text-[13px] font-semibold bg-cyan-50/90 text-cyan-700 border-cyan-200/70 dark:bg-cyan-500/10 dark:text-cyan-300 dark:border-cyan-500/20 backdrop-blur-sm">
+                <Badge variant="outline" className="border-white/20 bg-white/5 hover:bg-white/10 text-white shadow-none" className="mb-8 py-1.5 px-4 text-[13px] font-semibold bg-cyan-50/90 text-cyan-700 border-cyan-200/70 dark:bg-cyan-500/10 dark:text-cyan-300 dark:border-cyan-500/20 backdrop-blur-sm">
                   <Sparkles className="h-3.5 w-3.5 mr-1.5" />
                   Spring 2026 Registration Open
                 </Badge>
@@ -389,7 +389,7 @@ export function Home() {
                     Start Learning <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
-                <Button size="lg" variant="outline" className="w-full sm:w-auto px-8 h-12 text-[15px] font-semibold border-white/20 rounded-xl bg-white/5 hover:bg-white/10 transition-all duration-300 text-white" asChild>
+                <Button size="lg" variant="outline" className="border-white/20 bg-white/5 hover:bg-white/10 text-white shadow-none" className="w-full sm:w-auto px-8 h-12 text-[15px] font-semibold border-white/20 rounded-xl bg-white/5 hover:bg-white/10 transition-all duration-300 text-white" asChild>
                   <Link to="/app/courses">Explore Courses</Link>
                 </Button>
               </motion.div>
@@ -413,7 +413,7 @@ export function Home() {
                 {showSearchSuggestions && searchSuggestions.length > 0 && (
                   <div className="absolute top-full mt-2 w-full bg-white/95 dark:bg-[#131827]/95 border border-slate-200/70 dark:border-white/10 rounded-xl shadow-lg shadow-black/10 z-50 overflow-hidden backdrop-blur-md">
                     {searchSuggestions.map((s, i) => (
-                      <Link key={i} to="/app/courses" className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors text-sm text-slate-300">
+                      <Link key={i} to="/app/courses" className="flex items-center gap-3 px-4 py-3 hover:bg-white/10 bg-white/5 border-white/10 text-white transition-colors text-sm text-slate-300">
                         <Search className="h-3.5 w-3.5 text-slate-400" />
                         {s}
                       </Link>
@@ -539,13 +539,13 @@ export function Home() {
           <AnimatedSection>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-14 gap-6">
               <div>
-                <Badge variant="outline" className="mb-5 py-1 px-3.5 text-xs font-semibold bg-sky-50 text-sky-700 border-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:border-sky-500/20">
+                <Badge variant="outline" className="border-white/20 bg-white/5 hover:bg-white/10 text-white shadow-none" className="mb-5 py-1 px-3.5 text-xs font-semibold bg-sky-50 text-sky-700 border-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:border-sky-500/20">
                   Top Courses
                 </Badge>
                 <h2 className="home-display text-3xl sm:text-4xl font-extrabold tracking-tight text-white">Featured Courses</h2>
                 <p className="home-copy mt-3 text-base text-slate-300">Handpicked courses to accelerate your learning journey.</p>
               </div>
-              <Button variant="outline" className="rounded-xl font-semibold border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5" asChild>
+              <Button variant="outline" className="border-white/20 bg-white/5 hover:bg-white/10 text-white shadow-none" className="rounded-xl font-semibold border-slate-200 dark:border-white/10 hover:bg-white/10 bg-white/5 border-white/10 text-white" asChild>
                 <Link to="/app/courses">View All <ArrowRight className="ml-2 h-4 w-4" /></Link>
               </Button>
             </div>
@@ -673,7 +673,7 @@ export function Home() {
             {communityCards.map((item, i) => (
               <AnimatedSection key={item.id} delay={i * 0.08}>
                 <PremiumCard className="p-6 h-full flex flex-col">
-                  <Badge variant="outline" className="mb-3 w-fit text-[11px] capitalize bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20">
+                  <Badge variant="outline" className="border-white/20 bg-white/5 hover:bg-white/10 text-white shadow-none" className="mb-3 w-fit text-[11px] capitalize bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20">
                     {item.category}
                   </Badge>
                   <h3 className="text-[15px] font-semibold text-white mb-2">{item.title}</h3>
@@ -683,7 +683,7 @@ export function Home() {
                       <p className="text-sm font-semibold text-white">{item.author}</p>
                       <p className="text-[12px] text-slate-300">{item.date}</p>
                     </div>
-                    <Button size="sm" variant="outline" className="h-8 text-[11px]" asChild>
+                    <Button size="sm" variant="outline" className="border-white/20 bg-white/5 hover:bg-white/10 text-white shadow-none" className="h-8 text-[11px]" asChild>
                       <Link to="/app/community">Discuss</Link>
                     </Button>
                   </div>
@@ -730,7 +730,7 @@ export function Home() {
                       </div>
                     </div>
                     <div className="flex gap-2.5">
-                      <Button size="sm" variant="outline" className="text-[11px] flex-1 h-8 rounded-lg border-slate-200/60 dark:border-white/10" asChild>
+                      <Button size="sm" variant="outline" className="border-white/20 bg-white/5 hover:bg-white/10 text-white shadow-none" className="text-[11px] flex-1 h-8 rounded-lg border-white/10 bg-white/5 text-white hover:bg-white/10" asChild>
                         <Link to={p.href}>View Course</Link>
                       </Button>
                       <Button
@@ -817,7 +817,7 @@ export function Home() {
                   </div>
                   <h3 className="text-[15px] font-semibold text-white mb-2">{item.title}</h3>
                   <p className="text-sm text-slate-300 mb-5 leading-relaxed">{item.desc}</p>
-                  <Button variant="outline" size="sm" className="rounded-lg font-semibold border-slate-200/60 dark:border-white/10" asChild>
+                  <Button variant="outline" className="border-white/20 bg-white/5 hover:bg-white/10 text-white shadow-none" size="sm" className="rounded-lg font-semibold border-slate-200/60 dark:border-white/10" asChild>
                     <Link to="/app/support">{item.cta}</Link>
                   </Button>
                 </PremiumCard>
@@ -847,7 +847,7 @@ export function Home() {
               eventCards.map((e, i) => (
                 <AnimatedSection key={e.id} delay={i * 0.08}>
                   <PremiumCard className="p-6">
-                    <Badge variant="outline" className="mb-4 text-[11px] font-semibold bg-sky-50 text-sky-700 border-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:border-sky-500/20 capitalize">{e.type}</Badge>
+                    <Badge variant="outline" className="border-white/20 bg-white/5 hover:bg-white/10 text-white shadow-none" className="mb-4 text-[11px] font-semibold bg-sky-50 text-sky-700 border-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:border-sky-500/20 capitalize">{e.type}</Badge>
                     <h3 className="text-[15px] font-semibold text-white mb-2">{e.title}</h3>
                     <p className="text-sm text-slate-300 mb-4 leading-relaxed">{e.desc}</p>
                     <div className="flex items-center gap-4 text-[12px] text-slate-400 mb-5">
@@ -893,13 +893,13 @@ export function Home() {
                     </li>
                   ))}
                 </ul>
-                <Button className="w-full rounded-xl h-11 font-semibold" variant="outline" asChild>
+                <Button className="w-full rounded-xl h-11 font-semibold" variant="outline" className="border-white/20 bg-white/5 hover:bg-white/10 text-white shadow-none" asChild>
                   <Link to="/register">Start Frontend Free</Link>
                 </Button>
               </PremiumCard>
             </AnimatedSection>
             <AnimatedSection delay={0.12}>
-              <div className="rounded-2xl border-2 border-sky-500/30 bg-gradient-to-b from-sky-50/50 to-white dark:from-sky-500/5 dark:to-[#0c0f1a] p-8 relative h-full shadow-lg shadow-sky-500/10">
+              <div className="rounded-2xl border-2 border-sky-500/30 bg-gradient-to-b from-sky-500/5 to-[#0c0f1a] shadow-sky-500/10 p-8 relative h-full shadow-lg shadow-sky-500/10">
                 <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
                   <Badge className="bg-gradient-to-r from-sky-600 to-cyan-500 text-white border-0 px-4 py-1 text-[11px] font-semibold shadow-lg shadow-cyan-500/25">
                     Most Popular
@@ -947,7 +947,7 @@ export function Home() {
                 <Button size="lg" className="bg-white text-slate-900 hover:bg-cyan-50 px-8 h-12 rounded-xl font-semibold shadow-lg shadow-black/10 transition-all duration-300" asChild>
                   <Link to="/register">Register Now <ArrowRight className="ml-2 h-4 w-4" /></Link>
                 </Button>
-                <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10 px-8 h-12 rounded-xl font-semibold backdrop-blur-sm transition-all duration-300" asChild>
+                <Button size="lg" variant="outline" className="border-white/20 bg-white/5 hover:bg-white/10 text-white shadow-none" className="border-white/20 text-white hover:bg-white/10 px-8 h-12 rounded-xl font-semibold backdrop-blur-sm transition-all duration-300" asChild>
                   <Link to="/app/courses">Explore Courses</Link>
                 </Button>
               </div>
