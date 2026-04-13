@@ -434,6 +434,11 @@ export const getQuizById = asyncHandler(async (req: AuthRequest, res: Response) 
         res.status(404);
         throw new Error('Quiz not found');
     }
+
+    if (req.user.role === 'student' && !quizDoc.isPublished) {
+      res.status(403);
+      throw new Error('This quiz is not available yet');
+    }
     
     const quiz = quizDoc.toObject();
     

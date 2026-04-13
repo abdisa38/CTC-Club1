@@ -741,8 +741,8 @@ export const apiService = {
     return pickData<UploadedFile>(res.data);
   },
 
-  async getQuizzes(): Promise<Quiz[]> {
-    const res = await api.get("/quizzes");
+  async getQuizzes(courseId?: string): Promise<Quiz[]> {
+    const res = await api.get("/quizzes", { params: courseId ? { courseId } : undefined });
     return pickData<Quiz[]>(res.data);
   },
 
