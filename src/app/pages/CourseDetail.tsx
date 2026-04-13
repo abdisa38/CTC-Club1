@@ -280,6 +280,7 @@ export function CourseDetail() {
 
   const isInstructor = role === "instructor" || role === "admin";
   const isAdmin = role === "admin";
+  const isStudent = role === "student";
 
   const [activeTab, setActiveTab] = useState("overview");
   const [course, setCourse] = useState<Course | null>(null);
