@@ -25,8 +25,8 @@ export default function App() {
       return;
     }
 
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    root.classList.toggle('dark', prefersDark);
+    // Default to dark mode if no preference saved
+    root.classList.add('dark');
   }, []);
 
   return (
