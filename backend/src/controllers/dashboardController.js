@@ -1028,14 +1028,18 @@ exports.getInstructorGlobalSearch = (0, express_async_handler_1.default)(async (
             type: 'project',
             title: item.title,
             subtitle: `${item.isPublished ? 'Published' : 'Draft'} • ${item.course?.title || 'Course Project'}`,
-            href: '/app/instructor/projects',
+            href: item.course?._id
+                ? `/app/courses/${item.course._id.toString()}?tab=projects`
+                : '/app/instructor/courses',
         })),
         ...submissions.map((item) => ({
             id: item._id.toString(),
             type: 'submission',
             title: `${item.student?.name || 'Student'} • ${item.project?.title || 'Project'}`,
             subtitle: `Submission • ${new Date(item.updatedAt).toLocaleString()}`,
-            href: '/app/instructor/projects',
+            href: item.course
+                ? `/app/courses/${item.course.toString()}?tab=projects`
+                : '/app/instructor/courses',
         })),
         ...discussions.map((item) => ({
             id: item._id.toString(),
@@ -1166,7 +1170,9 @@ exports.getStudentGlobalSearch = (0, express_async_handler_1.default)(async (req
         type: 'project',
         title: item.title,
         subtitle: `${item.course?.title || 'Course'}${item.deadline ? ` • Due ${new Date(item.deadline).toLocaleDateString()}` : ''}`,
-        href: '/app/projects',
+        href: item.course?._id
+            ? `/app/courses/${item.course._id.toString()}?tab=projects`
+            : '/app/courses',
     }));
     const resourceItems = lessonsRaw
         .flatMap((lesson) => {
@@ -1190,7 +1196,9 @@ exports.getStudentGlobalSearch = (0, express_async_handler_1.default)(async (req
             type: 'resource',
             title: attachment.title || lesson.title,
             subtitle: `${lesson.course?.title || 'Course'} • ${attachment.fileType || 'file'}`,
-            href: '/app/resources',
+            href: lesson.course?._id
+                ? `/app/courses/${lesson.course._id.toString()}?tab=resources`
+                : '/app/courses',
         }));
     })
         .slice(0, 6);

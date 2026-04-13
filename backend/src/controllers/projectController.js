@@ -232,7 +232,7 @@ exports.submitProject = (0, express_async_handler_1.default)(async (req, res) =>
                 message: `${req.user.name || 'A student'} updated submission for "${project.title}"`,
                 type: 'message',
                 relatedId: project._id,
-                link: '/app/instructor/projects',
+                link: `/app/courses/${course._id.toString()}?tab=projects`,
             });
         }
         (0, apiResponse_1.sendSuccess)(res, existingSubmission, { message: 'Project submission updated' });
@@ -255,7 +255,7 @@ exports.submitProject = (0, express_async_handler_1.default)(async (req, res) =>
             message: `${req.user.name || 'A student'} submitted "${project.title}" for review`,
             type: 'message',
             relatedId: project._id,
-            link: '/app/instructor/projects',
+            link: `/app/courses/${course._id.toString()}?tab=projects`,
         });
     }
     (0, apiResponse_1.sendSuccess)(res, submission, { statusCode: 201, message: 'Project submitted successfully' });
@@ -301,7 +301,7 @@ exports.reviewProject = (0, express_async_handler_1.default)(async (req, res) =>
         message: `Your submission for "${project.title}" has been graded${grade !== undefined ? ` (${grade}/${project.maxPoints || 100})` : ''}`,
         type: 'project_graded',
         relatedId: submission.project,
-        link: '/app/projects',
+        link: `/app/courses/${submission.course.toString()}?tab=projects`,
     });
     (0, apiResponse_1.sendSuccess)(res, submission, { message: 'Project reviewed successfully' });
 });
