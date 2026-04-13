@@ -219,6 +219,7 @@ type ChapaVerificationSnapshot = {
   chapaReference: string;
   paymentMethod: string;
   paidAt?: Date;
+  
   raw: unknown;
 };
 
