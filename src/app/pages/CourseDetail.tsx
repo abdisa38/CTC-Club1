@@ -496,6 +496,34 @@ export function CourseDetail() {
       }));
   }, [selectedLesson]);
 
+  const projectSubmissionByProjectId = useMemo(() => {
+    const map = new Map<string, ProjectSubmission>();
+
+    courseProjectSubmissions.forEach((submission) => {
+      const projectId = getProjectRefId(submission.project);
+      if (!projectId || map.has(projectId)) {
+        return;
+      }
+
+      map.set(projectId, submission);
+    });
+
+    return map;
+  }, [courseProjectSubmissions]);
+
+  const pendingProjectSubmissions = useMemo(
+    () => courseProjectSubmissions.filter((submission) => submission.status !== "graded"),
+    [courseProjectSubmissions],
+  );
+
+  const activeQuizQuestion = useMemo(() => {
+    if (!activeQuiz || !Array.isArray(activeQuiz.questions)) {
+      return null;
+    }
+
+    return activeQuiz.questions[activeQuizQuestionIndex] || null;
+  }, [activeQuiz, activeQuizQuestionIndex]);
+
   const ratingValue = typeof course?.rating === "number" ? course.rating : 0;
   const reviewCount = typeof course?.numReviews === "number" ? course.numReviews : 0;
 
