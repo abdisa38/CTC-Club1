@@ -66,7 +66,7 @@ export function PublicLayout() {
   ];
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#050117] text-white">
+    <div className="dark flex min-h-screen flex-col bg-[#050117] text-white">
       {!isAuthPage && (
         <header
           className={`sticky top-0 z-50 w-full transition-all duration-500 ${
