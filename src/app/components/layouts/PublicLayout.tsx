@@ -169,7 +169,7 @@ export function PublicLayout() {
       </main>
 
       {!isAuthPage && (
-        <footer className="bg-[#0c0f1a] text-slate-400 pt-20 pb-10 border-t border-slate-800/50">
+        <footer className="bg-[#09090b] text-slate-400 pt-20 pb-10 border-t border-purple-500/10">
           <div className="max-w-[1200px] mx-auto px-6 lg:px-8">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-16 mb-16">
               {/* Brand */}
