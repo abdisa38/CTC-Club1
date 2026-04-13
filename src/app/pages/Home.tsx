@@ -128,7 +128,7 @@ function CourseCard({ course }: { course: FeaturedCourse }) {
       </div>
       <div className="p-5">
         <h3 className="text-[15px] font-semibold text-white mb-1.5 line-clamp-1">{course.title}</h3>
-        <p className="text-[13px] text-slate-500 mb-3">{course.instructor}</p>
+        <p className="text-[13px] text-slate-300 mb-3">{course.instructor}</p>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-1.5 text-[13px]">
             <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
@@ -434,7 +434,7 @@ export function Home() {
                 </div>
                 <div className="text-sm">
                   <span className="font-semibold text-white">{stats.activeStudents.toLocaleString()}+</span>
-                  <span className="text-slate-500 ml-1">students already learning</span>
+                  <span className="text-slate-300 ml-1">students already learning</span>
                 </div>
               </motion.div>
             </div>
@@ -459,7 +459,7 @@ export function Home() {
                   </div>
                   <div>
                     <p className="text-[13px] font-semibold text-white">Course Completed!</p>
-                    <p className="text-[11px] text-slate-500">+250 XP earned</p>
+                    <p className="text-[11px] text-slate-300">+250 XP earned</p>
                   </div>
                 </motion.div>
                 <motion.div
@@ -471,7 +471,7 @@ export function Home() {
                   </div>
                   <div>
                     <p className="text-[13px] font-semibold text-white">Project Submitted</p>
-                    <p className="text-[11px] text-slate-500">Awaiting mentor review</p>
+                    <p className="text-[11px] text-slate-300">Awaiting mentor review</p>
                   </div>
                 </motion.div>
               </div>
@@ -497,7 +497,7 @@ export function Home() {
                   <span className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
                     <AnimatedCounter target={stat.value} suffix={stat.suffix} />
                   </span>
-                  <span className="text-sm text-slate-500">{stat.label}</span>
+                  <span className="text-sm text-slate-300">{stat.label}</span>
                 </div>
               </AnimatedSection>
             ))}
@@ -552,7 +552,7 @@ export function Home() {
           </AnimatedSection>
 
           {realCourses.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500 dark:border-slate-700">
+            <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-300 dark:border-slate-700">
               No published courses available yet.
             </div>
           ) : (
@@ -601,7 +601,7 @@ export function Home() {
                       {path.steps.map((step, j) => (
                         <div key={j} className="flex items-center gap-3">
                           <div className="h-7 w-7 rounded-lg bg-slate-50 dark:bg-white/5 flex items-center justify-center shrink-0 border border-slate-100 dark:border-white/[0.06]">
-                            <span className="text-[11px] font-semibold text-slate-500">{j + 1}</span>
+                            <span className="text-[11px] font-semibold text-slate-300">{j + 1}</span>
                           </div>
                           <span className="text-sm text-slate-300">{step}</span>
                         </div>
@@ -649,7 +649,7 @@ export function Home() {
                     Step {item.step}
                   </span>
                   <h3 className="text-[15px] font-semibold text-white mb-1.5">{item.title}</h3>
-                  <p className="text-[13px] text-slate-500 leading-relaxed">{item.desc}</p>
+                  <p className="text-[13px] text-slate-300 leading-relaxed">{item.desc}</p>
                 </div>
               </AnimatedSection>
             ))}
@@ -681,7 +681,7 @@ export function Home() {
                   <div className="flex items-center justify-between gap-3 pt-4 border-t border-slate-100 dark:border-white/[0.04]">
                     <div>
                       <p className="text-sm font-semibold text-white">{item.author}</p>
-                      <p className="text-[12px] text-slate-500">{item.date}</p>
+                      <p className="text-[12px] text-slate-300">{item.date}</p>
                     </div>
                     <Button size="sm" variant="outline" className="h-8 text-[11px]" asChild>
                       <Link to="/app/community">Discuss</Link>
@@ -716,12 +716,12 @@ export function Home() {
                   </div>
                   <div className="p-5">
                     <h3 className="text-[15px] font-semibold text-white mb-1">{p.title}</h3>
-                    <p className="text-[13px] text-slate-500 mb-4">{p.tech}</p>
+                    <p className="text-[13px] text-slate-300 mb-4">{p.tech}</p>
                     <div className="flex items-center justify-between mb-4">
                       <Badge className={`text-[11px] font-bold border-0 shadow-sm ${p.price > 0 ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
                         {p.price > 0 ? `PAID ${p.price.toFixed(2)} ${p.currency}` : "FREE"}
                       </Badge>
-                      <div className="flex items-center gap-1 text-[12px] text-slate-500">
+                      <div className="flex items-center gap-1 text-[12px] text-slate-300">
                         <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
                         <span className="font-semibold text-slate-700 dark:text-slate-300">
                           {p.numReviews > 0 ? p.rating.toFixed(1) : "N/A"}
@@ -816,7 +816,7 @@ export function Home() {
                     <item.icon className="h-5 w-5 text-white" />
                   </div>
                   <h3 className="text-[15px] font-semibold text-white mb-2">{item.title}</h3>
-                  <p className="text-sm text-slate-500 mb-5 leading-relaxed">{item.desc}</p>
+                  <p className="text-sm text-slate-300 mb-5 leading-relaxed">{item.desc}</p>
                   <Button variant="outline" size="sm" className="rounded-lg font-semibold border-slate-200/60 dark:border-white/10" asChild>
                     <Link to="/app/support">{item.cta}</Link>
                   </Button>
@@ -840,7 +840,7 @@ export function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-5xl mx-auto">
             {eventCards.length === 0 ? (
-              <div className="md:col-span-3 rounded-2xl border border-dashed border-slate-300 p-8 text-center text-slate-500 dark:border-slate-700">
+              <div className="md:col-span-3 rounded-2xl border border-dashed border-slate-300 p-8 text-center text-slate-300 dark:border-slate-700">
                 No upcoming events are published yet.
               </div>
             ) : (
@@ -849,7 +849,7 @@ export function Home() {
                   <PremiumCard className="p-6">
                     <Badge variant="outline" className="mb-4 text-[11px] font-semibold bg-sky-50 text-sky-700 border-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:border-sky-500/20 capitalize">{e.type}</Badge>
                     <h3 className="text-[15px] font-semibold text-white mb-2">{e.title}</h3>
-                    <p className="text-sm text-slate-500 mb-4 leading-relaxed">{e.desc}</p>
+                    <p className="text-sm text-slate-300 mb-4 leading-relaxed">{e.desc}</p>
                     <div className="flex items-center gap-4 text-[12px] text-slate-400 mb-5">
                       <span className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" /> {e.date}</span>
                       <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> {e.time}</span>
@@ -881,10 +881,10 @@ export function Home() {
             <AnimatedSection>
               <PremiumCard hover={false} className="p-8 h-full">
                 <h3 className="text-xl font-bold text-white">Frontend Track</h3>
-                <p className="mt-2 text-sm text-slate-500">HTML, CSS, JavaScript, React, and Bootstrap.</p>
+                <p className="mt-2 text-sm text-slate-300">HTML, CSS, JavaScript, React, and Bootstrap.</p>
                 <div className="my-8 flex items-baseline gap-1">
                   <span className="text-5xl font-extrabold text-white tracking-tight">Free</span>
-                  <span className="text-base text-slate-500 ml-1">/ forever</span>
+                  <span className="text-base text-slate-300 ml-1">/ forever</span>
                 </div>
                 <ul className="space-y-3.5 mb-8">
                   {["Frontend learning path", "Community access", "GitHub project submissions", "Support tickets", "Beginner-friendly roadmap"].map((item, i) => (
@@ -906,10 +906,10 @@ export function Home() {
                   </Badge>
                 </div>
                 <h3 className="text-xl font-bold text-white">Backend Track</h3>
-                <p className="mt-2 text-sm text-slate-500">Node.js, Express.js, MySQL, and REST API training.</p>
+                <p className="mt-2 text-sm text-slate-300">Node.js, Express.js, MySQL, and REST API training.</p>
                 <div className="my-8 flex items-baseline gap-1">
                   <span className="text-5xl font-extrabold text-white tracking-tight">200 ETB</span>
-                  <span className="text-base text-slate-500 ml-1">/ backend track</span>
+                  <span className="text-base text-slate-300 ml-1">/ backend track</span>
                 </div>
                 <ul className="space-y-3.5 mb-8">
                   {["Backend learning path", "Hands-on API projects", "MySQL database modules", "Priority mentor feedback", "Backend assessment support"].map((item, i) => (
