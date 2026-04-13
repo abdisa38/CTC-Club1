@@ -148,6 +148,58 @@ const formatDuration = (duration?: number | string): string => {
   return "Self-paced";
 };
 
+const parseDurationInput = (input: string): number | undefined => {
+  const trimmed = input.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  if (trimmed.includes(":")) {
+    const parts = trimmed
+      .split(":")
+      .map((part) => Number(part))
+      .filter((part) => Number.isFinite(part));
+
+    if (parts.length === 2) {
+      const [mm, ss] = parts;
+      return Math.round(mm + ss / 60);
+    }
+
+    if (parts.length === 3) {
+      const [hh, mm, ss] = parts;
+      return Math.round(hh * 60 + mm + ss / 60);
+    }
+  }
+
+  const numeric = Number(trimmed);
+  if (Number.isFinite(numeric) && numeric >= 0) {
+    return Math.round(numeric);
+  }
+
+  return undefined;
+};
+
+const getProjectRefId = (value?: { _id: string } | string | null): string => {
+  if (!value) {
+    return "";
+  }
+
+  return typeof value === "string" ? value : value._id;
+};
+
+const toDateTimeLocal = (value?: string): string => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "";
+
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mm = String(date.getMinutes()).padStart(2, "0");
+  return `${y}-${m}-${d}T${hh}:${mm}`;
+};
+
 const formatPostTime = (value: string): string => {
   if (!value) return "";
 
