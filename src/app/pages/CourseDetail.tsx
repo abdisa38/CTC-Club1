@@ -235,6 +235,44 @@ const extractErrorMessage = (error: any, fallback: string) => {
   return fallback;
 };
 
+const defaultLessonForm: NewLessonForm = {
+  title: "",
+  videoUrl: "",
+  duration: "",
+  isPublished: true,
+  attachments: [],
+};
+
+const defaultQuizForm: CourseQuizForm = {
+  title: "",
+  description: "",
+  passingScore: "70",
+  timeLimit: "30",
+  maxAttempts: "3",
+  xpReward: "10",
+  isPublished: false,
+};
+
+const defaultQuestionForm: CourseQuizQuestionForm = {
+  questionText: "",
+  type: "multiple-choice",
+  options: ["", "", "", ""],
+  correctAnswerIndex: "0",
+  correctAnswerText: "",
+  points: "1",
+};
+
+const defaultProjectForm: CourseProjectForm = {
+  title: "",
+  description: "",
+  instructions: "",
+  requirements: "",
+  xpReward: "50",
+  maxPoints: "100",
+  deadline: "",
+  isPublished: true,
+};
+
 export function CourseDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
