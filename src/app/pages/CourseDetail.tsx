@@ -449,11 +449,83 @@ export function CourseDetail() {
   }, [activeTab, selectedLessonId]);
 
   useEffect(() => {
-    const availableTabs = canAccessLessons ? ["overview", "resources", "discussion"] : ["overview"];
+    const availableTabs = canAccessLessons
+      ? ["overview", "resources", "quizzes", "projects", "discussion"]
+      : ["overview"];
+
     if (!availableTabs.includes(activeTab)) {
       setActiveTab("overview");
     }
   }, [activeTab, canAccessLessons]);
+
+  useEffect(() => {
+    if (!id || !canAccessLessons) {
+      setCourseQuizzes([]);
+      setCourseProjects([]);
+      setCourseProjectSubmissions([]);
+      return;
+    }
+
+    let cancelled = false;
+
+    const fetchCourseContent = async () => {
+      setIsCourseContentLoading(true);
+
+      try {
+        const [quizzes, projects] = await Promise.all([
+          apiService.getQuizzes(id),
+          apiService.getProjects(id),
+        ]);
+
+        const submissions = await apiService.getProjectSubmissions();
+        const courseProjectIds = new Set(projects.map((project) => project._id));
+        const filteredSubmissions = submissions.filter((submission) => {
+          const projectId = getProjectRefId(submission.project);
+          return Boolean(projectId) && courseProjectIds.has(projectId);
+        });
+
+        if (cancelled) {
+          return;
+        }
+
+        setCourseQuizzes(Array.isArray(quizzes) ? quizzes : []);
+        setCourseProjects(Array.isArray(projects) ? projects : []);
+        setCourseProjectSubmissions(Array.isArray(filteredSubmissions) ? filteredSubmissions : []);
+      } catch (contentError: any) {
+        if (!cancelled) {
+          setError(extractErrorMessage(contentError, "Failed to load quizzes and projects for this course"));
+        }
+      } finally {
+        if (!cancelled) {
+          setIsCourseContentLoading(false);
+        }
+      }
+    };
+
+    void fetchCourseContent();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, canAccessLessons]);
+
+  useEffect(() => {
+    if (quizMode !== "taking") {
+      return;
+    }
+
+    if (quizTimeLeft <= 0) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setQuizTimeLeft((prev) => Math.max(0, prev - 1));
+    }, 1000);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [quizMode, quizTimeLeft]);
 
   const courseResources = useMemo(() => {
     const resources: CourseResource[] = [];
