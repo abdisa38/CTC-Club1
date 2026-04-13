@@ -370,7 +370,7 @@ export function Home() {
               >
                 Learn Tech Skills.{" "}
                 <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">Build Real Projects.</span><br />
-                Become Future-Ready.
+              
               </motion.h1>
 
               <motion.p
