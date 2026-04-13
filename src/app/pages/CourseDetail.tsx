@@ -2208,6 +2208,88 @@ export function CourseDetail() {
             <span>{completedCount} / {visibleLessons.length} Lessons</span>
           </div>
           <Progress value={progress} className="h-2" />
+
+          {isInstructor ? (
+            <div className="mt-4 space-y-3">
+              <Button variant="outline" className="w-full" onClick={() => setShowLessonCreator((prev) => !prev)}>
+                <Plus className="mr-2 h-4 w-4" />
+                {showLessonCreator ? "Close Lesson Creator" : "Add Lesson In Course"}
+              </Button>
+
+              {showLessonCreator ? (
+                <div className="rounded-lg border border-slate-200 bg-white p-3 space-y-2 dark:border-slate-800 dark:bg-slate-950">
+                  <Input
+                    placeholder="Lesson title"
+                    value={newLessonForm.title}
+                    onChange={(event) => setNewLessonForm((prev) => ({ ...prev, title: event.target.value }))}
+                  />
+                  <Input
+                    placeholder="Video URL (optional)"
+                    value={newLessonForm.videoUrl}
+                    onChange={(event) => setNewLessonForm((prev) => ({ ...prev, videoUrl: event.target.value }))}
+                  />
+                  <Input
+                    placeholder="Duration in minutes (or hh:mm:ss)"
+                    value={newLessonForm.duration}
+                    onChange={(event) => setNewLessonForm((prev) => ({ ...prev, duration: event.target.value }))}
+                  />
+
+                  <label className="inline-flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                    <input
+                      type="checkbox"
+                      checked={newLessonForm.isPublished}
+                      onChange={(event) => setNewLessonForm((prev) => ({ ...prev, isPublished: event.target.checked }))}
+                    />
+                    Publish lesson immediately
+                  </label>
+
+                  <div className="space-y-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => lessonResourceInputRef.current?.click()}
+                      disabled={isUploadingLessonResources}
+                    >
+                      <FileText className="mr-2 h-4 w-4" />
+                      {isUploadingLessonResources ? "Uploading Resources..." : "Attach Resource Files"}
+                    </Button>
+                    <input
+                      ref={lessonResourceInputRef}
+                      type="file"
+                      className="hidden"
+                      multiple
+                      onChange={(event) => void handleUploadNewLessonResources(event)}
+                    />
+
+                    {newLessonForm.attachments.length > 0 ? (
+                      <div className="space-y-1">
+                        {newLessonForm.attachments.map((attachment, index) => (
+                          <div key={`${attachment.url}-${index}`} className="flex items-center justify-between rounded border border-slate-200 px-2 py-1 text-xs dark:border-slate-800">
+                            <span className="truncate pr-2">{attachment.title}</span>
+                            <button
+                              type="button"
+                              className="text-red-600"
+                              onClick={() => setNewLessonForm((prev) => ({
+                                ...prev,
+                                attachments: prev.attachments.filter((_, itemIndex) => itemIndex !== index),
+                              }))}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <Button className="w-full" onClick={() => void handleCreateLessonInCourse()} disabled={contentActionBusy || isUploadingLessonResources}>
+                    Save Lesson
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
 
         <div className="flex-1 overflow-y-auto">
