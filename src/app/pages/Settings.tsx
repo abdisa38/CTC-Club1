@@ -179,6 +179,7 @@ export function Settings({ embedded = false }: { embedded?: boolean }) {
   const completedCourses = Number(metrics?.completedCourses || 0);
   const activeCoursesCount = Array.isArray(metrics?.activeCourses) ? metrics.activeCourses.length : 0;
   const completionRate = enrolledCourses > 0 ? Math.round((completedCourses / enrolledCourses) * 100) : 0;
+  const recentNotifications = Array.isArray(metrics?.notifications) ? metrics.notifications.slice(0, 4) : [];
 
   const hydrateSettingsForm = (payload: any) => {
     const { firstName, lastName } = splitName(payload?.name || "");
@@ -556,8 +557,8 @@ export function Settings({ embedded = false }: { embedded?: boolean }) {
     <div className={containerClassName}>
       {!embedded ? (
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Account Settings</h1>
-          <p className="text-slate-500 dark:text-slate-400">Manage your profile, preferences, and security.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Profile &amp; Account Settings</h1>
+          <p className="text-slate-500 dark:text-slate-400">All edit tools are merged here on one profile page.</p>
         </div>
       ) : null}
 
@@ -818,6 +819,55 @@ export function Settings({ embedded = false }: { embedded?: boolean }) {
                   )}
                 </CardContent>
               </Card>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Account</CardTitle>
+                    <CardDescription>Current access and sign-in details.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
+                    <div className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2 dark:border-slate-800">
+                      <span>Sign-in Method</span>
+                      <Badge variant="secondary">{((user as any)?.oauthProvider || "email").toUpperCase()}</Badge>
+                    </div>
+                    <div className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2 dark:border-slate-800">
+                      <span>Premium</span>
+                      <Badge className={user?.isPremium ? "bg-emerald-600 text-white" : "bg-slate-200 text-slate-700"}>
+                        {user?.isPremium ? "Active" : "Standard"}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2 dark:border-slate-800">
+                      <span>Recent Notifications</span>
+                      <span className="font-medium">{recentNotifications.length}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Bell className="h-5 w-5 text-indigo-600" />
+                      Recent Notifications
+                    </CardTitle>
+                    <CardDescription>Latest updates from your dashboard.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {recentNotifications.length === 0 ? (
+                      <div className="rounded-lg border border-dashed border-slate-300 p-5 text-sm text-slate-500 dark:border-slate-700">
+                        No recent notifications.
+                      </div>
+                    ) : (
+                      recentNotifications.map((item: any) => (
+                        <div key={item._id} className="rounded-lg border border-slate-200 p-3 dark:border-slate-800">
+                          <p className="font-medium text-slate-900 dark:text-white">{item.title}</p>
+                          <p className="text-sm text-slate-500 mt-0.5 line-clamp-2">{item.message}</p>
+                        </div>
+                      ))
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
 
             <TabsContent value="account" className="mt-0 space-y-6">

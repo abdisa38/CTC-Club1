@@ -315,6 +315,7 @@ export function CourseList() {
             {filteredCourses.map((course, i) => {
               const hasRatings = Number(course.numReviews || 0) > 0;
               const ratingLabel = hasRatings ? Number(course.rating || 0).toFixed(1) : "N/A";
+              const isPaidCourse = Number(course.price || 0) > 0;
 
               return (
                 <motion.div
@@ -389,16 +390,15 @@ export function CourseList() {
                       {!isUserEnrolled(course) ? (
                         <Button
                           size="sm"
-                          variant="outline"
-                          className="h-8 text-xs"
+                          className={`h-9 px-4 text-[12px] font-extrabold rounded-xl border-0 shadow-md ${isPaidCourse
+                            ? "bg-gradient-to-r from-rose-600 to-orange-500 hover:from-rose-700 hover:to-orange-600 text-white shadow-rose-500/30"
+                            : "bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white shadow-emerald-500/30"}`}
                           onClick={() => handleEnroll(course)}
                           disabled={enrollingId === course._id}
                         >
                           {enrollingId === course._id
-                            ? (Number(course.price || 0) > 0 ? "Opening checkout..." : "Enrolling...")
-                            : (Number(course.price || 0) > 0
-                                ? `Pay ${Number(course.price || 0).toFixed(2)} ETB`
-                              : "Enroll Free")}
+                            ? (isPaidCourse ? "Opening checkout..." : "Enrolling...")
+                            : (isPaidCourse ? `Pay ${Number(course.price || 0).toFixed(2)} ETB` : "Enroll Free")}
                         </Button>
                       ) : null}
                     </div>
