@@ -6,6 +6,7 @@ import { Badge } from "../components/ui/Badge";
 import { Input } from "../components/ui/Input";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import api from "../utils/api";
+import "../../styles/home.css";
 import ctcLogo from "../../assets/f6c46c16a776a1f63a42e49b36947669f8dcc942.png";
 import {
   ArrowRight, CheckCircle2, Star, Users, BookOpen, GitMerge,
@@ -58,23 +59,23 @@ function SectionHeader({ badge, badgeColor = "indigo", title, highlight, descrip
   badge: string; badgeColor?: string; title: string; highlight?: string; description?: string;
 }) {
   const colorMap: Record<string, string> = {
-    indigo: "bg-indigo-50 text-indigo-700 border-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/20",
-    purple: "bg-violet-50 text-violet-700 border-violet-100 dark:bg-violet-500/10 dark:text-violet-400 dark:border-violet-500/20",
+    indigo: "bg-sky-50 text-sky-700 border-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:border-sky-500/20",
+    purple: "bg-cyan-50 text-cyan-700 border-cyan-100 dark:bg-cyan-500/10 dark:text-cyan-300 dark:border-cyan-500/20",
     amber: "bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20",
     emerald: "bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20",
-    rose: "bg-rose-50 text-rose-700 border-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20",
+    rose: "bg-teal-50 text-teal-700 border-teal-100 dark:bg-teal-500/10 dark:text-teal-300 dark:border-teal-500/20",
   };
   return (
     <div className="text-center max-w-3xl mx-auto mb-16">
       <Badge variant="outline" className={`mb-5 py-1 px-3.5 text-xs font-semibold border ${colorMap[badgeColor] || colorMap.indigo}`}>
         {badge}
       </Badge>
-      <h2 className="text-3xl sm:text-4xl lg:text-[42px] font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
+      <h2 className="home-display text-3xl sm:text-4xl lg:text-[42px] font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
         {title}{" "}
-        {highlight && <span className="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">{highlight}</span>}
+        {highlight && <span className="bg-gradient-to-r from-sky-600 to-emerald-500 bg-clip-text text-transparent">{highlight}</span>}
       </h2>
       {description && (
-        <p className="mt-5 text-base sm:text-lg text-slate-500 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
+        <p className="home-copy mt-5 text-base sm:text-lg text-slate-500 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
           {description}
         </p>
       )}
@@ -87,7 +88,7 @@ function PremiumCard({ children, className = "", hover = true }: { children: Rea
   return (
     <motion.div
       whileHover={hover ? { y: -4, transition: { duration: 0.2 } } : undefined}
-      className={`rounded-2xl border border-slate-200/60 bg-white dark:border-white/[0.06] dark:bg-white/[0.02] backdrop-blur-sm transition-shadow duration-300 ${hover ? "hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.3)]" : ""} ${className}`}
+      className={`home-luxe-card rounded-2xl backdrop-blur-sm transition-shadow duration-300 ${hover ? "hover:shadow-[0_20px_50px_-30px_rgba(2,132,199,0.45)] dark:hover:shadow-[0_24px_60px_-34px_rgba(0,0,0,0.85)]" : ""} ${className}`}
     >
       {children}
     </motion.div>
@@ -342,7 +343,7 @@ export function Home() {
   }, [location.pathname, location.key]);
 
   return (
-    <div className="flex-1 overflow-x-hidden">
+    <div className="home-shell home-copy flex-1 overflow-x-hidden">
 
       {/* ═══ 1. HERO SECTION ═══ */}
       <section className="relative overflow-hidden bg-white pt-16 pb-24 lg:pt-24 lg:pb-32 dark:bg-[#0c0f1a]">
