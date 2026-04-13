@@ -244,14 +244,88 @@ exports.getDashboardMetrics = (0, express_async_handler_1.default)(async (req, r
         return;
     }
     // Role is Student
+    const student = await userModel_1.default.findById(req.user._id)
+        .select('xp level enrolledCourses')
+        .lean();
+    if (!student) {
+        res.status(404);
+        throw new Error('User not found');
+    }
     const userProgress = await progressModel_1.default.find({ user: req.user._id }).populate({
         path: 'course',
         select: 'title coverImage totalDuration'
     });
-    const enrolledCourses = userProgress.length;
-    const completedCourses = userProgress.filter(p => p.isCompleted).length;
-    // Next lesson logic: find progress where percentage < 100
-    const activeProgress = userProgress.filter(p => !p.isCompleted);
+    const enrolledCourseIdsFromUser = Array.isArray(student.enrolledCourses)
+        ? student.enrolledCourses.map((id) => id.toString())
+        : [];
+    const getProgressCourseId = (progress) => {
+        if (!progress?.course) {
+            return '';
+        }
+        if (typeof progress.course === 'string') {
+            return progress.course;
+        }
+        return progress.course?._id?.toString() || '';
+    };
+    const progressCourseIds = userProgress
+        .map((progress) => getProgressCourseId(progress))
+        .filter(Boolean);
+    const progressCourseIdSet = new Set(progressCourseIds);
+    const uniqueEnrolledCourseIds = Array.from(new Set([...enrolledCourseIdsFromUser, ...progressCourseIds]));
+    const missingProgressCourseIds = uniqueEnrolledCourseIds.filter((courseId) => !progressCourseIdSet.has(courseId));
+    const missingProgressCourses = missingProgressCourseIds.length > 0
+        ? await courseModel_1.default.find({
+            _id: { $in: missingProgressCourseIds },
+            isDeleted: false,
+        }).select('title coverImage totalDuration')
+        : [];
+    const syntheticActiveProgress = missingProgressCourses.map((course) => ({
+        _id: `enrolled-${course._id.toString()}`,
+        user: req.user._id,
+        course: {
+            _id: course._id,
+            title: course.title,
+            coverImage: course.coverImage,
+            totalDuration: course.totalDuration,
+        },
+        progressPercentage: 0,
+        isCompleted: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+    }));
+    const completedCourseIds = new Set(userProgress
+        .filter((progress) => progress.isCompleted)
+        .map((progress) => getProgressCourseId(progress))
+        .filter(Boolean));
+    const activeProgressMap = new Map();
+    userProgress
+        .filter((progress) => !progress.isCompleted)
+        .forEach((progress) => {
+        const courseId = getProgressCourseId(progress);
+        if (!courseId) {
+            return;
+        }
+        const existing = activeProgressMap.get(courseId);
+        if (!existing) {
+            activeProgressMap.set(courseId, progress);
+            return;
+        }
+        const existingUpdatedAt = new Date(existing.updatedAt || 0).getTime();
+        const currentUpdatedAt = new Date(progress.updatedAt || 0).getTime();
+        if (currentUpdatedAt >= existingUpdatedAt) {
+            activeProgressMap.set(courseId, progress);
+        }
+    });
+    syntheticActiveProgress.forEach((progress) => {
+        const courseId = getProgressCourseId(progress);
+        if (!courseId || activeProgressMap.has(courseId)) {
+            return;
+        }
+        activeProgressMap.set(courseId, progress);
+    });
+    const enrolledCourses = uniqueEnrolledCourseIds.length;
+    const completedCourses = completedCourseIds.size;
+    const activeProgress = Array.from(activeProgressMap.values());
     const [notifications, quizResults, projectSubmissions] = await Promise.all([
         notificationModel_1.default.find({ user: req.user._id }).sort({ createdAt: -1 }).limit(10),
         quizModel_1.QuizResult.find({ user: req.user._id }).populate('quiz', 'title').sort({ createdAt: -1 }).limit(10),
@@ -262,8 +336,8 @@ exports.getDashboardMetrics = (0, express_async_handler_1.default)(async (req, r
             .limit(10),
     ]);
     (0, apiResponse_1.sendSuccess)(res, {
-        xp: req.user.xp,
-        level: req.user.level,
+        xp: Number(student.xp ?? req.user.xp ?? 0),
+        level: Number(student.level ?? req.user.level ?? 1),
         enrolledCourses,
         completedCourses,
         activeCourses: activeProgress,
@@ -288,7 +362,7 @@ exports.getAdminAnalytics = (0, express_async_handler_1.default)(async (req, res
 // @route   GET /api/dashboard/leaderboard
 // @access  Private
 exports.getLeaderboard = (0, express_async_handler_1.default)(async (req, res) => {
-    const users = await userModel_1.default.find({ isDeleted: false })
+    const users = await userModel_1.default.find({ isDeleted: false, role: 'student' })
         .sort({ xp: -1, createdAt: 1 })
         .limit(100)
         .select('name avatar xp level role');
