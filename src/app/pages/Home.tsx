@@ -166,12 +166,12 @@ type HomeEvent = {
 };
 
 const features = [
-  { title: "Structured Courses", desc: "Follow curated learning paths with video lessons, quizzes, and hands-on labs.", icon: BookOpen, color: "from-blue-500 to-indigo-600", lightBg: "bg-blue-50 dark:bg-blue-500/10" },
+  { title: "Structured Courses", desc: "Follow curated learning paths with video lessons, quizzes, and hands-on labs.", icon: BookOpen, color: "from-sky-500 to-cyan-600", lightBg: "bg-sky-50 dark:bg-sky-500/10" },
   { title: "Track Progress", desc: "XP system, daily streaks, and detailed analytics to keep you motivated.", icon: TrendingUp, color: "from-emerald-500 to-teal-600", lightBg: "bg-emerald-50 dark:bg-emerald-500/10" },
   { title: "Mentor Feedback", desc: "Get practical project feedback from mentors and improve faster.", icon: MessageSquare, color: "from-amber-500 to-orange-600", lightBg: "bg-amber-50 dark:bg-amber-500/10" },
-  { title: "Submit Projects", desc: "Build real-world projects and submit via GitHub for review.", icon: GitMerge, color: "from-violet-500 to-purple-600", lightBg: "bg-violet-50 dark:bg-violet-500/10" },
+  { title: "Submit Projects", desc: "Build real-world projects and submit via GitHub for review.", icon: GitMerge, color: "from-cyan-500 to-sky-600", lightBg: "bg-cyan-50 dark:bg-cyan-500/10" },
   { title: "Get Support", desc: "24/7 support tickets, discussion forums, and peer-to-peer help.", icon: LifeBuoy, color: "from-rose-500 to-pink-600", lightBg: "bg-rose-50 dark:bg-rose-500/10" },
-  { title: "Role-Based Access", desc: "Tailored dashboards for students, instructors, and admins.", icon: Shield, color: "from-indigo-500 to-blue-600", lightBg: "bg-indigo-50 dark:bg-indigo-500/10" },
+  { title: "Role-Based Access", desc: "Tailored dashboards for students, instructors, and admins.", icon: Shield, color: "from-slate-600 to-cyan-600", lightBg: "bg-slate-100 dark:bg-slate-500/10" },
 ];
 
 const howItWorks = [
@@ -485,8 +485,8 @@ export function Home() {
         <div className="max-w-[1200px] mx-auto px-6 lg:px-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 lg:gap-12">
             {[
-              { value: stats.activeStudents, suffix: "+", label: "Active Students", icon: Users, color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-50 dark:bg-indigo-500/10" },
-              { value: stats.videoCourses, suffix: "+", label: "Video Courses", icon: BookOpen, color: "text-violet-600 dark:text-violet-400", bg: "bg-violet-50 dark:bg-violet-500/10" },
+              { value: stats.activeStudents, suffix: "+", label: "Active Students", icon: Users, color: "text-sky-600 dark:text-sky-400", bg: "bg-sky-50 dark:bg-sky-500/10" },
+              { value: stats.videoCourses, suffix: "+", label: "Video Courses", icon: BookOpen, color: "text-teal-600 dark:text-teal-400", bg: "bg-teal-50 dark:bg-teal-500/10" },
               { value: stats.instructors, suffix: "+", label: "Expert Instructors", icon: Award, color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-500/10" },
             ].map((stat, i) => (
               <AnimatedSection key={i} delay={i * 0.08}>
@@ -539,11 +539,11 @@ export function Home() {
           <AnimatedSection>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-14 gap-6">
               <div>
-                <Badge variant="outline" className="mb-5 py-1 px-3.5 text-xs font-semibold bg-indigo-50 text-indigo-700 border-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/20">
+                <Badge variant="outline" className="mb-5 py-1 px-3.5 text-xs font-semibold bg-sky-50 text-sky-700 border-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:border-sky-500/20">
                   Top Courses
                 </Badge>
-                <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">Featured Courses</h2>
-                <p className="mt-3 text-base text-slate-500 dark:text-slate-400">Handpicked courses to accelerate your learning journey.</p>
+                <h2 className="home-display text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">Featured Courses</h2>
+                <p className="home-copy mt-3 text-base text-slate-500 dark:text-slate-400">Handpicked courses to accelerate your learning journey.</p>
               </div>
               <Button variant="outline" className="rounded-xl font-semibold border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5" asChild>
                 <Link to="/app/courses">View All <ArrowRight className="ml-2 h-4 w-4" /></Link>
@@ -637,15 +637,15 @@ export function Home() {
             {howItWorks.map((item, i) => (
               <AnimatedSection key={i} delay={i * 0.08}>
                 <div className="text-center relative">
-                  <div className="mx-auto h-14 w-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center mb-5 shadow-lg shadow-indigo-500/20">
+                  <div className="mx-auto h-14 w-14 rounded-2xl bg-gradient-to-br from-sky-500 to-cyan-600 flex items-center justify-center mb-5 shadow-lg shadow-cyan-500/20">
                     <item.icon className="h-6 w-6 text-white" />
                   </div>
                   {i < howItWorks.length - 1 && (
                     <div className="absolute top-7 left-[calc(50%+35px)] hidden lg:block w-[calc(100%-70px)]">
-                      <div className="h-[2px] bg-gradient-to-r from-indigo-200 to-violet-200 dark:from-indigo-800 dark:to-violet-800 w-full" />
+                      <div className="h-[2px] bg-gradient-to-r from-sky-200 to-emerald-200 dark:from-sky-900/80 dark:to-emerald-900/80 w-full" />
                     </div>
                   )}
-                  <span className="inline-block mb-2.5 text-[10px] font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
+                  <span className="inline-block mb-2.5 text-[10px] font-bold uppercase tracking-widest text-sky-600 dark:text-sky-400">
                     Step {item.step}
                   </span>
                   <h3 className="text-[15px] font-semibold text-slate-900 dark:text-white mb-1.5">{item.title}</h3>
@@ -750,16 +750,16 @@ export function Home() {
       </section>
 
       {/* ═══ 9. COMMUNITY ═══ */}
-      <section className="py-24 lg:py-32 relative overflow-hidden bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-700">
+      <section className="py-24 lg:py-32 relative overflow-hidden bg-gradient-to-br from-slate-900 via-sky-950 to-emerald-950">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff06_1px,transparent_1px),linear-gradient(to_bottom,#ffffff06_1px,transparent_1px)] bg-[size:40px_40px]" />
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/5 rounded-full blur-3xl" />
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-cyan-300/10 rounded-full blur-3xl" />
         <div className="max-w-[1200px] mx-auto px-6 lg:px-8 relative">
           <div className="flex flex-col lg:flex-row items-center gap-16">
             <AnimatedSection className="flex-1 text-center lg:text-left">
-              <h2 className="text-3xl sm:text-4xl lg:text-[42px] font-extrabold text-white mb-6 leading-tight tracking-tight">
+              <h2 className="home-display text-3xl sm:text-4xl lg:text-[42px] font-extrabold text-white mb-6 leading-tight tracking-tight">
                 Join a Thriving<br />Tech Community
               </h2>
-              <p className="text-indigo-100/80 text-lg mb-10 max-w-lg leading-relaxed">
+              <p className="home-copy text-cyan-50/85 text-lg mb-10 max-w-lg leading-relaxed">
                 Connect with fellow learners, join study groups, participate in discussions, and grow together.
               </p>
               <div className="space-y-4 mb-10">
@@ -776,14 +776,14 @@ export function Home() {
                   </div>
                 ))}
               </div>
-              <Button size="lg" className="bg-white text-indigo-700 hover:bg-white/90 rounded-xl h-12 px-8 font-semibold shadow-lg shadow-black/10 transition-all duration-300" asChild>
+              <Button size="lg" className="bg-white text-slate-900 hover:bg-cyan-50 rounded-xl h-12 px-8 font-semibold shadow-lg shadow-black/10 transition-all duration-300" asChild>
                 <a href="https://t.me/officialCTCclub" target="_blank" rel="noreferrer">
                   Join on Telegram <ArrowRight className="ml-2 h-4 w-4" />
                 </a>
               </Button>
             </AnimatedSection>
             <AnimatedSection delay={0.15} className="flex-1 hidden lg:block">
-              <div className="rounded-2xl overflow-hidden shadow-2xl border border-white/10">
+              <div className="rounded-2xl overflow-hidden shadow-2xl border border-cyan-200/20">
                 <ImageWithFallback src="https://images.unsplash.com/photo-1759884247144-53d52c31f859?w=600&h=400&fit=crop" alt="Community" className="w-full h-auto" />
               </div>
             </AnimatedSection>
@@ -807,8 +807,8 @@ export function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-4xl mx-auto">
             {[
               { icon: Headphones, title: "Submit a Ticket", desc: "Create a support ticket and get a response within 24 hours.", cta: "Get Help", color: "from-rose-500 to-pink-600" },
-              { icon: MessageSquare, title: "Community Forum", desc: "Ask questions and get answers from the community.", cta: "Visit Forum", color: "from-violet-500 to-purple-600" },
-              { icon: FileText, title: "Knowledge Base", desc: "Browse FAQs, tutorials, and troubleshooting guides.", cta: "Browse Docs", color: "from-blue-500 to-indigo-600" },
+              { icon: MessageSquare, title: "Community Forum", desc: "Ask questions and get answers from the community.", cta: "Visit Forum", color: "from-cyan-500 to-sky-600" },
+              { icon: FileText, title: "Knowledge Base", desc: "Browse FAQs, tutorials, and troubleshooting guides.", cta: "Browse Docs", color: "from-sky-500 to-teal-600" },
             ].map((item, i) => (
               <AnimatedSection key={i} delay={i * 0.08}>
                 <PremiumCard className="p-6 text-center">
@@ -847,14 +847,14 @@ export function Home() {
               eventCards.map((e, i) => (
                 <AnimatedSection key={e.id} delay={i * 0.08}>
                   <PremiumCard className="p-6">
-                    <Badge variant="outline" className="mb-4 text-[11px] font-semibold bg-indigo-50 text-indigo-700 border-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/20 capitalize">{e.type}</Badge>
+                    <Badge variant="outline" className="mb-4 text-[11px] font-semibold bg-sky-50 text-sky-700 border-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:border-sky-500/20 capitalize">{e.type}</Badge>
                     <h3 className="text-[15px] font-semibold text-slate-900 dark:text-white mb-2">{e.title}</h3>
                     <p className="text-sm text-slate-500 mb-4 leading-relaxed">{e.desc}</p>
                     <div className="flex items-center gap-4 text-[12px] text-slate-400 mb-5">
                       <span className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" /> {e.date}</span>
                       <span className="flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> {e.time}</span>
                     </div>
-                    <Button size="sm" className="w-full rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white shadow-sm shadow-indigo-500/20" asChild>
+                    <Button size="sm" className="w-full rounded-lg bg-gradient-to-r from-sky-600 to-cyan-500 hover:from-sky-700 hover:to-cyan-600 text-white shadow-sm shadow-cyan-500/20" asChild>
                       <Link to="/events">View Events</Link>
                     </Button>
                   </PremiumCard>
@@ -899,9 +899,9 @@ export function Home() {
               </PremiumCard>
             </AnimatedSection>
             <AnimatedSection delay={0.12}>
-              <div className="rounded-2xl border-2 border-indigo-500/30 bg-gradient-to-b from-indigo-50/50 to-white dark:from-indigo-500/5 dark:to-[#0c0f1a] p-8 relative h-full shadow-lg shadow-indigo-500/5">
+              <div className="rounded-2xl border-2 border-sky-500/30 bg-gradient-to-b from-sky-50/50 to-white dark:from-sky-500/5 dark:to-[#0c0f1a] p-8 relative h-full shadow-lg shadow-sky-500/10">
                 <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                  <Badge className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white border-0 px-4 py-1 text-[11px] font-semibold shadow-lg shadow-indigo-500/25">
+                  <Badge className="bg-gradient-to-r from-sky-600 to-cyan-500 text-white border-0 px-4 py-1 text-[11px] font-semibold shadow-lg shadow-cyan-500/25">
                     Most Popular
                   </Badge>
                 </div>
@@ -914,11 +914,11 @@ export function Home() {
                 <ul className="space-y-3.5 mb-8">
                   {["Backend learning path", "Hands-on API projects", "MySQL database modules", "Priority mentor feedback", "Backend assessment support"].map((item, i) => (
                     <li key={i} className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400">
-                      <CheckCircle2 className="h-4 w-4 text-indigo-500 shrink-0" /> {item}
+                      <CheckCircle2 className="h-4 w-4 text-sky-500 shrink-0" /> {item}
                     </li>
                   ))}
                 </ul>
-                <Button className="w-full rounded-xl h-11 font-semibold bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 shadow-sm shadow-indigo-500/20" asChild>
+                <Button className="w-full rounded-xl h-11 font-semibold bg-gradient-to-r from-sky-600 to-cyan-500 hover:from-sky-700 hover:to-cyan-600 shadow-sm shadow-cyan-500/20" asChild>
                   <Link to="/register">Enroll Backend Track</Link>
                 </Button>
               </div>
@@ -928,23 +928,23 @@ export function Home() {
       </section>
 
       {/* ═══ 13. FINAL CTA ═══ */}
-      <section className="py-24 lg:py-32 relative overflow-hidden bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-700">
+      <section className="py-24 lg:py-32 relative overflow-hidden bg-gradient-to-br from-slate-900 via-sky-950 to-emerald-950">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff04_1px,transparent_1px),linear-gradient(to_bottom,#ffffff04_1px,transparent_1px)] bg-[size:48px_48px]" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-white/5 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-cyan-300/10 rounded-full blur-3xl" />
         <div className="max-w-[1200px] mx-auto px-6 lg:px-8 relative text-center">
           <AnimatedSection>
             <div className="max-w-2xl mx-auto">
               <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 mb-8 shadow-lg">
                 <img src={ctcLogo} alt="CTC Club" className="h-10 w-10 rounded-lg" />
               </div>
-              <h2 className="text-3xl sm:text-4xl lg:text-[42px] font-extrabold text-white mb-5 leading-tight tracking-tight">
+              <h2 className="home-display text-3xl sm:text-4xl lg:text-[42px] font-extrabold text-white mb-5 leading-tight tracking-tight">
                 Start Your Journey Today<br />with CTC Club
               </h2>
-              <p className="text-indigo-100/80 text-lg mb-10 leading-relaxed">
+              <p className="home-copy text-cyan-50/85 text-lg mb-10 leading-relaxed">
                 Be among the first students building tech careers with us.
               </p>
               <div className="flex flex-col sm:flex-row items-center gap-3 justify-center">
-                <Button size="lg" className="bg-white text-indigo-700 hover:bg-white/90 px-8 h-12 rounded-xl font-semibold shadow-lg shadow-black/10 transition-all duration-300" asChild>
+                <Button size="lg" className="bg-white text-slate-900 hover:bg-cyan-50 px-8 h-12 rounded-xl font-semibold shadow-lg shadow-black/10 transition-all duration-300" asChild>
                   <Link to="/register">Register Now <ArrowRight className="ml-2 h-4 w-4" /></Link>
                 </Button>
                 <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10 px-8 h-12 rounded-xl font-semibold backdrop-blur-sm transition-all duration-300" asChild>
