@@ -101,13 +101,16 @@ type FeaturedCourse = {
   instructor: string;
   rating: number;
   numReviews: number;
-  students: string;
+  students: number;
   category: string;
+  price: number;
+  currency: string;
   image: string;
   description?: string;
 };
 
 function CourseCard({ course }: { course: FeaturedCourse }) {
+  const isPaid = Number(course.price || 0) > 0;
   const hasRatings = Number(course.numReviews || 0) > 0;
 
   return (
@@ -115,25 +118,29 @@ function CourseCard({ course }: { course: FeaturedCourse }) {
       <div className="relative overflow-hidden aspect-video">
         <ImageWithFallback src={course.image} alt={course.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        <div className="absolute top-3 left-3">
+        <div className="absolute top-3 left-3 flex items-center gap-2">
           <Badge className="bg-white/90 backdrop-blur-sm text-slate-700 text-[11px] font-semibold border-0 shadow-sm">{course.category}</Badge>
+          <Badge className={`text-[11px] font-bold border-0 shadow-sm ${isPaid ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
+            {isPaid ? `PAID ${Number(course.price || 0).toFixed(2)} ${course.currency || "ETB"}` : "FREE"}
+          </Badge>
         </div>
       </div>
       <div className="p-5">
         <h3 className="text-[15px] font-semibold text-slate-900 dark:text-white mb-1.5 line-clamp-1">{course.title}</h3>
         <p className="text-[13px] text-slate-500 mb-3">{course.instructor}</p>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-1.5 text-[13px]">
             <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
             <span className="text-[13px] font-semibold text-slate-700 dark:text-slate-300">
               {hasRatings ? Number(course.rating || 0).toFixed(1) : "N/A"}
             </span>
-            <span className="text-[11px] text-slate-400">({course.students})</span>
+            <span className="text-[11px] text-slate-400">({Number(course.numReviews || 0)} reviews)</span>
           </div>
-          <Button size="sm" className="text-[11px] h-8 px-3.5 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white shadow-sm shadow-indigo-500/20" asChild>
-            <Link to="/app/courses">Enroll</Link>
-          </Button>
+          <span className="text-[11px] text-slate-400">{Number(course.students || 0)} students</span>
         </div>
+        <Button size="sm" className={`w-full h-10 text-[12px] font-bold rounded-lg shadow-sm ${isPaid ? "bg-gradient-to-r from-rose-600 to-orange-500 hover:from-rose-700 hover:to-orange-600 text-white" : "bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white"}`} asChild>
+          <Link to={`/app/courses/${course.id}`}>{isPaid ? `Pay ${Number(course.price || 0).toFixed(2)} ${course.currency || "ETB"}` : "Enroll Free"}</Link>
+        </Button>
       </div>
     </PremiumCard>
   );

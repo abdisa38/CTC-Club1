@@ -25,6 +25,7 @@ import {
   Shield,
   RefreshCw,
   Loader2,
+  Star,
 } from "lucide-react";
 import { Link } from "react-router";
 import apiService from "../../services/api";
@@ -63,6 +64,8 @@ export function AdminDashboard({ metrics }: { metrics?: any }) {
   const completion = useMemo(() => analytics?.courseCompletionData || [], [analytics]);
   const collectedRevenue = Number(analytics?.collectedRevenue || 0);
   const estimatedRevenue = Number(analytics?.estimatedRevenue || 0);
+  const avgCourseRating = Number(analytics?.ratings?.avgCourseRating || 0);
+  const totalReviews = Number(analytics?.ratings?.totalReviews || 0);
 
   const stats = [
     {
@@ -85,9 +88,21 @@ export function AdminDashboard({ metrics }: { metrics?: any }) {
     },
     {
       title: "Revenue",
-      value: `$${collectedRevenue.toLocaleString()}`,
+      value: `${collectedRevenue.toLocaleString()} ETB`,
       icon: TrendingUp,
       sub: "Collected sales revenue",
+    },
+    {
+      title: "Avg Course Rating",
+      value: avgCourseRating.toFixed(2),
+      icon: Star,
+      sub: "Weighted by all reviews",
+    },
+    {
+      title: "Total Reviews",
+      value: totalReviews.toLocaleString(),
+      icon: MessageSquare,
+      sub: "Submitted course ratings",
     },
   ];
 
@@ -122,7 +137,7 @@ export function AdminDashboard({ metrics }: { metrics?: any }) {
 
       {error ? <ErrorBanner message={error} /> : null}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
         {stats.map((stat) => (
           <Card key={stat.title}>
             <CardContent className="p-5">
@@ -142,7 +157,7 @@ export function AdminDashboard({ metrics }: { metrics?: any }) {
       </div>
 
       <p className="text-xs text-slate-500 dark:text-slate-400">
-        Estimated enrollment value: ${estimatedRevenue.toLocaleString()}
+        Estimated enrollment value: {estimatedRevenue.toLocaleString()} ETB
       </p>
 
       <div className="grid gap-6 lg:grid-cols-3">
