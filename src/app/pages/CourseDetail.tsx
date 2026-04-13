@@ -10,8 +10,6 @@ import {
   PlayCircle,
   CheckCircle,
   Lock,
-  HelpCircle,
-  MessageSquare,
   FileText,
   Download,
   FolderKanban,
