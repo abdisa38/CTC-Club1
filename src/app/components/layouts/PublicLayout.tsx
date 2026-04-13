@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Button } from "../ui/button";
 import { Menu, X, Github, Twitter, Linkedin, Instagram, Mail, ArrowRight, ArrowUpRight } from "lucide-react";
 import { Input } from "../ui/input";
+import { toast } from "sonner";
 import ctcLogo from "../../../assets/f6c46c16a776a1f63a42e49b36947669f8dcc942.png";
 
 export function PublicLayout() {
@@ -12,6 +13,41 @@ export function PublicLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [email, setEmail] = useState("");
+  const [newsletterFeedback, setNewsletterFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  const handleNewsletterSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailPattern.test(normalizedEmail)) {
+      const message = "Please enter a valid email address.";
+      setNewsletterFeedback({ type: "error", message });
+      toast.error(message);
+      return;
+    }
+
+    try {
+      const rawStored = localStorage.getItem("ctc-newsletter-subscribers");
+      const existingList = rawStored ? JSON.parse(rawStored) : [];
+      const subscribers = Array.isArray(existingList) ? existingList : [];
+
+      if (!subscribers.includes(normalizedEmail)) {
+        subscribers.push(normalizedEmail);
+        localStorage.setItem("ctc-newsletter-subscribers", JSON.stringify(subscribers));
+      }
+
+      const message = "Thanks. Your email has been saved for updates.";
+      setNewsletterFeedback({ type: "success", message });
+      setEmail("");
+      toast.success(message);
+    } catch {
+      const message = "Could not save your email right now. Please try again.";
+      setNewsletterFeedback({ type: "error", message });
+      toast.error(message);
+    }
+  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
@@ -189,14 +225,24 @@ export function PublicLayout() {
               <div>
                 <h4 className="text-white text-sm font-semibold mb-5 tracking-wide">Company</h4>
                 <ul className="space-y-3">
-                  {["About", "Contact", "Privacy Policy", "Terms of Service", "Support"].map((link) => (
-                    <li key={link}>
-                      <a href="#" className="text-sm text-slate-500 hover:text-white transition-colors duration-200 flex items-center gap-1.5 group">
-                        {link}
-                        <ArrowUpRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </a>
-                    </li>
-                  ))}
+                  <li className="text-sm text-slate-500 leading-relaxed">
+                    <span className="text-slate-300 font-medium">About:</span> CTC Club helps students build practical tech skills with real projects and mentor support.
+                  </li>
+                  <li className="text-sm text-slate-500 leading-relaxed">
+                    <span className="text-slate-300 font-medium">Privacy Policy:</span> We protect your personal information and only use it for learning platform services.
+                  </li>
+                  <li className="text-sm text-slate-500 leading-relaxed">
+                    <span className="text-slate-300 font-medium">Terms of Service:</span> Use the platform respectfully, submit original work, and follow community guidelines.
+                  </li>
+                  <li className="text-sm text-slate-500 leading-relaxed">
+                    <span className="text-slate-300 font-medium">Support:</span> For help with courses or your account, use the support page in your dashboard.
+                  </li>
+                  <li className="text-sm text-slate-500 leading-relaxed">
+                    <span className="text-slate-300 font-medium">Contact:</span>{" "}
+                    <a href="tel:0986182779" className="hover:text-white transition-colors">0986182779</a>
+                    {" "}|{" "}
+                    <a href="mailto:abdisaawel82@gmail.com" className="hover:text-white transition-colors">abdisaawel82@gmail.com</a>
+                  </li>
                 </ul>
               </div>
 
@@ -206,17 +252,25 @@ export function PublicLayout() {
                 <p className="text-sm text-slate-500 mb-4 leading-relaxed">
                   Get the latest courses and events delivered to your inbox.
                 </p>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="you@email.com"
-                    className="bg-white/5 border-white/10 text-white placeholder:text-slate-600 text-sm h-10 rounded-xl focus-visible:ring-indigo-500 focus-visible:border-indigo-500"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                  <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 shrink-0 h-10 px-3.5 rounded-xl">
-                    <Mail className="h-4 w-4" />
-                  </Button>
-                </div>
+                <form onSubmit={handleNewsletterSubmit} className="space-y-2">
+                  <div className="flex gap-2">
+                    <Input
+                      type="email"
+                      placeholder="you@email.com"
+                      className="bg-white/5 border-white/10 text-white placeholder:text-slate-600 text-sm h-10 rounded-xl focus-visible:ring-indigo-500 focus-visible:border-indigo-500"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                    <Button type="submit" size="sm" className="bg-indigo-600 hover:bg-indigo-700 shrink-0 h-10 px-3.5 rounded-xl">
+                      <Mail className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {newsletterFeedback ? (
+                    <p className={`text-xs ${newsletterFeedback.type === "success" ? "text-emerald-400" : "text-rose-400"}`}>
+                      {newsletterFeedback.message}
+                    </p>
+                  ) : null}
+                </form>
               </div>
             </div>
 

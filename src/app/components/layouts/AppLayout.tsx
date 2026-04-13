@@ -517,8 +517,7 @@ export function AppLayout() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild className="rounded-lg"><Link to="/app/settings">Profile</Link></DropdownMenuItem>
-                <DropdownMenuItem asChild className="rounded-lg"><Link to="/app/settings">Settings</Link></DropdownMenuItem>
+                <DropdownMenuItem asChild className="rounded-lg"><Link to="/app/profile">Profile</Link></DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
                   onClick={() => logout()} 

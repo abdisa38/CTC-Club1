@@ -283,12 +283,39 @@ export function Projects() {
       return;
     }
 
+    const normalizedRepoUrl = repoUrl.trim();
+    const normalizedLiveUrl = liveUrl.trim();
+    const normalizedComments = comments.trim();
+
+    if (!normalizedRepoUrl) {
+      setError("GitHub repository URL is required");
+      return;
+    }
+
+    const existingSubmission = submissionByProjectId.get(projectId);
+    if (existingSubmission) {
+      const existingRepoUrl = String(existingSubmission.repoUrl || "").trim();
+      const existingLiveUrl = String(existingSubmission.liveUrl || "").trim();
+      const existingComments = String(existingSubmission.comments || "").trim();
+
+      const hasNoChanges = (
+        existingRepoUrl === normalizedRepoUrl
+        && existingLiveUrl === normalizedLiveUrl
+        && existingComments === normalizedComments
+      );
+
+      if (hasNoChanges) {
+        setError("No changes detected. Update any field before saving your submission.");
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     try {
       const submission = await apiService.submitProject(projectId, {
-        repoUrl: repoUrl.trim(),
-        liveUrl: liveUrl.trim() || undefined,
-        comments: comments.trim() || undefined,
+        repoUrl: normalizedRepoUrl,
+        liveUrl: normalizedLiveUrl || undefined,
+        comments: normalizedComments || undefined,
       });
 
       setSubmissions((prev) => {
@@ -645,8 +672,8 @@ export function Projects() {
                         ) : null}
                         {submission?.updatedAt ? (
                           <span className="flex items-center gap-1">
-                            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                            Updated: {new Date(submission.updatedAt).toLocaleDateString()}
+                            <Clock className="h-4 w-4" />
+                            Last submitted: {new Date(submission.updatedAt).toLocaleDateString()}
                           </span>
                         ) : null}
                       </div>

@@ -1,5 +1,6 @@
 import { Toaster } from 'sonner';
 import { RouterProvider } from 'react-router';
+import { useEffect } from 'react';
 import { router } from './routes';
 import { AuthProvider } from './context/AuthContext';
 
@@ -10,6 +11,24 @@ const routerFallback = (
 );
 
 export default function App() {
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    const root = document.documentElement;
+
+    if (savedTheme === 'dark') {
+      root.classList.add('dark');
+      return;
+    }
+
+    if (savedTheme === 'light') {
+      root.classList.remove('dark');
+      return;
+    }
+
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    root.classList.toggle('dark', prefersDark);
+  }, []);
+
   return (
     <div className="font-sans antialiased text-slate-900 bg-white dark:bg-slate-950 dark:text-slate-50 min-h-screen">
       <AuthProvider>

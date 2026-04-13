@@ -56,7 +56,7 @@ export function StudentDashboard({ metrics }: { metrics?: any }) {
           apiService.getCourses({ limit: 8, status: "published" }),
         ]);
 
-        setLeaderboard(leaderboardData);
+        setLeaderboard(leaderboardData.filter((entry) => entry.role === "student"));
 
         const enrolledIds = new Set(
           activeCourses

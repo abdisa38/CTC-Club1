@@ -9,10 +9,6 @@ const lazyComponent = <T extends Record<string, any>>(loader: () => Promise<T>, 
   };
 };
 
-function ProfileRedirect() {
-  return <Navigate to="/app/settings" replace />;
-}
-
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -66,7 +62,7 @@ export const router = createBrowserRouter([
       { path: "admin/settings", lazy: lazyComponent(() => import("./pages/admin/AdminSettings"), "AdminSettings") },
       { path: "analytics", lazy: lazyComponent(() => import("./pages/AdminReports"), "AdminReports") },
       { path: "jobs", lazy: lazyComponent(() => import("./pages/Dashboard"), "Dashboard") },
-      { path: "profile", Component: ProfileRedirect },
+      { path: "profile", lazy: lazyComponent(() => import("./pages/Profile"), "Profile") },
       { path: "premium-return", lazy: lazyComponent(() => import("./pages/PremiumReturn"), "PremiumReturn") },
       { path: "settings", lazy: lazyComponent(() => import("./pages/Settings"), "Settings") },
       { path: "*", lazy: lazyComponent(() => import("./pages/Dashboard"), "Dashboard") },

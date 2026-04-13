@@ -16,7 +16,7 @@ export function Leaderboard() {
     const fetchLeaderboard = async () => {
       try {
         const data = await apiService.getLeaderboard();
-        setEntries(data);
+        setEntries(data.filter((entry) => entry.role === "student"));
       } catch (err: any) {
         setError(err?.response?.data?.message || "Failed to load leaderboard");
       } finally {

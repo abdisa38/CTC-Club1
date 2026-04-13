@@ -200,8 +200,15 @@ export function Settings({ embedded = false }: { embedded?: boolean }) {
     });
 
     const nextTheme = (payload?.preferences?.appearance?.theme || "system") as ThemePreference;
-    setThemePreference(nextTheme);
-    applyThemePreference(nextTheme);
+    const storedTheme = localStorage.getItem("theme");
+    const hasStoredTheme = storedTheme === "light" || storedTheme === "dark" || storedTheme === "system";
+    const initialTheme = hasStoredTheme ? (storedTheme as ThemePreference) : nextTheme;
+
+    setThemePreference(initialTheme);
+
+    if (!hasStoredTheme) {
+      applyThemePreference(nextTheme);
+    }
   };
 
   useEffect(() => {

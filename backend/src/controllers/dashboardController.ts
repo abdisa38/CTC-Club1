@@ -270,16 +270,107 @@ export const getDashboardMetrics = asyncHandler(async (req: AuthRequest, res: Re
     }
 
     // Role is Student
+    const student = await User.findById(req.user._id)
+        .select('xp level enrolledCourses')
+        .lean();
+
+    if (!student) {
+        res.status(404);
+        throw new Error('User not found');
+    }
+
     const userProgress = await Progress.find({ user: req.user._id }).populate({
         path: 'course',
         select: 'title coverImage totalDuration'
     });
 
-    const enrolledCourses = userProgress.length;
-    const completedCourses = userProgress.filter(p => p.isCompleted).length;
+    const enrolledCourseIdsFromUser = Array.isArray((student as any).enrolledCourses)
+        ? (student as any).enrolledCourses.map((id: any) => id.toString())
+        : [];
 
-    // Next lesson logic: find progress where percentage < 100
-    const activeProgress = userProgress.filter(p => !p.isCompleted);
+    const getProgressCourseId = (progress: any) => {
+        if (!progress?.course) {
+            return '';
+        }
+
+        if (typeof progress.course === 'string') {
+            return progress.course;
+        }
+
+        return progress.course?._id?.toString() || '';
+    };
+
+    const progressCourseIds = userProgress
+        .map((progress: any) => getProgressCourseId(progress))
+        .filter(Boolean);
+
+    const progressCourseIdSet = new Set(progressCourseIds);
+    const uniqueEnrolledCourseIds = Array.from(new Set([...enrolledCourseIdsFromUser, ...progressCourseIds]));
+    const missingProgressCourseIds = uniqueEnrolledCourseIds.filter((courseId) => !progressCourseIdSet.has(courseId));
+
+    const missingProgressCourses = missingProgressCourseIds.length > 0
+        ? await Course.find({
+            _id: { $in: missingProgressCourseIds },
+            isDeleted: false,
+        }).select('title coverImage totalDuration')
+        : [];
+
+    const syntheticActiveProgress = missingProgressCourses.map((course: any) => ({
+        _id: `enrolled-${course._id.toString()}`,
+        user: req.user._id,
+        course: {
+            _id: course._id,
+            title: course.title,
+            coverImage: course.coverImage,
+            totalDuration: course.totalDuration,
+        },
+        progressPercentage: 0,
+        isCompleted: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+    }));
+
+    const completedCourseIds = new Set(
+        userProgress
+            .filter((progress: any) => progress.isCompleted)
+            .map((progress: any) => getProgressCourseId(progress))
+            .filter(Boolean)
+    );
+
+    const activeProgressMap = new Map<string, any>();
+    userProgress
+        .filter((progress: any) => !progress.isCompleted)
+        .forEach((progress: any) => {
+            const courseId = getProgressCourseId(progress);
+            if (!courseId) {
+                return;
+            }
+
+            const existing = activeProgressMap.get(courseId);
+            if (!existing) {
+                activeProgressMap.set(courseId, progress);
+                return;
+            }
+
+            const existingUpdatedAt = new Date(existing.updatedAt || 0).getTime();
+            const currentUpdatedAt = new Date(progress.updatedAt || 0).getTime();
+            if (currentUpdatedAt >= existingUpdatedAt) {
+                activeProgressMap.set(courseId, progress);
+            }
+        });
+
+    syntheticActiveProgress.forEach((progress: any) => {
+        const courseId = getProgressCourseId(progress);
+        if (!courseId || activeProgressMap.has(courseId)) {
+            return;
+        }
+
+        activeProgressMap.set(courseId, progress);
+    });
+
+    const enrolledCourses = uniqueEnrolledCourseIds.length;
+    const completedCourses = completedCourseIds.size;
+    const activeProgress = Array.from(activeProgressMap.values());
 
     const [notifications, quizResults, projectSubmissions] = await Promise.all([
         Notification.find({ user: req.user._id }).sort({ createdAt: -1 }).limit(10),
@@ -292,8 +383,8 @@ export const getDashboardMetrics = asyncHandler(async (req: AuthRequest, res: Re
     ]);
 
     sendSuccess(res, {
-        xp: req.user.xp,
-        level: req.user.level,
+        xp: Number((student as any).xp ?? req.user.xp ?? 0),
+        level: Number((student as any).level ?? req.user.level ?? 1),
         enrolledCourses,
         completedCourses,
         activeCourses: activeProgress,
@@ -321,7 +412,7 @@ export const getAdminAnalytics = asyncHandler(async (req: AuthRequest, res: Resp
 // @route   GET /api/dashboard/leaderboard
 // @access  Private
 export const getLeaderboard = asyncHandler(async (req: AuthRequest, res: Response): Promise<void> => {
-    const users = await User.find({ isDeleted: false })
+    const users = await User.find({ isDeleted: false, role: 'student' })
         .sort({ xp: -1, createdAt: 1 })
         .limit(100)
         .select('name avatar xp level role');
