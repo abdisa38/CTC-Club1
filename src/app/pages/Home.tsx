@@ -708,12 +708,28 @@ export function Home() {
                   <div className="p-5">
                     <h3 className="text-[15px] font-semibold text-slate-900 dark:text-white mb-1">{p.title}</h3>
                     <p className="text-[13px] text-slate-500 mb-4">{p.tech}</p>
+                    <div className="flex items-center justify-between mb-4">
+                      <Badge className={`text-[11px] font-bold border-0 shadow-sm ${p.price > 0 ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
+                        {p.price > 0 ? `PAID ${p.price.toFixed(2)} ${p.currency}` : "FREE"}
+                      </Badge>
+                      <div className="flex items-center gap-1 text-[12px] text-slate-500">
+                        <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                        <span className="font-semibold text-slate-700 dark:text-slate-300">
+                          {p.numReviews > 0 ? p.rating.toFixed(1) : "N/A"}
+                        </span>
+                        <span>({p.numReviews})</span>
+                      </div>
+                    </div>
                     <div className="flex gap-2.5">
                       <Button size="sm" variant="outline" className="text-[11px] flex-1 h-8 rounded-lg border-slate-200/60 dark:border-white/10" asChild>
                         <Link to={p.href}>View Course</Link>
                       </Button>
-                      <Button size="sm" className="text-[11px] flex-1 h-8 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-sm shadow-indigo-500/20" asChild>
-                        <Link to="/app/courses">Explore</Link>
+                      <Button
+                        size="sm"
+                        className={`text-[11px] flex-1 h-8 rounded-lg font-bold ${p.price > 0 ? "bg-gradient-to-r from-rose-600 to-orange-500 hover:from-rose-700 hover:to-orange-600 text-white" : "bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white"}`}
+                        asChild
+                      >
+                        <Link to={p.href}>{p.price > 0 ? `Pay ${p.price.toFixed(2)} ${p.currency}` : "Enroll Free"}</Link>
                       </Button>
                     </div>
                   </div>
@@ -752,7 +768,9 @@ export function Home() {
                 ))}
               </div>
               <Button size="lg" className="bg-white text-indigo-700 hover:bg-white/90 rounded-xl h-12 px-8 font-semibold shadow-lg shadow-black/10 transition-all duration-300" asChild>
-                <Link to="/register">Join the Community <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                <a href="https://t.me/officialCTCclub" target="_blank" rel="noreferrer">
+                  Join on Telegram <ArrowRight className="ml-2 h-4 w-4" />
+                </a>
               </Button>
             </AnimatedSection>
             <AnimatedSection delay={0.15} className="flex-1 hidden lg:block">

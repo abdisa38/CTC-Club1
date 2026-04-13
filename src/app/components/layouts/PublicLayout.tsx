@@ -2,7 +2,7 @@ import { Outlet, Link, useLocation } from "react-router";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "../ui/button";
-import { Menu, X, Github, Twitter, Linkedin, Youtube, Instagram, Mail, ArrowRight, ArrowUpRight } from "lucide-react";
+import { Menu, X, Github, Twitter, Linkedin, Instagram, Mail, ArrowRight, ArrowUpRight } from "lucide-react";
 import { Input } from "../ui/input";
 import ctcLogo from "../../../assets/f6c46c16a776a1f63a42e49b36947669f8dcc942.png";
 
@@ -149,15 +149,16 @@ export function PublicLayout() {
                 </p>
                 <div className="flex gap-2">
                   {[
-                    { Icon: Twitter, href: "#" },
-                    { Icon: Github, href: "#" },
-                    { Icon: Linkedin, href: "#" },
-                    { Icon: Youtube, href: "#" },
-                    { Icon: Instagram, href: "#" },
+                    { Icon: Github, href: "https://github.com/abdisa38" },
+                    { Icon: Twitter, href: "https://x.com/bdi3889" },
+                    { Icon: Linkedin, href: "https://www.linkedin.com/in/abdisa-awel-92b963383/" },
+                    { Icon: Instagram, href: "https://www.instagram.com/abdisa3889/" },
                   ].map(({ Icon, href }, i) => (
                     <a
                       key={i}
                       href={href}
+                      target="_blank"
+                      rel="noreferrer"
                       className="h-9 w-9 rounded-xl bg-white/5 hover:bg-indigo-600 flex items-center justify-center transition-all duration-200 hover:scale-105"
                     >
                       <Icon className="h-4 w-4" />
