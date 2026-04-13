@@ -553,21 +553,6 @@ export function CourseDetail() {
     return resources;
   }, [visibleLessons]);
 
-  const selectedLessonResources = useMemo(() => {
-    if (!selectedLesson || !Array.isArray(selectedLesson.attachments)) {
-      return [];
-    }
-
-    return selectedLesson.attachments
-      .filter((attachment) => Boolean(attachment?.url))
-      .map((attachment, index) => ({
-        id: `${selectedLesson._id}-selected-${index}`,
-        name: attachment.title || toResourceName(attachment.url, `${selectedLesson.title} Resource`),
-        url: attachment.url,
-        fileType: attachment.fileType || "file",
-      }));
-  }, [selectedLesson]);
-
   const projectSubmissionByProjectId = useMemo(() => {
     const map = new Map<string, ProjectSubmission>();
 
