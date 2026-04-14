@@ -1,0 +1,50 @@
+name: Deploy to DigitalOcean App Platform
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-digitalocean-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy-backend:
+    name: Deploy backend app (DigitalOcean)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Trigger backend deployment
+        run: doctl apps create-deployment "${{ secrets.DIGITALOCEAN_BACKEND_APP_ID }}" --wait
+
+      - name: Optional backend health check
+        if: ${{ secrets.DIGITALOCEAN_BACKEND_HEALTHCHECK_URL != '' }}
+        run: curl -fsSL "${{ secrets.DIGITALOCEAN_BACKEND_HEALTHCHECK_URL }}"
+
+  deploy-frontend:
+    name: Deploy frontend app (DigitalOcean)
+    if: ${{ secrets.DIGITALOCEAN_FRONTEND_APP_ID != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+
+    steps:
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Trigger frontend deployment
+        run: doctl apps create-deployment "${{ secrets.DIGITALOCEAN_FRONTEND_APP_ID }}" --wait
