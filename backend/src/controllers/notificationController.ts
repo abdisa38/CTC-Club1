@@ -4,28 +4,29 @@ import { AuthRequest } from '../middleware/authMiddleware';
 import Notification from '../models/notificationModel';
 import User from '../models/userModel';
 import { sendSuccess } from '../utils/apiResponse';
+import { getPagination } from '../utils/pagination';
 
 // @desc    Get notifications for current user
 // @route   GET /api/notifications
 // @access  Private
 export const getNotifications = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const pageSize = Number(req.query.limit) || 20;
-  const page = Number(req.query.page) || 1;
+  const { page, limit, skip } = getPagination(req, { limit: 20, maxLimit: 100 });
 
   const filter = { user: req.user._id };
   const total = await Notification.countDocuments(filter);
 
   const notifications = await Notification.find(filter)
     .sort({ createdAt: -1 })
-    .limit(pageSize)
-    .skip(pageSize * (page - 1));
+    .limit(limit)
+    .skip(skip)
+    .lean();
 
   res.json({
     success: true,
     data: notifications,
     notifications,
     page,
-    pages: Math.ceil(total / pageSize),
+    pages: Math.ceil(total / limit),
     total,
   });
 });
@@ -75,12 +76,23 @@ export const broadcastNotification = asyncHandler(async (req: AuthRequest, res: 
     throw new Error('Title and message are required');
   }
 
+  const allowedTypes = ['system', 'course_update', 'project_graded', 'achievement', 'message'];
+  const safeType = allowedTypes.includes(String(type)) ? String(type) : 'system';
+
+  const safeTitle = String(title).trim().slice(0, 160);
+  const safeMessage = String(message).trim().slice(0, 2000);
+
+  if (!safeTitle || !safeMessage) {
+    res.status(400);
+    throw new Error('Title and message are required');
+  }
+
   const userFilter: any = { isDeleted: false };
   if (role) {
     userFilter.role = role;
   }
 
-  const users = await User.find(userFilter).select('_id');
+  const users = await User.find(userFilter).select('_id').lean();
   if (users.length === 0) {
     sendSuccess(res, { count: 0 }, { message: 'No target users found' });
     return;
@@ -88,9 +100,9 @@ export const broadcastNotification = asyncHandler(async (req: AuthRequest, res: 
 
   const documents = users.map((u) => ({
     user: u._id,
-    title,
-    message,
-    type,
+    title: safeTitle,
+    message: safeMessage,
+    type: safeType,
   }));
 
   await Notification.insertMany(documents);
