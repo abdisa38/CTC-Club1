@@ -35,12 +35,20 @@ jobs:
             frontend/package-lock.json
 
       - name: Install workspace dependencies
-        run: |
-          npm --prefix frontend ci
-          npm --prefix backend ci
+        run: npm ci
+        working-directory: frontend
+
+      - name: Install backend dependencies
+        run: npm ci
+        working-directory: backend
 
       - name: Build frontend and backend
         run: npm run build
+        working-directory: frontend
+
+      - name: Build backend
+        run: npm run build
+        working-directory: backend
 
       - name: Dependency vulnerability audit
         run: npm run audit
