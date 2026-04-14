@@ -1,8 +1,10 @@
 import axios from 'axios';
 
-// Create an Axios instance pointing to the API via our Vite proxy
+const configuredApiBaseUrl = String(import.meta.env.VITE_API_BASE_URL || '/api').trim();
+
+// Create an Axios instance pointing to the API via env-configured URL or local proxy
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: configuredApiBaseUrl || '/api',
   withCredentials: true, // Crucial for sending/receiving httpOnly cookies
 });
 
