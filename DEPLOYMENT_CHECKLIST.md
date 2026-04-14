@@ -44,8 +44,6 @@ Run these before every deployment:
 
 - CI workflow: .github/workflows/ci.yml
 - Frontend Pages workflow: .github/workflows/deploy-frontend-pages.yml
-- Heroku workflow: .github/workflows/deploy-heroku.yml
-- DigitalOcean workflow: .github/workflows/deploy-digitalocean.yml
 - Azure workflow: .github/workflows/deploy-azure.yml
 - Full setup guide: DEVOPS_STUDENT_SETUP.md
 - Docker local setup guide: DOCKER_SETUP.md
