@@ -7,7 +7,6 @@ For now, Heroku and DigitalOcean deployment workflows are removed.
 
 - CI workflow (build + audit): .github/workflows/ci.yml
 - Frontend CD workflow (GitHub Pages): .github/workflows/deploy-frontend-pages.yml
-- Optional backend CD workflow (Azure): .github/workflows/deploy-azure.yml
 - Docker backend image: backend/Dockerfile
 - Docker local stack (backend + MongoDB): docker-compose.yml
 
@@ -15,6 +14,7 @@ For now, Heroku and DigitalOcean deployment workflows are removed.
 
 - .github/workflows/deploy-heroku.yml
 - .github/workflows/deploy-digitalocean.yml
+- .github/workflows/deploy-azure.yml
 
 ## 3) CI step by step (every code push)
 
@@ -50,21 +50,7 @@ If CI is red:
 4. Wait for build and deploy jobs to finish.
 5. Open your Pages URL from workflow output.
 
-## 5) Optional backend CD (Azure for Students)
-
-If you want backend cloud deploy without Heroku/DigitalOcean now, use Azure.
-
-1. Create Azure App Service (Node backend).
-2. Download Publish Profile from Azure portal.
-3. In GitHub repo, open Settings -> Secrets and variables -> Actions.
-4. Add these secrets:
-   - AZURE_BACKEND_WEBAPP_NAME
-   - AZURE_BACKEND_PUBLISH_PROFILE
-5. Open Actions -> Deploy Backend to Azure App Service.
-6. Run workflow manually.
-7. Check backend health endpoint /api/health.
-
-## 6) Docker step by step (local backend + database)
+## 5) Docker step by step (local backend + database)
 
 ### Start
 
@@ -87,7 +73,7 @@ If you want backend cloud deploy without Heroku/DigitalOcean now, use Azure.
 1. Run: docker compose down
 2. To remove volume data too: docker compose down -v
 
-## 7) Environment variables you must set in production
+## 6) Environment variables you must set in production
 
 - NODE_ENV=production
 - PORT
@@ -107,7 +93,7 @@ Optional feature variables:
 - GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET
 - CHAPA_SECRET_KEY, CHAPA_WEBHOOK_SECRET, CHAPA_RETURN_URL
 
-## 8) Beginner command list
+## 7) Beginner command list
 
 - Install all: npm run install:all
 - Run frontend: npm run dev:frontend
@@ -116,7 +102,7 @@ Optional feature variables:
 - Audit packages: npm run audit
 - Pre-deploy gate: npm run predeploy
 
-## 9) Safety rules
+## 8) Safety rules
 
 1. Keep deployment workflows manual until you are confident.
 2. Do not put secrets directly in files.
