@@ -1,9 +1,12 @@
+import 'dotenv/config';
 import express, { type Application, type Request, type Response } from 'express';
 import path from 'path';
-import dotenv from 'dotenv';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import connectDB from './config/db';
+import { getJwtSecret } from './config/env';
 import { notFound, errorHandler } from './middleware/errorMiddleware';
 import authRoutes from './routes/authRoutes';
 import courseRoutes from './routes/courseRoutes';
@@ -18,36 +21,109 @@ import uploadRoutes from './routes/uploadRoutes';
 import eventRoutes from './routes/eventRoutes';
 import paymentRoutes from './routes/paymentRoutes';
 
-// Load env vars
-dotenv.config();
+const parseRateLimitMax = (value: string | undefined, fallback: number) => {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+        return fallback;
+    }
+
+    return Math.floor(parsed);
+};
+
+const getAllowedOrigins = () => {
+    const envOrigins = String(process.env.CORS_ORIGINS || '')
+        .split(',')
+        .map((origin) => origin.trim())
+        .filter(Boolean);
+
+    return Array.from(new Set([
+        'http://localhost:5173',
+        'http://localhost:3000',
+        process.env.CLIENT_URL || '',
+        ...envOrigins,
+    ].filter(Boolean)));
+};
+
+const corsOriginSet = new Set(getAllowedOrigins());
+
+const apiRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: parseRateLimitMax(process.env.RATE_LIMIT_MAX, 500),
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+        success: false,
+        message: 'Too many requests from this IP, please try again in a few minutes.',
+    },
+});
+
+const authRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: parseRateLimitMax(process.env.AUTH_RATE_LIMIT_MAX, 20),
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+        success: false,
+        message: 'Too many authentication attempts, please wait and try again.',
+    },
+});
 
 // Connect to database
 connectDB();
+getJwtSecret();
 
 const app: Application = express();
 
+if (process.env.NODE_ENV === 'production') {
+    app.set('trust proxy', 1);
+}
+
+app.disable('x-powered-by');
+
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
+
+app.use(cors({
+    origin(origin, callback) {
+        if (!origin || corsOriginSet.has(origin)) {
+            callback(null, true);
+            return;
+        }
+
+        callback(new Error('CORS policy blocked this request origin.'));
+    },
+    credentials: true,
+}));
+
+app.use('/api', apiRateLimiter);
+app.use('/api/auth/login', authRateLimiter);
+app.use('/api/auth/register', authRateLimiter);
+app.use('/api/auth/password/forgot', authRateLimiter);
+app.use('/api/auth/password/reset', authRateLimiter);
+
 // Body parser
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 
 // Serve uploaded lesson assets
-app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
+app.use('/uploads', express.static(path.resolve(__dirname, '..', 'uploads')));
 
 // Cookie parser
 app.use(cookieParser());
 
-// Enable CORS
-app.use(cors({
-    origin: [
-        'http://localhost:5173',
-        'http://localhost:3000',
-        process.env.CLIENT_URL || '',
-    ].filter(Boolean),
-    credentials: true,
-}));
-
 // Basic Route for testing
 app.get('/api', (req: Request, res: Response) => {
     res.json({ message: 'Welcome to the CTC Club API' });
+});
+
+app.get('/api/health', (_req: Request, res: Response) => {
+    res.json({
+        success: true,
+        status: 'ok',
+        environment: process.env.NODE_ENV || 'development',
+        uptimeSeconds: Math.round(process.uptime()),
+        timestamp: new Date().toISOString(),
+    });
 });
 
 if (process.env.NODE_ENV === 'development') {
