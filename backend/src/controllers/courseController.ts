@@ -5,6 +5,7 @@ import Course from '../models/courseModel';
 import CourseReview from '../models/courseReviewModel';
 import User from '../models/userModel';
 import { sendSuccess } from '../utils/apiResponse';
+import { getPagination } from '../utils/pagination';
 
 // @desc    Create a course
 // @route   POST /api/courses
@@ -37,8 +38,7 @@ export const createCourse = asyncHandler(async (req: AuthRequest, res: Response)
 // @route   GET /api/courses
 // @access  Public
 export const getCourses = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const pageSize = Number(req.query.limit) || 12;
-  const page = Number(req.query.page) || 1;
+  const { page, limit, skip } = getPagination(req, { limit: 12, maxLimit: 100 });
 
   const keyword = req.query.keyword
     ? {
@@ -51,7 +51,8 @@ export const getCourses = asyncHandler(async (req: AuthRequest, res: Response) =
 
   const queryFilter: any = { ...keyword, isDeleted: false };
   
-  if (req.query.status) {
+    const allowedStatuses = ['draft', 'published', 'archived'];
+    if (typeof req.query.status === 'string' && allowedStatuses.includes(req.query.status)) {
       queryFilter.status = req.query.status;
   } else if (!req.user || req.user.role === 'student') { 
       // Public / Students should only see published ones
@@ -62,21 +63,21 @@ export const getCourses = asyncHandler(async (req: AuthRequest, res: Response) =
   const courseQuery = Course.find(queryFilter)
     .populate('instructor', 'name email avatar')
     .sort({ createdAt: -1 })
-    .limit(pageSize)
-    .skip(pageSize * (page - 1));
+    .limit(limit)
+    .skip(skip);
 
   if (!req.user) {
     courseQuery.select('-students');
   }
 
-  const courses = await courseQuery;
+  const courses = await courseQuery.lean();
 
   res.json({
     success: true,
     data: courses,
     courses,
     page,
-    pages: Math.ceil(count / pageSize),
+    pages: Math.ceil(count / limit),
     total: count,
   });
 });
