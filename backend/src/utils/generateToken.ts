@@ -12,7 +12,7 @@ const generateToken = (res: Response, userId: string, role: string) => {
   const maxAge = Number(process.env.JWT_COOKIE_MAX_AGE_MS || 7 * 24 * 60 * 60 * 1000);
 
   const token = jwt.sign({ id: userId, role }, jwtSecret, {
-    expiresIn,
+    expiresIn: expiresIn as any,
   });
 
   res.cookie(cookieName, token, {
