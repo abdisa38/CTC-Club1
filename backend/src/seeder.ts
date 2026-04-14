@@ -4,6 +4,7 @@ import connectDB from './config/db';
 import User from './models/userModel';
 import Course from './models/courseModel';
 import Progress from './models/progressModel';
+import { logger } from './utils/logger';
 
 dotenv.config();
 
@@ -11,7 +12,7 @@ const importData = async () => {
   try {
     await connectDB();
 
-    console.log('Clearing existing dummy data...');
+    logger.info('Clearing existing dummy data...');
     await Course.deleteMany();
     await Progress.deleteMany();
 
@@ -47,7 +48,7 @@ const importData = async () => {
       let existingUser = await User.findOne({ email: user.email });
       if (!existingUser) {
         existingUser = await User.create(user);
-        console.log(`Created ${user.role}: ${user.email}`);
+        logger.info(`Created ${user.role}: ${user.email}`);
       }
       createdUsersByEmail[user.email] = existingUser;
     }
@@ -63,7 +64,7 @@ const importData = async () => {
     const sarahId = sarahUser._id;
     const alexId = alexUser._id;
 
-    console.log('Seeding courses...');
+    logger.info('Seeding courses...');
     const courses = [
       {
         title: "Complete Web Development Bootcamp",
@@ -116,7 +117,7 @@ const importData = async () => {
     ];
 
     const insertedCourses = await Course.insertMany(courses);
-    console.log(`Imported ${insertedCourses.length} courses!`);
+    logger.info(`Imported ${insertedCourses.length} courses!`);
 
     // Optionally create some progress
     const firstCourse = insertedCourses[0];
@@ -127,13 +128,13 @@ const importData = async () => {
         completedLessons: [],
         isCompleted: true
       });
-      console.log('Seeded progress successfully.');
+      logger.info('Seeded progress successfully.');
     }
 
-    console.log('Data Imported!');
+    logger.info('Data imported');
     process.exit();
   } catch (error) {
-    console.error(`Error: ${(error as Error).message}`);
+    logger.error(`Seeder error: ${(error as Error).message}`);
     process.exit(1);
   }
 };
