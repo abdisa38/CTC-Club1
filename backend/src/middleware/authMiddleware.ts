@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import expressAsyncHandler from 'express-async-handler';
 import User from '../models/userModel';
+import { getJwtSecret } from '../config/env';
 
 export interface AuthRequest extends Request {
   user?: any;
@@ -13,7 +14,7 @@ export const protect = expressAsyncHandler(async (req: AuthRequest, res: Respons
 
   if (token) {
     try {
-      const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+      const decoded: any = jwt.verify(token, getJwtSecret());
       req.user = await User.findById(decoded.id).select('-password');
       next();
     } catch (error) {
@@ -36,7 +37,7 @@ export const optionalProtect = expressAsyncHandler(async (req: AuthRequest, _res
   }
 
   try {
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+    const decoded: any = jwt.verify(token, getJwtSecret());
     req.user = await User.findById(decoded.id).select('-password');
   } catch {
     // Ignore invalid/expired tokens for optional auth routes.

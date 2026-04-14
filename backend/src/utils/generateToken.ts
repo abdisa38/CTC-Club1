@@ -1,8 +1,9 @@
 import { Response } from 'express';
 import jwt from 'jsonwebtoken';
+import { getJwtSecret } from '../config/env';
 
 const generateToken = (res: Response, userId: string, role: string) => {
-  const token = jwt.sign({ id: userId, role }, process.env.JWT_SECRET || 'fallback_secret', {
+  const token = jwt.sign({ id: userId, role }, getJwtSecret(), {
     expiresIn: '30d',
   });
 
@@ -19,6 +20,8 @@ const generateToken = (res: Response, userId: string, role: string) => {
 export const clearToken = (res: Response) => {
   res.cookie('jwt', '', {
     httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
     expires: new Date(0),
   });
 };
