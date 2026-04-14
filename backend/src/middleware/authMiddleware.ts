@@ -8,30 +8,16 @@ export interface AuthRequest extends Request {
 }
 
 export const protect = expressAsyncHandler(async (req: AuthRequest, res: Response, next: NextFunction) => {
-  const jwtSecret = String(process.env.JWT_SECRET || '').trim();
-  const cookieName = String(process.env.JWT_COOKIE_NAME || 'jwt').trim() || 'jwt';
-
-  if (!jwtSecret) {
-    res.status(500);
-    throw new Error('JWT_SECRET is not configured');
-  }
-
   let token;
-  token = req.cookies?.[cookieName];
+  token = req.cookies.jwt;
 
   if (token) {
     try {
-      const decoded: any = jwt.verify(token, jwtSecret);
-      const user = await User.findById(decoded.id).select('-password');
-
-      if (!user) {
-        res.status(401);
-        throw new Error('Not authorized, user not found');
-      }
-
-      req.user = user;
+      const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+      req.user = await User.findById(decoded.id).select('-password');
       next();
-    } catch {
+    } catch (error) {
+      console.error(error);
       res.status(401);
       throw new Error('Not authorized, token failed');
     }
@@ -42,17 +28,15 @@ export const protect = expressAsyncHandler(async (req: AuthRequest, res: Respons
 });
 
 export const optionalProtect = expressAsyncHandler(async (req: AuthRequest, _res: Response, next: NextFunction) => {
-  const jwtSecret = String(process.env.JWT_SECRET || '').trim();
-  const cookieName = String(process.env.JWT_COOKIE_NAME || 'jwt').trim() || 'jwt';
-  const token = req.cookies?.[cookieName];
+  const token = req.cookies.jwt;
 
-  if (!token || !jwtSecret) {
+  if (!token) {
     next();
     return;
   }
 
   try {
-    const decoded: any = jwt.verify(token, jwtSecret);
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
     req.user = await User.findById(decoded.id).select('-password');
   } catch {
     // Ignore invalid/expired tokens for optional auth routes.
