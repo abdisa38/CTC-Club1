@@ -15,7 +15,10 @@ jobs:
     name: Deploy backend (Heroku)
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: production
+    env:
+      HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+      HEROKU_APP_NAME: ${{ secrets.HEROKU_APP_NAME }}
+      HEROKU_EMAIL: ${{ secrets.HEROKU_EMAIL }}
 
     steps:
       - name: Checkout repository
@@ -39,12 +42,12 @@ jobs:
       - name: Deploy to Heroku
         uses: akhileshns/heroku-deploy@v3.14.15
         with:
-          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
-          heroku_app_name: ${{ secrets.HEROKU_APP_NAME }}
-          heroku_email: ${{ secrets.HEROKU_EMAIL }}
+          heroku_api_key: ${{ env.HEROKU_API_KEY }}
+          heroku_app_name: ${{ env.HEROKU_APP_NAME }}
+          heroku_email: ${{ env.HEROKU_EMAIL }}
           appdir: backend
           usedocker: true
-          healthcheck: https://${{ secrets.HEROKU_APP_NAME }}.herokuapp.com/api/health
+          healthcheck: https://${{ env.HEROKU_APP_NAME }}.herokuapp.com/api/health
           checkstring: ok
           rollbackonhealthcheckfailed: true
           delay: 10

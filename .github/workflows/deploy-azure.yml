@@ -15,7 +15,9 @@ jobs:
     name: Deploy backend (Azure)
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: production
+    env:
+      AZURE_BACKEND_WEBAPP_NAME: ${{ secrets.AZURE_BACKEND_WEBAPP_NAME }}
+      AZURE_BACKEND_PUBLISH_PROFILE: ${{ secrets.AZURE_BACKEND_PUBLISH_PROFILE }}
 
     steps:
       - name: Checkout repository
@@ -36,6 +38,6 @@ jobs:
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
-          app-name: ${{ secrets.AZURE_BACKEND_WEBAPP_NAME }}
-          publish-profile: ${{ secrets.AZURE_BACKEND_PUBLISH_PROFILE }}
+          app-name: ${{ env.AZURE_BACKEND_WEBAPP_NAME }}
+          publish-profile: ${{ env.AZURE_BACKEND_PUBLISH_PROFILE }}
           package: backend

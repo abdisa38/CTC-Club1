@@ -40,7 +40,16 @@ Run these before every deployment:
    - Payment init and return flow (if enabled)
    - Password reset email and reset code
 
-## 5) Security Controls Already Added
+## 5) DevOps Automation
+
+- CI workflow: .github/workflows/ci.yml
+- Frontend Pages workflow: .github/workflows/deploy-frontend-pages.yml
+- Heroku workflow: .github/workflows/deploy-heroku.yml
+- DigitalOcean workflow: .github/workflows/deploy-digitalocean.yml
+- Azure workflow: .github/workflows/deploy-azure.yml
+- Full setup guide: DEVOPS_STUDENT_SETUP.md
+
+## 6) Security Controls Already Added
 
 - Helmet security headers
 - CORS allow-list with optional CORS_ORIGINS env
@@ -49,7 +58,7 @@ Run these before every deployment:
 - Request body size limit on JSON payloads
 - Production-safe cookie clearing flags
 
-## 6) Deployment Order
+## 7) Deployment Order
 
 1. Deploy backend first
 2. Set backend environment variables on hosting platform
@@ -58,7 +67,7 @@ Run these before every deployment:
 5. Set frontend VITE_API_BASE_URL to your backend URL + /api (if not same origin)
 6. Smoke-test login, dashboard, and one protected API call
 
-## 7) Production Environment Minimum
+## 8) Production Environment Minimum
 
 Backend:
 
@@ -75,7 +84,7 @@ Frontend:
 
 - VITE_API_BASE_URL (if frontend and backend are on different domains)
 
-## 8) Rollback Plan (Simple)
+## 9) Rollback Plan (Simple)
 
 1. Keep last known-good backend and frontend build artifacts/images.
 2. If health check fails after release, roll back backend first.

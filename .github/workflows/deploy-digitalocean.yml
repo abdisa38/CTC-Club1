@@ -11,11 +11,15 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy-backend:
-    name: Deploy backend app (DigitalOcean)
+  deploy:
+    name: Deploy app(s) on DigitalOcean
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    environment: production
+    env:
+      DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+      DIGITALOCEAN_BACKEND_APP_ID: ${{ secrets.DIGITALOCEAN_BACKEND_APP_ID }}
+      DIGITALOCEAN_FRONTEND_APP_ID: ${{ secrets.DIGITALOCEAN_FRONTEND_APP_ID }}
+      DIGITALOCEAN_BACKEND_HEALTHCHECK_URL: ${{ secrets.DIGITALOCEAN_BACKEND_HEALTHCHECK_URL }}
 
     steps:
       - name: Checkout repository
@@ -24,27 +28,29 @@ jobs:
       - name: Install doctl
         uses: digitalocean/action-doctl@v2
         with:
-          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          token: ${{ env.DIGITALOCEAN_ACCESS_TOKEN }}
 
       - name: Trigger backend deployment
-        run: doctl apps create-deployment "${{ secrets.DIGITALOCEAN_BACKEND_APP_ID }}" --wait
+        run: |
+          if [ -z "$DIGITALOCEAN_BACKEND_APP_ID" ]; then
+            echo "DIGITALOCEAN_BACKEND_APP_ID is required."
+            exit 1
+          fi
+
+          doctl apps create-deployment "$DIGITALOCEAN_BACKEND_APP_ID" --wait
 
       - name: Optional backend health check
-        if: ${{ secrets.DIGITALOCEAN_BACKEND_HEALTHCHECK_URL != '' }}
-        run: curl -fsSL "${{ secrets.DIGITALOCEAN_BACKEND_HEALTHCHECK_URL }}"
+        run: |
+          if [ -n "$DIGITALOCEAN_BACKEND_HEALTHCHECK_URL" ]; then
+            curl -fsSL "$DIGITALOCEAN_BACKEND_HEALTHCHECK_URL"
+          else
+            echo "No backend healthcheck URL set; skipping health check."
+          fi
 
-  deploy-frontend:
-    name: Deploy frontend app (DigitalOcean)
-    if: ${{ secrets.DIGITALOCEAN_FRONTEND_APP_ID != '' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    environment: production
-
-    steps:
-      - name: Install doctl
-        uses: digitalocean/action-doctl@v2
-        with:
-          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-
-      - name: Trigger frontend deployment
-        run: doctl apps create-deployment "${{ secrets.DIGITALOCEAN_FRONTEND_APP_ID }}" --wait
+      - name: Optional frontend deployment
+        run: |
+          if [ -n "$DIGITALOCEAN_FRONTEND_APP_ID" ]; then
+            doctl apps create-deployment "$DIGITALOCEAN_FRONTEND_APP_ID" --wait
+          else
+            echo "No DIGITALOCEAN_FRONTEND_APP_ID set; skipping frontend deployment."
+          fi
