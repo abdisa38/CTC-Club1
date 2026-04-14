@@ -104,3 +104,10 @@ Optional based on features:
 - Build all: `npm run build`
 - Security audit: `npm run audit`
 - Predeploy gate: `npm run predeploy`
+
+## 9) Docker local stack
+
+- Compose file: `docker-compose.yml`
+- Quick guide: `DOCKER_SETUP.md`
+- Start: `docker compose up -d --build`
+- Stop: `docker compose down`
