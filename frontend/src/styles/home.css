@@ -1,0 +1,68 @@
+/* Premium Glassmorphism Theme */
+
+.home-shell {
+  background: radial-gradient(circle at 15% 50%, rgba(91, 33, 182, 0.2), transparent 45%),
+              radial-gradient(circle at 85% 10%, rgba(30, 64, 175, 0.25), transparent 40%),
+              linear-gradient(135deg, #09090b 0%, #050117 50%, #08061a 100%);
+  background-attachment: fixed;
+  color: #f8fafc;
+}
+
+/* Because the background is primarily dark, dark mode is effectively enforced on the homepage */
+.dark .home-shell {
+  background: radial-gradient(circle at 15% 50%, rgba(91, 33, 182, 0.2), transparent 45%),
+              radial-gradient(circle at 85% 10%, rgba(30, 64, 175, 0.25), transparent 40%),
+              linear-gradient(135deg, #09090b 0%, #050117 50%, #08061a 100%);
+  background-attachment: fixed;
+}
+
+.home-display {
+  font-family: "Poppins", "Inter", sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.home-copy {
+  font-family: "Inter", sans-serif;
+}
+
+.home-hero-grid {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+.dark .home-hero-grid {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+}
+
+.home-luxe-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.home-luxe-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(139, 92, 246, 0.3); /* Purple border glow */
+  box-shadow: 0 12px 40px rgba(139, 92, 246, 0.15); /* Purple shadow glow */
+  transform: translateY(-4px);
+}
+
+.dark .home-luxe-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: 0 12px 36px -12px rgba(0, 0, 0, 0.6);
+}
+
+.dark .home-luxe-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  box-shadow: 0 16px 40px -8px rgba(139, 92, 246, 0.2);
+}
+
