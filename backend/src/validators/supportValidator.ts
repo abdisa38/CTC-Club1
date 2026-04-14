@@ -1,5 +1,11 @@
 import { z } from 'zod';
 
+export const ticketIdParamSchema = z.object({
+  params: z.object({
+    id: z.string().trim().length(24).regex(/^[a-fA-F0-9]+$/),
+  }),
+});
+
 export const submitTicketSchema = z.object({
   body: z.object({
     subject: z.string().trim().min(3).max(140),
@@ -17,18 +23,14 @@ export const listTicketsQuerySchema = z.object({
 });
 
 export const replyTicketSchema = z.object({
-  params: z.object({
-    id: z.string().trim().length(24).regex(/^[a-fA-F0-9]+$/),
-  }),
+  params: ticketIdParamSchema.shape.params,
   body: z.object({
     message: z.string().trim().min(1).max(2000),
   }),
 });
 
 export const changeTicketStatusSchema = z.object({
-  params: z.object({
-    id: z.string().trim().length(24).regex(/^[a-fA-F0-9]+$/),
-  }),
+  params: ticketIdParamSchema.shape.params,
   body: z.object({
     status: z.enum(['open', 'in_progress', 'resolved', 'closed']),
   }),

@@ -1,5 +1,11 @@
 import { z } from 'zod';
 
+export const courseIdParamSchema = z.object({
+  params: z.object({
+    courseId: z.string().trim().length(24).regex(/^[a-fA-F0-9]+$/),
+  }),
+});
+
 const attachmentSchema = z.object({
   title: z.string().trim().max(120).optional(),
   url: z.string().trim().url(),
@@ -7,9 +13,7 @@ const attachmentSchema = z.object({
 });
 
 export const createLessonSchema = z.object({
-  params: z.object({
-    courseId: z.string().trim().length(24).regex(/^[a-fA-F0-9]+$/),
-  }),
+  params: courseIdParamSchema.shape.params,
   body: z.object({
     title: z.string().trim().min(2).max(160),
     content: z.string().trim().min(1).max(50000).optional(),
