@@ -16,8 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      AZURE_BACKEND_WEBAPP_NAME: ${{ secrets.AZURE_BACKEND_WEBAPP_NAME }}
-      AZURE_BACKEND_PUBLISH_PROFILE: ${{ secrets.AZURE_BACKEND_PUBLISH_PROFILE }}
+      AZURE_BACKEND_WEBAPP_NAME: ${{ secrets['AZURE_BACKEND_WEBAPP_NAME'] }}
+      AZURE_BACKEND_PUBLISH_PROFILE: ${{ secrets['AZURE_BACKEND_PUBLISH_PROFILE'] }}
 
     steps:
       - name: Checkout repository
