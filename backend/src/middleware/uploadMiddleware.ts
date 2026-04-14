@@ -3,6 +3,26 @@ import path from 'path';
 import type { RequestHandler } from 'express';
 import multer from 'multer';
 
+const MB = 1024 * 1024;
+
+const parseUploadLimitMb = (
+  envName: string,
+  fallbackMb: number,
+  minMb = 1,
+  maxMb = 2048
+) => {
+  const raw = Number(process.env[envName] || fallbackMb);
+  if (!Number.isFinite(raw)) {
+    return fallbackMb * MB;
+  }
+
+  const bounded = Math.min(maxMb, Math.max(minMb, Math.floor(raw)));
+  return bounded * MB;
+};
+
+const VIDEO_UPLOAD_LIMIT_BYTES = parseUploadLimitMb('VIDEO_UPLOAD_MAX_MB', 512);
+const RESOURCE_UPLOAD_LIMIT_BYTES = parseUploadLimitMb('RESOURCE_UPLOAD_MAX_MB', 50);
+
 const uploadDir = path.resolve(process.cwd(), 'uploads');
 
 if (!fs.existsSync(uploadDir)) {
@@ -27,7 +47,7 @@ const storage = multer.diskStorage({
 const videoUploader = multer({
   storage,
   limits: {
-    fileSize: 2 * 1024 * 1024 * 1024, // 2GB
+    fileSize: VIDEO_UPLOAD_LIMIT_BYTES,
   },
   fileFilter: (_req, file, cb) => {
     if (!file.mimetype?.startsWith('video/')) {
@@ -42,7 +62,7 @@ const videoUploader = multer({
 const resourceUploader = multer({
   storage,
   limits: {
-    fileSize: 50 * 1024 * 1024, // 50MB
+    fileSize: RESOURCE_UPLOAD_LIMIT_BYTES,
   },
 });
 
