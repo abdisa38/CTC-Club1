@@ -6,6 +6,7 @@ import User from '../models/userModel';
 import Course from '../models/courseModel';
 import { AuthRequest } from '../middleware/authMiddleware';
 import { sendSuccess } from '../utils/apiResponse';
+import { logger } from '../utils/logger';
 
 const CHAPA_API_BASE_URL = process.env.CHAPA_API_BASE_URL || 'https://api.chapa.co';
 const PREMIUM_CURRENCY = 'ETB';
@@ -776,7 +777,7 @@ export const chapaCallback = asyncHandler(async (req: Request, res: Response) =>
         try {
           await finalizePaymentTransaction(txRef, secretKey);
         } catch (error) {
-          console.error('Failed to auto-verify callback transaction', error);
+          logger.error('Failed to auto-verify callback transaction', error);
         }
       }
     }
@@ -820,7 +821,7 @@ export const chapaWebhook = asyncHandler(async (req: Request, res: Response) => 
       try {
         await finalizePaymentTransaction(txRef, secretKey);
       } catch (error) {
-        console.error('Failed to verify webhook transaction', error);
+        logger.error('Failed to verify webhook transaction', error);
       }
     }
   }
