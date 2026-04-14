@@ -553,7 +553,7 @@ export function Home() {
 
           {realCourses.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-300 dark:border-slate-700">
-              No published courses available yet.
+              No published course available yet.
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
