@@ -16,9 +16,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-      HEROKU_APP_NAME: ${{ secrets.HEROKU_APP_NAME }}
-      HEROKU_EMAIL: ${{ secrets.HEROKU_EMAIL }}
+      HEROKU_API_KEY: ${{ secrets['HEROKU_API_KEY'] }}
+      HEROKU_APP_NAME: ${{ secrets['HEROKU_APP_NAME'] }}
+      HEROKU_EMAIL: ${{ secrets['HEROKU_EMAIL'] }}
 
     steps:
       - name: Checkout repository
