@@ -2,6 +2,7 @@ import express, { type Application, type Request, type Response } from 'express'
 import path from 'path';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import connectDB from './config/db';
 import { notFound, errorHandler } from './middleware/errorMiddleware';
@@ -26,24 +27,46 @@ connectDB();
 
 const app: Application = express();
 
+app.disable('x-powered-by');
+if (process.env.TRUST_PROXY === 'true') {
+    app.set('trust proxy', 1);
+}
+
+const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    process.env.CLIENT_URL || '',
+    ...(String(process.env.CORS_ALLOWED_ORIGINS || '')
+        .split(',')
+        .map((origin) => origin.trim())
+        .filter(Boolean)),
+].filter(Boolean);
+
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
+
+app.use(cors({
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+            return;
+        }
+
+        callback(new Error('CORS origin not allowed'));
+    },
+    credentials: true,
+}));
+
 // Body parser
-app.use(express.json());
+app.use(express.json({ limit: process.env.REQUEST_BODY_LIMIT || '1mb' }));
+app.use(express.urlencoded({ extended: false, limit: process.env.REQUEST_BODY_LIMIT || '1mb' }));
 
 // Serve uploaded lesson assets
 app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
 
 // Cookie parser
 app.use(cookieParser());
-
-// Enable CORS
-app.use(cors({
-    origin: [
-        'http://localhost:5173',
-        'http://localhost:3000',
-        process.env.CLIENT_URL || '',
-    ].filter(Boolean),
-    credentials: true,
-}));
 
 // Basic Route for testing
 app.get('/api', (req: Request, res: Response) => {
@@ -82,7 +105,7 @@ app.use('/api/lessons', lessonRoutes);
 app.use(notFound);
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT) || 5000;
 
 app.listen(PORT, () => {
     console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
