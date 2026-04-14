@@ -7,11 +7,14 @@
     "backend"
   ],
   "scripts": {
+    "install:all": "npm --prefix frontend install && npm --prefix backend install",
     "dev:frontend": "npm --prefix frontend run dev",
     "dev:backend": "npm --prefix backend run dev",
     "build:frontend": "npm --prefix frontend run build",
     "build:backend": "npm --prefix backend run build",
     "build": "npm run build:frontend && npm run build:backend",
+    "audit": "npm --prefix backend audit --omit=dev && npm --prefix frontend audit --omit=dev",
+    "predeploy": "npm run build && npm run audit",
     "start:backend": "npm --prefix backend run start",
     "seed": "npm --prefix backend run seed",
     "check": "npm run build"
