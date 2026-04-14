@@ -3,6 +3,7 @@ import asyncHandler from 'express-async-handler';
 import { AuthRequest } from '../middleware/authMiddleware';
 import Ticket from '../models/ticketModel';
 import { sendSuccess } from '../utils/apiResponse';
+import { getPagination } from '../utils/pagination';
 
 // @desc    Create a support ticket
 // @route   POST /api/support/tickets
@@ -10,14 +11,25 @@ import { sendSuccess } from '../utils/apiResponse';
 export const submitTicket = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { subject, category, priority, message } = req.body;
 
+    if (!String(subject || '').trim() || !String(message || '').trim()) {
+        res.status(400);
+        throw new Error('Subject and message are required');
+    }
+
+    const allowedCategories = ['technical', 'billing', 'course_content', 'other'];
+    const allowedPriorities = ['low', 'medium', 'high', 'urgent'];
+
+    const safeCategory = allowedCategories.includes(String(category)) ? String(category) : 'technical';
+    const safePriority = allowedPriorities.includes(String(priority)) ? String(priority) : 'medium';
+
   const ticket = await Ticket.create({ 
       user: req.user._id, 
-      subject,
-      category,
-      priority,
+            subject: String(subject).trim(),
+            category: safeCategory,
+            priority: safePriority,
       messages: [{
           sender: req.user._id,
-          message,
+                    message: String(message).trim(),
           isAdminReply: false
       }]
   });
@@ -29,8 +41,7 @@ export const submitTicket = asyncHandler(async (req: AuthRequest, res: Response)
 // @route   GET /api/support/tickets
 // @access  Private
 export const getTickets = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const pageSize = Number(req.query.limit) || 12;
-  const page = Number(req.query.page) || 1;
+    const { page, limit, skip } = getPagination(req, { limit: 12, maxLimit: 100 });
 
   let filter: any = {};
   if (req.user.role === 'student' || req.user.role === 'instructor') {
@@ -43,15 +54,16 @@ export const getTickets = asyncHandler(async (req: AuthRequest, res: Response) =
       .populate('user', 'name email avatar')
       .populate('assignedTo', 'name email')
       .sort({ createdAt: -1 })
-      .limit(pageSize)
-      .skip(pageSize * (page - 1));
+      .limit(limit)
+      .skip(skip)
+      .lean();
 
     res.json({
         success: true,
         data: tickets,
         tickets,
         page,
-        pages: Math.ceil(count / pageSize),
+        pages: Math.ceil(count / limit),
         total: count,
     });
 });
@@ -84,6 +96,11 @@ export const getTicketById = asyncHandler(async (req: AuthRequest, res: Response
 // @access  Private
 export const replyTicket = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { message } = req.body;
+    if (!String(message || '').trim()) {
+            res.status(400);
+            throw new Error('Reply message is required');
+    }
+
   const ticket = await Ticket.findById(req.params.id);
 
   if (!ticket) {
@@ -101,7 +118,7 @@ export const replyTicket = asyncHandler(async (req: AuthRequest, res: Response) 
 
   ticket.messages.push({
       sender: req.user._id,
-      message,
+      message: String(message).trim(),
       isAdminReply,
       createdAt: new Date()
   });
@@ -124,6 +141,13 @@ export const replyTicket = asyncHandler(async (req: AuthRequest, res: Response) 
 // @access  Private/Admin
 export const changeTicketStatus = asyncHandler(async (req: AuthRequest, res: Response) => {
     const { status } = req.body;
+    const allowedStatuses = ['open', 'in_progress', 'resolved', 'closed'];
+
+    if (!allowedStatuses.includes(String(status))) {
+        res.status(400);
+        throw new Error('Invalid ticket status');
+    }
+
     const ticket = await Ticket.findById(req.params.id);
 
     if (!ticket) {
@@ -131,7 +155,7 @@ export const changeTicketStatus = asyncHandler(async (req: AuthRequest, res: Res
         throw new Error('Ticket not found');
     }
 
-    ticket.status = status;
+    ticket.status = String(status) as any;
     await ticket.save();
 
     sendSuccess(res, ticket, { message: 'Ticket status updated' });
