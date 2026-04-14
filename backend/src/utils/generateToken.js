@@ -5,8 +5,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.clearToken = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const env_1 = require("../config/env");
 const generateToken = (res, userId, role) => {
-    const token = jsonwebtoken_1.default.sign({ id: userId, role }, process.env.JWT_SECRET || 'fallback_secret', {
+    const token = jsonwebtoken_1.default.sign({ id: userId, role }, (0, env_1.getJwtSecret)(), {
         expiresIn: '30d',
     });
     res.cookie('jwt', token, {
@@ -20,6 +21,8 @@ const generateToken = (res, userId, role) => {
 const clearToken = (res) => {
     res.cookie('jwt', '', {
         httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
         expires: new Date(0),
     });
 };

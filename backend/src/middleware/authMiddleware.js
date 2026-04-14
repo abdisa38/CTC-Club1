@@ -7,12 +7,13 @@ exports.authorizeRoles = exports.optionalProtect = exports.protect = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const userModel_1 = __importDefault(require("../models/userModel"));
+const env_1 = require("../config/env");
 exports.protect = (0, express_async_handler_1.default)(async (req, res, next) => {
     let token;
     token = req.cookies.jwt;
     if (token) {
         try {
-            const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+            const decoded = jsonwebtoken_1.default.verify(token, (0, env_1.getJwtSecret)());
             req.user = await userModel_1.default.findById(decoded.id).select('-password');
             next();
         }
@@ -34,7 +35,7 @@ exports.optionalProtect = (0, express_async_handler_1.default)(async (req, _res,
         return;
     }
     try {
-        const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+        const decoded = jsonwebtoken_1.default.verify(token, (0, env_1.getJwtSecret)());
         req.user = await userModel_1.default.findById(decoded.id).select('-password');
     }
     catch {

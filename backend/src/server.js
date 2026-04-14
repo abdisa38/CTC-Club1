@@ -3,12 +3,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+require("dotenv/config");
 const express_1 = __importDefault(require("express"));
 const path_1 = __importDefault(require("path"));
-const dotenv_1 = __importDefault(require("dotenv"));
 const cors_1 = __importDefault(require("cors"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
+const helmet_1 = __importDefault(require("helmet"));
+const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const db_1 = __importDefault(require("./config/db"));
+const env_1 = require("./config/env");
 const errorMiddleware_1 = require("./middleware/errorMiddleware");
 const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
 const courseRoutes_1 = __importDefault(require("./routes/courseRoutes"));
@@ -22,29 +25,90 @@ const notificationRoutes_1 = __importDefault(require("./routes/notificationRoute
 const uploadRoutes_1 = __importDefault(require("./routes/uploadRoutes"));
 const eventRoutes_1 = __importDefault(require("./routes/eventRoutes"));
 const paymentRoutes_1 = __importDefault(require("./routes/paymentRoutes"));
-// Load env vars
-dotenv_1.default.config();
-// Connect to database
-(0, db_1.default)();
-const app = (0, express_1.default)();
-// Body parser
-app.use(express_1.default.json());
-// Serve uploaded lesson assets
-app.use('/uploads', express_1.default.static(path_1.default.resolve(process.cwd(), 'uploads')));
-// Cookie parser
-app.use((0, cookie_parser_1.default)());
-// Enable CORS
-app.use((0, cors_1.default)({
-    origin: [
+const parseRateLimitMax = (value, fallback) => {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+        return fallback;
+    }
+    return Math.floor(parsed);
+};
+const getAllowedOrigins = () => {
+    const envOrigins = String(process.env.CORS_ORIGINS || '')
+        .split(',')
+        .map((origin) => origin.trim())
+        .filter(Boolean);
+    return Array.from(new Set([
         'http://localhost:5173',
         'http://localhost:3000',
         process.env.CLIENT_URL || '',
-    ].filter(Boolean),
+        ...envOrigins,
+    ].filter(Boolean)));
+};
+const corsOriginSet = new Set(getAllowedOrigins());
+const apiRateLimiter = (0, express_rate_limit_1.default)({
+    windowMs: 15 * 60 * 1000,
+    max: parseRateLimitMax(process.env.RATE_LIMIT_MAX, 500),
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+        success: false,
+        message: 'Too many requests from this IP, please try again in a few minutes.',
+    },
+});
+const authRateLimiter = (0, express_rate_limit_1.default)({
+    windowMs: 15 * 60 * 1000,
+    max: parseRateLimitMax(process.env.AUTH_RATE_LIMIT_MAX, 20),
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+        success: false,
+        message: 'Too many authentication attempts, please wait and try again.',
+    },
+});
+// Connect to database
+(0, db_1.default)();
+(0, env_1.getJwtSecret)();
+const app = (0, express_1.default)();
+if (process.env.NODE_ENV === 'production') {
+    app.set('trust proxy', 1);
+}
+app.disable('x-powered-by');
+app.use((0, helmet_1.default)({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
+app.use((0, cors_1.default)({
+    origin(origin, callback) {
+        if (!origin || corsOriginSet.has(origin)) {
+            callback(null, true);
+            return;
+        }
+        callback(new Error('CORS policy blocked this request origin.'));
+    },
     credentials: true,
 }));
+app.use('/api', apiRateLimiter);
+app.use('/api/auth/login', authRateLimiter);
+app.use('/api/auth/register', authRateLimiter);
+app.use('/api/auth/password/forgot', authRateLimiter);
+app.use('/api/auth/password/reset', authRateLimiter);
+// Body parser
+app.use(express_1.default.json({ limit: '1mb' }));
+// Serve uploaded lesson assets
+app.use('/uploads', express_1.default.static(path_1.default.resolve(__dirname, '..', 'uploads')));
+// Cookie parser
+app.use((0, cookie_parser_1.default)());
 // Basic Route for testing
 app.get('/api', (req, res) => {
     res.json({ message: 'Welcome to the CTC Club API' });
+});
+app.get('/api/health', (_req, res) => {
+    res.json({
+        success: true,
+        status: 'ok',
+        environment: process.env.NODE_ENV || 'development',
+        uptimeSeconds: Math.round(process.uptime()),
+        timestamp: new Date().toISOString(),
+    });
 });
 if (process.env.NODE_ENV === 'development') {
     app.get('/api/debug/routes/payments', (req, res) => {
