@@ -1,5 +1,11 @@
 import { z } from 'zod';
 
+export const communityPostIdParamSchema = z.object({
+  params: z.object({
+    postId: z.string().trim().length(24).regex(/^[a-fA-F0-9]+$/),
+  }),
+});
+
 export const getCommunityPostsSchema = z.object({
   query: z.object({
     page: z.coerce.number().int().positive().max(10000).optional(),
@@ -22,27 +28,21 @@ export const createCommunityPostSchema = z.object({
 });
 
 export const voteCommunityPostSchema = z.object({
-  params: z.object({
-    postId: z.string().trim().length(24).regex(/^[a-fA-F0-9]+$/),
-  }),
+  params: communityPostIdParamSchema.shape.params,
   body: z.object({
     vote: z.enum(['up', 'down']),
   }),
 });
 
 export const addCommunityReplySchema = z.object({
-  params: z.object({
-    postId: z.string().trim().length(24).regex(/^[a-fA-F0-9]+$/),
-  }),
+  params: communityPostIdParamSchema.shape.params,
   body: z.object({
     content: z.string().trim().min(1).max(4000),
   }),
 });
 
 export const pinCommunityPostSchema = z.object({
-  params: z.object({
-    postId: z.string().trim().length(24).regex(/^[a-fA-F0-9]+$/),
-  }),
+  params: communityPostIdParamSchema.shape.params,
   body: z.object({
     isPinned: z.boolean().optional(),
   }),
