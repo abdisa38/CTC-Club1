@@ -48,6 +48,7 @@ Run these before every deployment:
 - DigitalOcean workflow: .github/workflows/deploy-digitalocean.yml
 - Azure workflow: .github/workflows/deploy-azure.yml
 - Full setup guide: DEVOPS_STUDENT_SETUP.md
+- Docker local setup guide: DOCKER_SETUP.md
 
 ## 6) Security Controls Already Added
 
