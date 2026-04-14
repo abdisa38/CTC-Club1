@@ -14,7 +14,6 @@ For now, Heroku and DigitalOcean deployment workflows are removed.
 
 - .github/workflows/deploy-heroku.yml
 - .github/workflows/deploy-digitalocean.yml
-- .github/workflows/deploy-azure.yml
 
 ## 3) CI step by step (every code push)
 
