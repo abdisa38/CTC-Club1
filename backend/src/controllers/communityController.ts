@@ -5,7 +5,6 @@ import { AuthRequest } from '../middleware/authMiddleware';
 import { CommunityPost, CommunityReply } from '../models/communityModel';
 import Course from '../models/courseModel';
 import { sendSuccess } from '../utils/apiResponse';
-import { getPagination } from '../utils/pagination';
 
 const canManagePost = async (post: any, user: any): Promise<boolean> => {
   if (user.role === 'admin') {
@@ -30,7 +29,8 @@ const canManagePost = async (post: any, user: any): Promise<boolean> => {
 // @route   GET /api/community/posts
 // @access  Private
 export const getCommunityPosts = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { page, limit, skip } = getPagination(req, { limit: 20, maxLimit: 100 });
+  const pageSize = Number(req.query.limit) || 20;
+  const page = Number(req.query.page) || 1;
   const keyword = req.query.keyword as string | undefined;
   const category = req.query.category as string | undefined;
   const course = req.query.course as string | undefined;
@@ -38,9 +38,7 @@ export const getCommunityPosts = asyncHandler(async (req: AuthRequest, res: Resp
 
   const filter: any = { isDeleted: false };
 
-  const allowedCategories = ['general', 'qna', 'showcase', 'announcement'];
-
-  if (category && category !== 'all' && allowedCategories.includes(category)) {
+  if (category && category !== 'all') {
     filter.category = category;
   } else {
     // Keep announcement feed separate from community discussions by default.
@@ -57,7 +55,7 @@ export const getCommunityPosts = asyncHandler(async (req: AuthRequest, res: Resp
   }
 
   if (managed && req.user.role === 'instructor') {
-    const instructorCourses = await Course.find({ instructor: req.user._id, isDeleted: false }).select('_id').lean();
+    const instructorCourses = await Course.find({ instructor: req.user._id, isDeleted: false }).select('_id');
     const courseIds = instructorCourses.map((item) => item._id);
 
     if (course) {
@@ -83,16 +81,15 @@ export const getCommunityPosts = asyncHandler(async (req: AuthRequest, res: Resp
     .populate('user', 'name avatar role')
     .populate('course', 'title')
     .sort({ isPinned: -1, createdAt: -1 })
-    .limit(limit)
-    .skip(skip)
-    .lean();
+    .limit(pageSize)
+    .skip(pageSize * (page - 1));
 
   res.json({
     success: true,
     data: posts,
     posts,
     page,
-    pages: Math.ceil(total / limit),
+    pages: Math.ceil(total / pageSize),
     total,
   });
 });

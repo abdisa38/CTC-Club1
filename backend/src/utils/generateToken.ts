@@ -1,30 +1,25 @@
-import { type CookieOptions, type Response } from 'express';
+import { Response } from 'express';
 import jwt from 'jsonwebtoken';
-import { cookieSameSite, env } from '../config/env';
-
-const buildCookieOptions = (): CookieOptions => ({
-  httpOnly: true,
-  secure: env.authCookieSecure,
-  sameSite: cookieSameSite,
-  maxAge: env.authCookieMaxAgeMs,
-  path: '/',
-});
 
 const generateToken = (res: Response, userId: string, role: string) => {
-  const token = jwt.sign({ id: userId, role }, env.jwtSecret, {
-    expiresIn: env.jwtExpiresIn,
+  const token = jwt.sign({ id: userId, role }, process.env.JWT_SECRET || 'fallback_secret', {
+    expiresIn: '30d',
   });
 
-  res.cookie(env.authCookieName, token, buildCookieOptions());
+  res.cookie('jwt', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+  });
 
   return token;
 };
 
 export const clearToken = (res: Response) => {
-  res.cookie(env.authCookieName, '', {
-    ...buildCookieOptions(),
+  res.cookie('jwt', '', {
+    httpOnly: true,
     expires: new Date(0),
-    maxAge: 0,
   });
 };
 
