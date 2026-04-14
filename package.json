@@ -1,0 +1,19 @@
+{
+  "name": "ctc-club1-workspace",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:backend": "npm --prefix backend run dev",
+    "build:frontend": "npm --prefix frontend run build",
+    "build:backend": "npm --prefix backend run build",
+    "build": "npm run build:frontend && npm run build:backend",
+    "start:backend": "npm --prefix backend run start",
+    "seed": "npm --prefix backend run seed",
+    "check": "npm run build"
+  }
+}
