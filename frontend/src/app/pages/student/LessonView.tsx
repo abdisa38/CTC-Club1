@@ -471,8 +471,8 @@ export function LessonView() {
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen
             />
-          ) : activeLesson.videoUrl ? (
-            <video src={activeLesson.videoUrl} controls className="w-full h-full object-cover" />
+          ) : primaryLessonVideoUrl ? (
+            <video src={primaryLessonVideoUrl} controls className="w-full h-full object-cover" />
           ) : (
             <>
               <img
@@ -493,7 +493,7 @@ export function LessonView() {
             </>
           )}
 
-          {!youtubeEmbedUrl && !activeLesson.videoUrl ? (
+          {!youtubeEmbedUrl && !primaryLessonVideoUrl ? (
             <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
               <div className="flex items-center gap-3 mb-2">
                 <div className="flex-1 h-1 bg-white/30 rounded-full cursor-pointer relative group/bar">
@@ -728,7 +728,7 @@ export function LessonView() {
                             <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500 flex-wrap">
                               <Clock className="h-3 w-3" />
                               <span>{formatDuration(lesson.duration)}</span>
-                              {lesson.videoUrl ? (
+                              {getLessonVideoUrls(lesson).length > 0 ? (
                                 <Badge variant="secondary" className="text-[9px] h-4 px-1">
                                   Video
                                 </Badge>
