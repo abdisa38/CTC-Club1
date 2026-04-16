@@ -4,12 +4,37 @@ import Lesson from '../models/lessonModel';
 import Course from '../models/courseModel';
 import { sendSuccess } from '../utils/apiResponse';
 
+const normalizeVideoUrls = (videoUrlInput: unknown, videoUrlsInput: unknown): string[] => {
+  const candidates: unknown[] = [];
+
+  if (Array.isArray(videoUrlsInput)) {
+    candidates.push(...videoUrlsInput);
+  } else if (typeof videoUrlsInput === 'string') {
+    candidates.push(...videoUrlsInput.split(/[\n,]+/));
+  }
+
+  if (videoUrlInput !== undefined) {
+    candidates.push(videoUrlInput);
+  }
+
+  const unique = new Set<string>();
+
+  candidates.forEach((candidate) => {
+    const normalized = String(candidate ?? '').trim();
+    if (normalized) {
+      unique.add(normalized);
+    }
+  });
+
+  return Array.from(unique);
+};
+
 // @desc    Add a lesson to a course
 // @route   POST /api/courses/:courseId/lessons
 // @access  Private/Instructor
 export const addLesson = async (req: AuthRequest, res: Response) => {
   try {
-    const { title, content, videoUrl, order, duration, attachments, isPublished } = req.body;
+    const { title, content, videoUrl, videoUrls, order, duration, attachments, isPublished } = req.body;
     const courseId = typeof req.params.courseId === 'string' ? req.params.courseId : '';
 
     if (!courseId) {
@@ -34,8 +59,10 @@ export const addLesson = async (req: AuthRequest, res: Response) => {
       attachments: Array.isArray(attachments) ? attachments : [],
     };
 
-    if (videoUrl) {
-      lessonPayload.videoUrl = videoUrl;
+    const normalizedVideoUrls = normalizeVideoUrls(videoUrl, videoUrls);
+    if (normalizedVideoUrls.length > 0) {
+      lessonPayload.videoUrls = normalizedVideoUrls;
+      lessonPayload.videoUrl = normalizedVideoUrls[0];
     }
 
     if (order !== undefined) {
@@ -67,7 +94,7 @@ export const addLesson = async (req: AuthRequest, res: Response) => {
 export const updateLesson = async (req: AuthRequest, res: Response) => {
   try {
     const lessonId = typeof req.params.lessonId === 'string' ? req.params.lessonId : '';
-    const { title, content, videoUrl, order, duration, attachments, isPublished } = req.body;
+    const { title, content, videoUrl, videoUrls, order, duration, attachments, isPublished } = req.body;
 
     if (!lessonId) {
       return res.status(400).json({ message: 'Lesson ID is required' });
@@ -85,7 +112,13 @@ export const updateLesson = async (req: AuthRequest, res: Response) => {
 
     lesson.title = title || lesson.title;
     lesson.content = content || lesson.content;
-    lesson.videoUrl = videoUrl || lesson.videoUrl;
+
+    if (videoUrl !== undefined || videoUrls !== undefined) {
+      const normalizedVideoUrls = normalizeVideoUrls(videoUrl, videoUrls);
+      lesson.videoUrls = normalizedVideoUrls;
+      lesson.videoUrl = normalizedVideoUrls[0] || undefined;
+    }
+
     lesson.order = order !== undefined ? order : lesson.order;
     if (duration !== undefined) {
       const parsedDuration = Number(duration);

@@ -107,6 +107,7 @@ export interface Lesson {
   title: string;
   content?: string;
   videoUrl?: string;
+  videoUrls?: string[];
   course?: string;
   order?: number;
   duration?: number | string;
@@ -694,6 +695,7 @@ export const apiService = {
       title: string;
       content: string;
       videoUrl?: string;
+      videoUrls?: string[];
       order?: number;
       duration?: number;
       attachments?: Array<{ title?: string; url: string; fileType?: string }>;
@@ -711,6 +713,7 @@ export const apiService = {
       title: string;
       content: string;
       videoUrl?: string;
+      videoUrls?: string[];
       order?: number;
       duration?: number;
       attachments?: Array<{ title?: string; url: string; fileType?: string }>;

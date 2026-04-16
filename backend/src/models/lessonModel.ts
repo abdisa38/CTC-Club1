@@ -6,6 +6,7 @@ export interface ILesson extends Document {
   chapter?: mongoose.Types.ObjectId; // For grouped lessons
   content: string;
   videoUrl?: string;
+  videoUrls?: string[];
   duration?: number; // In minutes
   order: number;
   
@@ -53,6 +54,10 @@ const lessonSchema = new Schema<ILesson>(
     },
     videoUrl: {
       type: String, // Supports YouTube, Vimeo, AWS S3
+    },
+    videoUrls: {
+      type: [String],
+      default: [],
     },
     duration: {
       type: Number,
