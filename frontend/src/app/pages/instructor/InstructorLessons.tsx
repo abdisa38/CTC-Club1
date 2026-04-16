@@ -20,7 +20,7 @@ type LessonAttachment = {
 type LessonForm = {
   title: string;
   lessonType: LessonType;
-  videoUrl: string;
+  videoUrls: string[];
   duration: string;
   isLocked: boolean;
   attachments: LessonAttachment[];
@@ -75,10 +75,29 @@ const parseDurationInput = (input: string): number | undefined => {
   return undefined;
 };
 
+const getLessonVideoUrls = (lesson: Lesson | null | undefined): string[] => {
+  if (!lesson) {
+    return [];
+  }
+
+  const fromArray = Array.isArray(lesson.videoUrls) ? lesson.videoUrls : [];
+  const fromLegacy = lesson.videoUrl ? [lesson.videoUrl] : [];
+
+  const unique = new Set<string>();
+  [...fromArray, ...fromLegacy].forEach((url) => {
+    const normalized = String(url || "").trim();
+    if (normalized) {
+      unique.add(normalized);
+    }
+  });
+
+  return Array.from(unique);
+};
+
 const defaultForm: LessonForm = {
   title: "",
   lessonType: "video",
-  videoUrl: "",
+  videoUrls: [],
   duration: "",
   isLocked: false,
   attachments: [],
@@ -147,10 +166,12 @@ export function InstructorLessons() {
     const lesson = lessons.find((item) => item._id === lessonId);
     if (!lesson) return;
 
+    const lessonVideoUrls = getLessonVideoUrls(lesson);
+
     setForm({
       title: lesson.title || "",
-      lessonType: lesson.videoUrl ? "video" : "document",
-      videoUrl: lesson.videoUrl || "",
+      lessonType: lessonVideoUrls.length > 0 ? "video" : "document",
+      videoUrls: lessonVideoUrls,
       duration: lesson.duration !== undefined ? String(lesson.duration) : "",
       isLocked: lesson.isPublished === false,
       attachments: (lesson.attachments || []).map((item) => ({
@@ -238,7 +259,11 @@ export function InstructorLessons() {
 
     try {
       const uploaded = await apiService.uploadLessonVideo(file);
-      setForm((prev) => ({ ...prev, videoUrl: uploaded.url, lessonType: "video" }));
+      setForm((prev) => ({
+        ...prev,
+        lessonType: "video",
+        videoUrls: [...prev.videoUrls, uploaded.url],
+      }));
     } catch (err: any) {
       setError(err?.response?.data?.message || "Failed to upload selected video file.");
     }
@@ -261,8 +286,12 @@ export function InstructorLessons() {
       return;
     }
 
-    if (form.lessonType === "video" && !form.videoUrl.trim()) {
-      setError("Video lessons require a YouTube/Vimeo URL or uploaded video file");
+    const normalizedVideoUrls = form.lessonType === "video"
+      ? form.videoUrls.map((url) => url.trim()).filter(Boolean)
+      : [];
+
+    if (form.lessonType === "video" && normalizedVideoUrls.length === 0) {
+      setError("Video lessons require at least one YouTube/Vimeo URL or uploaded video file");
       return;
     }
 
@@ -274,7 +303,8 @@ export function InstructorLessons() {
       const payload = {
         title: form.title.trim(),
         content: `${form.lessonType === "video" ? "Video" : "Document"} lesson: ${form.title.trim()}`,
-        videoUrl: form.lessonType === "video" ? form.videoUrl.trim() || undefined : undefined,
+        videoUrl: normalizedVideoUrls[0] || undefined,
+        videoUrls: normalizedVideoUrls.length > 0 ? normalizedVideoUrls : undefined,
         duration: durationInMinutes,
         order: currentLesson?.order ?? lessons.length,
         isPublished: !form.isLocked,
@@ -342,13 +372,16 @@ export function InstructorLessons() {
             <Reorder.Group axis="y" values={lessons} onReorder={setLessons} className="space-y-3">
               {lessons.map((lesson) => (
                 <Reorder.Item key={lesson._id} value={lesson} className="relative">
+                  {(() => {
+                    const hasVideoLinks = getLessonVideoUrls(lesson).length > 0;
+                    return (
                   <div className={`flex items-center gap-3 bg-white dark:bg-slate-900 p-4 rounded-lg border transition-all ${isEditing === lesson._id ? 'border-emerald-500 shadow-sm' : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'}`}>
                     <div className="cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600 p-1">
                       <GripVertical className="h-5 w-5" />
                     </div>
                     
-                    <div className={`p-2 rounded-md ${lesson.videoUrl ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30' : 'bg-orange-50 text-orange-600 dark:bg-orange-900/30'}`}>
-                      {lesson.videoUrl ? <Video className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
+                    <div className={`p-2 rounded-md ${hasVideoLinks ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30' : 'bg-orange-50 text-orange-600 dark:bg-orange-900/30'}`}>
+                      {hasVideoLinks ? <Video className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
                     </div>
 
                     <div className="flex-1 min-w-0">
@@ -375,6 +408,8 @@ export function InstructorLessons() {
                       </Button>
                     </div>
                   </div>
+                    );
+                  })()}
                 </Reorder.Item>
               ))}
             </Reorder.Group>
@@ -456,7 +491,51 @@ export function InstructorLessons() {
                     <span className="bg-white dark:bg-slate-950 px-2 text-slate-500">Or embed</span>
                   </div>
                 </div>
-                <Input value={form.videoUrl} onChange={(e) => setForm((prev) => ({ ...prev, videoUrl: e.target.value }))} placeholder="YouTube or Vimeo URL" />
+                <div className="space-y-2">
+                  {form.videoUrls.map((url, index) => (
+                    <div key={`video-url-${index}`} className="flex items-center gap-2">
+                      <Input
+                        value={url}
+                        onChange={(e) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            videoUrls: prev.videoUrls.map((item, itemIndex) =>
+                              itemIndex === index ? e.target.value : item,
+                            ),
+                          }))
+                        }
+                        placeholder={`YouTube/Vimeo URL #${index + 1}`}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() =>
+                          setForm((prev) => ({
+                            ...prev,
+                            videoUrls: prev.videoUrls.filter((_, itemIndex) => itemIndex !== index),
+                          }))
+                        }
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        lessonType: "video",
+                        videoUrls: [...prev.videoUrls, ""],
+                      }))
+                    }
+                  >
+                    <Plus className="h-4 w-4 mr-2" /> Add Video Link
+                  </Button>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
