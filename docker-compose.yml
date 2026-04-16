@@ -22,6 +22,8 @@ services:
     depends_on:
       mongo:
         condition: service_healthy
+    env_file:
+      - ./backend/.env
     environment:
       NODE_ENV: production
       PORT: 5000
