@@ -104,6 +104,25 @@ const getYoutubeEmbedUrl = (url: string): string | null => {
   }
 };
 
+const getLessonVideoUrls = (lesson: Lesson | null): string[] => {
+  if (!lesson) {
+    return [];
+  }
+
+  const fromArray = Array.isArray(lesson.videoUrls) ? lesson.videoUrls : [];
+  const fromLegacy = lesson.videoUrl ? [lesson.videoUrl] : [];
+  const unique = new Set<string>();
+
+  [...fromArray, ...fromLegacy].forEach((url) => {
+    const normalized = String(url || "").trim();
+    if (normalized) {
+      unique.add(normalized);
+    }
+  });
+
+  return Array.from(unique);
+};
+
 const toResourceName = (url: string, fallback: string): string => {
   try {
     const parsed = new URL(url);
@@ -122,15 +141,15 @@ const getLessonResources = (lesson: Lesson | null): LessonResource[] => {
 
   const resources: LessonResource[] = [];
 
-  if (lesson.videoUrl) {
+  getLessonVideoUrls(lesson).forEach((videoUrl, index) => {
     resources.push({
-      id: `video-${lesson._id}`,
-      name: `${lesson.title} Video`,
+      id: `video-${lesson._id}-${index}`,
+      name: `${lesson.title} Video${index > 0 ? ` ${index + 1}` : ""}`,
       size: "-",
-      url: lesson.videoUrl,
+      url: videoUrl,
       type: "video",
     });
-  }
+  });
 
   if (Array.isArray(lesson.attachments)) {
     lesson.attachments.forEach((attachment, index) => {
@@ -313,8 +332,9 @@ export function LessonView() {
 
   const lessonCompleted = !!activeLesson && mergedCompletedLessons.has(activeLesson._id);
   const lessonResources = useMemo(() => getLessonResources(activeLesson), [activeLesson]);
-
-  const youtubeEmbedUrl = activeLesson?.videoUrl ? getYoutubeEmbedUrl(activeLesson.videoUrl) : null;
+  const lessonVideoUrls = useMemo(() => getLessonVideoUrls(activeLesson), [activeLesson]);
+  const primaryLessonVideoUrl = lessonVideoUrls[0] || "";
+  const youtubeEmbedUrl = primaryLessonVideoUrl ? getYoutubeEmbedUrl(primaryLessonVideoUrl) : null;
 
   const modules = useMemo(
     () => [
