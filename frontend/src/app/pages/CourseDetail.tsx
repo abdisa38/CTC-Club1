@@ -40,7 +40,7 @@ type CourseResource = {
 
 type NewLessonForm = {
   title: string;
-  videoUrl: string;
+  videoUrlsInput: string;
   duration: string;
   isPublished: boolean;
   attachments: Array<{
@@ -117,6 +117,25 @@ const getEmbedVideoUrl = (url: string): string | null => {
   }
 };
 
+const getLessonVideoUrls = (lesson: Lesson | null | undefined): string[] => {
+  if (!lesson) {
+    return [];
+  }
+
+  const fromArray = Array.isArray(lesson.videoUrls) ? lesson.videoUrls : [];
+  const fromLegacy = lesson.videoUrl ? [lesson.videoUrl] : [];
+  const unique = new Set<string>();
+
+  [...fromArray, ...fromLegacy].forEach((url) => {
+    const normalized = String(url || "").trim();
+    if (normalized) {
+      unique.add(normalized);
+    }
+  });
+
+  return Array.from(unique);
+};
+
 const toResourceName = (url: string, fallback: string): string => {
   try {
     const parsed = new URL(url);
@@ -177,6 +196,21 @@ const parseDurationInput = (input: string): number | undefined => {
   return undefined;
 };
 
+const parseVideoUrlsInput = (input: string): string[] => {
+  if (!input.trim()) {
+    return [];
+  }
+
+  const unique = new Set<string>();
+  input
+    .split(/[\n,]+/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .forEach((url) => unique.add(url));
+
+  return Array.from(unique);
+};
+
 const getProjectRefId = (value?: { _id: string } | string | null): string => {
   if (!value) {
     return "";
@@ -222,7 +256,7 @@ const extractErrorMessage = (error: any, fallback: string) => {
 
 const defaultLessonForm: NewLessonForm = {
   title: "",
-  videoUrl: "",
+  videoUrlsInput: "",
   duration: "",
   isPublished: true,
   attachments: [],

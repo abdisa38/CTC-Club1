@@ -370,11 +370,11 @@ export function InstructorLessons() {
           </CardHeader>
           <CardContent className="pt-4">
             <Reorder.Group axis="y" values={lessons} onReorder={setLessons} className="space-y-3">
-              {lessons.map((lesson) => (
+              {lessons.map((lesson) => {
+                const hasVideoLinks = getLessonVideoUrls(lesson).length > 0;
+
+                return (
                 <Reorder.Item key={lesson._id} value={lesson} className="relative">
-                  {(() => {
-                    const hasVideoLinks = getLessonVideoUrls(lesson).length > 0;
-                    return (
                   <div className={`flex items-center gap-3 bg-white dark:bg-slate-900 p-4 rounded-lg border transition-all ${isEditing === lesson._id ? 'border-emerald-500 shadow-sm' : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'}`}>
                     <div className="cursor-grab active:cursor-grabbing text-slate-400 hover:text-slate-600 p-1">
                       <GripVertical className="h-5 w-5" />
@@ -408,10 +408,9 @@ export function InstructorLessons() {
                       </Button>
                     </div>
                   </div>
-                    );
-                  })()}
                 </Reorder.Item>
-              ))}
+                );
+              })}
             </Reorder.Group>
             
             {lessons.length === 0 && (
