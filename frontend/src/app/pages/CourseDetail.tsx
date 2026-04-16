@@ -1448,7 +1448,7 @@ export function CourseDetail() {
                 </div>
               </div>
             </>
-          ) : selectedLesson?.videoUrl ? (
+          ) : selectedLessonPrimaryVideoUrl ? (
             embedVideoUrl ? (
               <iframe
                 title={selectedLesson.title}
@@ -1461,7 +1461,7 @@ export function CourseDetail() {
               <video
                 className="w-full h-full"
                 controls
-                src={selectedLesson.videoUrl}
+                src={selectedLessonPrimaryVideoUrl}
                 poster={course.coverImage || FALLBACK_COVER_IMAGE}
               >
                 Your browser does not support video playback.
