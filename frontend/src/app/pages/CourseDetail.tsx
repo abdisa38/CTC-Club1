@@ -462,7 +462,9 @@ export function CourseDetail() {
   const completedCount = canAccessLessons && selectedLessonIndex >= 0 ? selectedLessonIndex + 1 : 0;
   const progress = visibleLessons.length > 0 ? Math.round((completedCount / visibleLessons.length) * 100) : 0;
 
-  const embedVideoUrl = selectedLesson?.videoUrl ? getEmbedVideoUrl(selectedLesson.videoUrl) : null;
+  const selectedLessonVideoUrls = useMemo(() => getLessonVideoUrls(selectedLesson), [selectedLesson]);
+  const selectedLessonPrimaryVideoUrl = selectedLessonVideoUrls[0] || "";
+  const embedVideoUrl = selectedLessonPrimaryVideoUrl ? getEmbedVideoUrl(selectedLessonPrimaryVideoUrl) : null;
 
   useEffect(() => {
     scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
@@ -907,10 +909,13 @@ export function CourseDetail() {
     setSuccessMsg("");
 
     try {
+      const parsedVideoUrls = parseVideoUrlsInput(newLessonForm.videoUrlsInput);
+
       const createdLesson = await apiService.createLesson(id, {
         title: newLessonForm.title.trim(),
         content: newLessonForm.title.trim(),
-        videoUrl: newLessonForm.videoUrl.trim() || undefined,
+        videoUrl: parsedVideoUrls[0] || undefined,
+        videoUrls: parsedVideoUrls.length > 0 ? parsedVideoUrls : undefined,
         duration: parseDurationInput(newLessonForm.duration),
         order: lessons.length,
         isPublished: newLessonForm.isPublished,
