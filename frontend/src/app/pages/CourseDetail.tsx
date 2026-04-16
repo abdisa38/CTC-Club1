@@ -2249,10 +2249,11 @@ export function CourseDetail() {
                     value={newLessonForm.title}
                     onChange={(event) => setNewLessonForm((prev) => ({ ...prev, title: event.target.value }))}
                   />
-                  <Input
-                    placeholder="Video URL (optional)"
-                    value={newLessonForm.videoUrl}
-                    onChange={(event) => setNewLessonForm((prev) => ({ ...prev, videoUrl: event.target.value }))}
+                  <Textarea
+                    placeholder="Video links (optional). Add one URL per line for multiple YouTube/Vimeo videos."
+                    value={newLessonForm.videoUrlsInput}
+                    onChange={(event) => setNewLessonForm((prev) => ({ ...prev, videoUrlsInput: event.target.value }))}
+                    rows={3}
                   />
                   <Input
                     placeholder="Duration in minutes (or hh:mm:ss)"
