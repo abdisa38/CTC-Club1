@@ -2602,6 +2602,42 @@ export function CourseDetail() {
                     value={newLessonForm.title}
                     onChange={(event) => setNewLessonForm((prev) => ({ ...prev, title: event.target.value }))}
                   />
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      placeholder="Phase title (optional)"
+                      value={newLessonForm.phaseTitle}
+                      onChange={(event) => setNewLessonForm((prev) => ({ ...prev, phaseTitle: event.target.value }))}
+                    />
+                    <Input
+                      placeholder="Phase order (0, 1, 2...)"
+                      value={newLessonForm.phaseOrder}
+                      onChange={(event) => setNewLessonForm((prev) => ({ ...prev, phaseOrder: event.target.value }))}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      placeholder="Week title (optional)"
+                      value={newLessonForm.weekTitle}
+                      onChange={(event) => setNewLessonForm((prev) => ({ ...prev, weekTitle: event.target.value }))}
+                    />
+                    <Input
+                      placeholder="Week order (0, 1, 2...)"
+                      value={newLessonForm.weekOrder}
+                      onChange={(event) => setNewLessonForm((prev) => ({ ...prev, weekOrder: event.target.value }))}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      placeholder="Topic title (optional)"
+                      value={newLessonForm.topicTitle}
+                      onChange={(event) => setNewLessonForm((prev) => ({ ...prev, topicTitle: event.target.value }))}
+                    />
+                    <Input
+                      placeholder="Topic order (0, 1, 2...)"
+                      value={newLessonForm.topicOrder}
+                      onChange={(event) => setNewLessonForm((prev) => ({ ...prev, topicOrder: event.target.value }))}
+                    />
+                  </div>
                   <Textarea
                     placeholder="Video links (optional). Add one URL per line for multiple YouTube/Vimeo videos."
                     value={newLessonForm.videoUrlsInput}
@@ -2612,6 +2648,30 @@ export function CourseDetail() {
                     placeholder="Duration in minutes (or hh:mm:ss)"
                     value={newLessonForm.duration}
                     onChange={(event) => setNewLessonForm((prev) => ({ ...prev, duration: event.target.value }))}
+                  />
+                  <Textarea
+                    placeholder="Section by section (one per line): Title | Minutes"
+                    value={newLessonForm.sectionBreakdownInput}
+                    onChange={(event) => setNewLessonForm((prev) => ({ ...prev, sectionBreakdownInput: event.target.value }))}
+                    rows={3}
+                  />
+                  <Textarea
+                    placeholder="Class checklist (one item per line)"
+                    value={newLessonForm.classChecklistInput}
+                    onChange={(event) => setNewLessonForm((prev) => ({ ...prev, classChecklistInput: event.target.value }))}
+                    rows={3}
+                  />
+                  <Textarea
+                    placeholder="Class notes (one per line): Title | URL"
+                    value={newLessonForm.classNotesInput}
+                    onChange={(event) => setNewLessonForm((prev) => ({ ...prev, classNotesInput: event.target.value }))}
+                    rows={3}
+                  />
+                  <Textarea
+                    placeholder="Class questions (one per line): Question | Answer (optional)"
+                    value={newLessonForm.classQuestionsInput}
+                    onChange={(event) => setNewLessonForm((prev) => ({ ...prev, classQuestionsInput: event.target.value }))}
+                    rows={3}
                   />
 
                   <label className="inline-flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
