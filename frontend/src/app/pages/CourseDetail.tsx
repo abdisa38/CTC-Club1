@@ -625,6 +625,7 @@ export function CourseDetail() {
   const [contentActionBusy, setContentActionBusy] = useState(false);
 
   const [showLessonCreator, setShowLessonCreator] = useState(false);
+  const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
   const [newLessonForm, setNewLessonForm] = useState<NewLessonForm>(defaultLessonForm);
   const [isUploadingLessonResources, setIsUploadingLessonResources] = useState(false);
   const [selectedLessonVideoIndex, setSelectedLessonVideoIndex] = useState(0);
@@ -1254,7 +1255,106 @@ export function CourseDetail() {
     event.target.value = "";
   };
 
-  const handleCreateLessonInCourse = async () => {
+  const resetLessonCreatorState = () => {
+    setEditingLessonId(null);
+    setNewLessonForm(defaultLessonForm);
+  };
+
+  const handleStartLessonEdit = (lesson: Lesson) => {
+    const attachments = Array.isArray(lesson.attachments)
+      ? lesson.attachments
+          .filter((attachment): attachment is NonNullable<Lesson["attachments"]>[number] => Boolean(attachment?.url))
+          .map((attachment) => ({
+            title: attachment.title || toResourceName(attachment.url, "Resource"),
+            url: attachment.url,
+            fileType: attachment.fileType || "file",
+          }))
+      : [];
+
+    setEditingLessonId(lesson._id);
+    setShowLessonCreator(true);
+    setSelectedLessonId(lesson._id);
+    setNewLessonForm({
+      title: lesson.title || "",
+      phaseTitle: lesson.phaseTitle || "",
+      phaseOrder: lesson.phaseOrder !== undefined ? String(lesson.phaseOrder) : "",
+      weekTitle: lesson.weekTitle || "",
+      weekOrder: lesson.weekOrder !== undefined ? String(lesson.weekOrder) : "",
+      topicTitle: lesson.topicTitle || "",
+      topicOrder: lesson.topicOrder !== undefined ? String(lesson.topicOrder) : "",
+      videoUrlsInput: stringifyVideoUrlsInput(lesson),
+      duration: lesson.duration !== undefined ? String(lesson.duration) : "",
+      sectionBreakdownInput: stringifySectionBreakdownInput(lesson),
+      classChecklistInput: stringifyChecklistInput(lesson),
+      classNotesInput: stringifyClassNotesInput(lesson),
+      classQuestionsInput: stringifyClassQuestionsInput(lesson),
+      isPublished: lesson.isPublished !== false,
+      attachments,
+    });
+  };
+
+  const handleDeleteLessonInCourse = async (lesson: Lesson) => {
+    if (!id) {
+      return;
+    }
+
+    if (!window.confirm(`Delete \"${lesson.title}\"? This cannot be undone.`)) {
+      return;
+    }
+
+    setContentActionBusy(true);
+    setError("");
+
+    try {
+      await apiService.deleteLesson(id, lesson._id);
+      setLessons((prev) => prev.filter((item) => item._id !== lesson._id));
+
+      if (editingLessonId === lesson._id) {
+        resetLessonCreatorState();
+        setShowLessonCreator(false);
+      }
+
+      setSuccessMsg("Lesson deleted.");
+    } catch (lessonDeleteError: any) {
+      setError(extractErrorMessage(lessonDeleteError, "Failed to delete lesson"));
+    } finally {
+      setContentActionBusy(false);
+    }
+  };
+
+  const handleToggleLessonPublish = async (lesson: Lesson) => {
+    if (!id) {
+      return;
+    }
+
+    setContentActionBusy(true);
+    setError("");
+
+    const nextPublishedState = lesson.isPublished === false;
+
+    try {
+      const updatedLesson = await apiService.updateLesson(id, lesson._id, {
+        isPublished: nextPublishedState,
+      });
+
+      setLessons((prev) => prev.map((item) => (item._id === lesson._id ? updatedLesson : item)));
+
+      if (editingLessonId === lesson._id) {
+        setNewLessonForm((prev) => ({
+          ...prev,
+          isPublished: updatedLesson.isPublished !== false,
+        }));
+      }
+
+      setSuccessMsg(nextPublishedState ? "Lesson published." : "Lesson moved to draft.");
+    } catch (lessonUpdateError: any) {
+      setError(extractErrorMessage(lessonUpdateError, "Failed to update lesson publish state"));
+    } finally {
+      setContentActionBusy(false);
+    }
+  };
+
+  const handleSaveLessonInCourse = async () => {
     if (!id) {
       return;
     }
@@ -1269,6 +1369,7 @@ export function CourseDetail() {
     setSuccessMsg("");
 
     try {
+      const editingLesson = editingLessonId ? lessons.find((lesson) => lesson._id === editingLessonId) : null;
       const parsedVideoUrls = parseVideoUrlsInput(newLessonForm.videoUrlsInput);
       const parsedPhaseTitle = newLessonForm.phaseTitle.trim();
       const parsedPhaseOrder = parseOptionalOrderInput(newLessonForm.phaseOrder);
@@ -1281,34 +1382,45 @@ export function CourseDetail() {
       const parsedClassNotes = parseClassNotesInput(newLessonForm.classNotesInput);
       const parsedClassQuestions = parseClassQuestionsInput(newLessonForm.classQuestionsInput);
 
-      const createdLesson = await apiService.createLesson(id, {
+      const lessonPayload = {
         title: newLessonForm.title.trim(),
         content: newLessonForm.title.trim(),
-        videoUrl: parsedVideoUrls[0] || undefined,
-        videoUrls: parsedVideoUrls.length > 0 ? parsedVideoUrls : undefined,
+        videoUrl: parsedVideoUrls[0] || "",
+        videoUrls: parsedVideoUrls,
         duration: parseDurationInput(newLessonForm.duration),
-        order: lessons.length,
         isPublished: newLessonForm.isPublished,
         attachments: newLessonForm.attachments,
-        ...(parsedPhaseTitle ? { phaseTitle: parsedPhaseTitle } : {}),
+        phaseTitle: parsedPhaseTitle,
+        weekTitle: parsedWeekTitle,
+        topicTitle: parsedTopicTitle,
         ...(parsedPhaseOrder !== undefined ? { phaseOrder: parsedPhaseOrder } : {}),
-        ...(parsedWeekTitle ? { weekTitle: parsedWeekTitle } : {}),
         ...(parsedWeekOrder !== undefined ? { weekOrder: parsedWeekOrder } : {}),
-        ...(parsedTopicTitle ? { topicTitle: parsedTopicTitle } : {}),
         ...(parsedTopicOrder !== undefined ? { topicOrder: parsedTopicOrder } : {}),
-        ...(parsedSectionBreakdown.length > 0 ? { sectionBreakdown: parsedSectionBreakdown } : {}),
-        ...(parsedChecklist.length > 0 ? { classChecklist: parsedChecklist } : {}),
-        ...(parsedClassNotes.length > 0 ? { classNotes: parsedClassNotes } : {}),
-        ...(parsedClassQuestions.length > 0 ? { classQuestions: parsedClassQuestions } : {}),
-      });
+        sectionBreakdown: parsedSectionBreakdown,
+        classChecklist: parsedChecklist,
+        classNotes: parsedClassNotes,
+        classQuestions: parsedClassQuestions,
+      };
 
-      setLessons((prev) => [...prev, createdLesson].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)));
-      setSelectedLessonId(createdLesson._id);
+      if (editingLesson) {
+        const updatedLesson = await apiService.updateLesson(id, editingLesson._id, lessonPayload);
+        setLessons((prev) => prev.map((lesson) => (lesson._id === updatedLesson._id ? updatedLesson : lesson)));
+        setSelectedLessonId(updatedLesson._id);
+        setSuccessMsg("Lesson updated successfully.");
+      } else {
+        const createdLesson = await apiService.createLesson(id, {
+          ...lessonPayload,
+          order: lessons.length,
+        });
+        setLessons((prev) => [...prev, createdLesson].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)));
+        setSelectedLessonId(createdLesson._id);
+        setSuccessMsg("Lesson and resources added inside this course.");
+      }
+
       setShowLessonCreator(false);
-      setNewLessonForm(defaultLessonForm);
-      setSuccessMsg("Lesson and resources added inside this course.");
+      resetLessonCreatorState();
     } catch (lessonSaveError: any) {
-      setError(extractErrorMessage(lessonSaveError, "Failed to create lesson"));
+      setError(extractErrorMessage(lessonSaveError, "Failed to save lesson"));
     } finally {
       setContentActionBusy(false);
     }
@@ -2797,13 +2909,45 @@ export function CourseDetail() {
 
           {isInstructor ? (
             <div className="mt-4 space-y-3">
-              <Button variant="outline" className="w-full" onClick={() => setShowLessonCreator((prev) => !prev)}>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  if (showLessonCreator) {
+                    setShowLessonCreator(false);
+                    resetLessonCreatorState();
+                    return;
+                  }
+
+                  setShowLessonCreator(true);
+                  resetLessonCreatorState();
+                }}
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 {showLessonCreator ? "Close Lesson Creator" : "Add Lesson In Course"}
               </Button>
 
               {showLessonCreator ? (
                 <div className="rounded-lg border border-slate-200 bg-white p-3 space-y-2 dark:border-slate-800 dark:bg-slate-950 max-h-[52vh] overflow-y-auto">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                      {editingLessonId ? "Editing lesson" : "Create lesson"}
+                    </p>
+                    {editingLessonId ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          resetLessonCreatorState();
+                          setShowLessonCreator(false);
+                        }}
+                      >
+                        Cancel Edit
+                      </Button>
+                    ) : null}
+                  </div>
+
                   <Input
                     placeholder="Lesson title"
                     value={newLessonForm.title}
@@ -2930,8 +3074,8 @@ export function CourseDetail() {
                     ) : null}
                   </div>
 
-                  <Button className="w-full sticky bottom-0" onClick={() => void handleCreateLessonInCourse()} disabled={contentActionBusy || isUploadingLessonResources}>
-                    Save Lesson
+                  <Button className="w-full sticky bottom-0" onClick={() => void handleSaveLessonInCourse()} disabled={contentActionBusy || isUploadingLessonResources}>
+                    {editingLessonId ? "Update Lesson" : "Save Lesson"}
                   </Button>
                 </div>
               ) : null}
