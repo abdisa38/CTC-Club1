@@ -631,22 +631,79 @@ export function CourseDetail() {
     [lessons, isInstructor]
   );
 
+  const curriculumLessons = useMemo(
+    () => [...visibleLessons].sort(sortCurriculumLessons),
+    [visibleLessons]
+  );
+
   useEffect(() => {
-    if (visibleLessons.length === 0) {
+    if (curriculumLessons.length === 0) {
       setSelectedLessonId("");
       return;
     }
 
-    const exists = visibleLessons.some((lesson) => lesson._id === selectedLessonId);
+    const exists = curriculumLessons.some((lesson) => lesson._id === selectedLessonId);
     if (!exists) {
-      setSelectedLessonId(visibleLessons[0]._id);
+      setSelectedLessonId(curriculumLessons[0]._id);
     }
-  }, [visibleLessons, selectedLessonId]);
+  }, [curriculumLessons, selectedLessonId]);
 
   const selectedLesson = useMemo(
-    () => visibleLessons.find((lesson) => lesson._id === selectedLessonId) || visibleLessons[0] || null,
-    [visibleLessons, selectedLessonId]
+    () => curriculumLessons.find((lesson) => lesson._id === selectedLessonId) || curriculumLessons[0] || null,
+    [curriculumLessons, selectedLessonId]
   );
+
+  const groupedCurriculum = useMemo(() => {
+    const weeks = new Map<string, { key: string; title: string; order: number; topics: Map<string, CurriculumTopicGroup> }>();
+
+    curriculumLessons.forEach((lesson, globalIndex) => {
+      const phaseOrder = readOrder(lesson.phaseOrder, 0);
+      const phaseTitle = String(lesson.phaseTitle || "").trim();
+      const weekOrder = readOrder(lesson.weekOrder, 0);
+      const weekTitle = String(lesson.weekTitle || "").trim() || `Week ${weekOrder + 1}`;
+      const weekDisplayTitle = phaseTitle ? `${phaseTitle} / ${weekTitle}` : weekTitle;
+      const weekKey = `${phaseOrder}-${phaseTitle.toLowerCase()}-${weekOrder}-${weekTitle.toLowerCase()}`;
+
+      const topicTitle = String(lesson.topicTitle || "").trim() || lesson.title;
+      const topicOrder = readOrder(lesson.topicOrder, readOrder(lesson.order, globalIndex));
+      const topicKey = `${topicOrder}-${topicTitle.toLowerCase()}`;
+
+      let weekGroup = weeks.get(weekKey);
+      if (!weekGroup) {
+        weekGroup = {
+          key: weekKey,
+          title: weekDisplayTitle,
+          order: globalIndex,
+          topics: new Map<string, CurriculumTopicGroup>(),
+        };
+        weeks.set(weekKey, weekGroup);
+      }
+
+      let topicGroup = weekGroup.topics.get(topicKey);
+      if (!topicGroup) {
+        topicGroup = {
+          key: topicKey,
+          title: topicTitle,
+          order: topicOrder,
+          lessons: [],
+        };
+        weekGroup.topics.set(topicKey, topicGroup);
+      }
+
+      topicGroup.lessons.push({ lesson, globalIndex });
+    });
+
+    return Array.from(weeks.values())
+      .sort((left, right) => left.order - right.order || left.title.localeCompare(right.title))
+      .map((weekGroup): CurriculumWeekGroup => ({
+        key: weekGroup.key,
+        title: weekGroup.title,
+        order: weekGroup.order,
+        topics: Array.from(weekGroup.topics.values()).sort(
+          (left, right) => left.order - right.order || left.title.localeCompare(right.title)
+        ),
+      }));
+  }, [curriculumLessons]);
 
   useEffect(() => {
     setSelectedLessonVideoIndex(0);
@@ -666,9 +723,9 @@ export function CourseDetail() {
   const isPaidCourse = coursePrice > 0;
 
   const canAccessLessons = isEnrolled || isInstructor || !isPaidCourse;
-  const selectedLessonIndex = selectedLesson ? visibleLessons.findIndex((lesson) => lesson._id === selectedLesson._id) : -1;
+  const selectedLessonIndex = selectedLesson ? curriculumLessons.findIndex((lesson) => lesson._id === selectedLesson._id) : -1;
   const completedCount = canAccessLessons && selectedLessonIndex >= 0 ? selectedLessonIndex + 1 : 0;
-  const progress = visibleLessons.length > 0 ? Math.round((completedCount / visibleLessons.length) * 100) : 0;
+  const progress = curriculumLessons.length > 0 ? Math.round((completedCount / curriculumLessons.length) * 100) : 0;
 
   const selectedLessonVideoUrls = useMemo(() => getLessonVideoUrls(selectedLesson), [selectedLesson]);
   const safeSelectedVideoIndex =
@@ -780,7 +837,7 @@ export function CourseDetail() {
   const courseResources = useMemo(() => {
     const resources: CourseResource[] = [];
 
-    visibleLessons.forEach((lesson) => {
+    curriculumLessons.forEach((lesson) => {
       if (!Array.isArray(lesson.attachments)) {
         return;
       }
@@ -801,7 +858,7 @@ export function CourseDetail() {
     });
 
     return resources;
-  }, [visibleLessons]);
+  }, [curriculumLessons]);
 
   const projectSubmissionByProjectId = useMemo(() => {
     const map = new Map<string, ProjectSubmission>();
