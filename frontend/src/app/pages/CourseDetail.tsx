@@ -2584,7 +2584,7 @@ export function CourseDetail() {
           <h3 className="font-semibold text-lg text-slate-900 dark:text-white mb-2">Course Content</h3>
           <div className="flex justify-between items-center text-sm mb-1 text-slate-600 dark:text-slate-400">
             <span>Progress: {progress}%</span>
-            <span>{completedCount} / {visibleLessons.length} Lessons</span>
+            <span>{completedCount} / {curriculumLessons.length} Lessons</span>
           </div>
           <Progress value={progress} className="h-2" />
 
@@ -2737,55 +2737,71 @@ export function CourseDetail() {
             <button className="w-full flex items-center justify-between p-4 bg-slate-50/50 hover:bg-slate-100 dark:bg-slate-900/30 dark:hover:bg-slate-900 transition-colors">
               <div className="text-left">
                 <h4 className="font-semibold text-sm text-slate-900 dark:text-white">All Lectures</h4>
-                <p className="text-xs text-slate-500 mt-0.5">{visibleLessons.length} lessons</p>
+                <p className="text-xs text-slate-500 mt-0.5">{curriculumLessons.length} lessons</p>
               </div>
               <ChevronRight className="h-5 w-5 text-slate-400 rotate-90" />
             </button>
-            <div className="bg-white dark:bg-slate-950 divide-y divide-slate-100 dark:divide-slate-800/50">
-              {visibleLessons.length > 0 ? (
-                visibleLessons.map((lesson, i) => {
-                  const isSelected = selectedLesson?._id === lesson._id;
+            <div className="bg-white dark:bg-slate-950">
+              {curriculumLessons.length > 0 ? (
+                groupedCurriculum.map((weekGroup) => (
+                  <div key={weekGroup.key} className="border-b border-slate-100 dark:border-slate-800/60 last:border-b-0">
+                    <div className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 bg-slate-50/70 dark:bg-slate-900/30 dark:text-slate-400">
+                      {weekGroup.title}
+                    </div>
 
-                  return (
-                    <button
-                      key={lesson._id}
-                      className={`w-full flex items-start gap-3 p-4 transition-colors text-left ${
-                        !canAccessLessons
-                          ? "opacity-60 cursor-not-allowed"
-                          : isSelected
-                            ? "bg-indigo-50 dark:bg-indigo-950/20"
-                            : "hover:bg-slate-50 dark:hover:bg-slate-900"
-                      }`}
-                      onClick={() => {
-                        if (!canAccessLessons) return;
-                        setSelectedLessonId(lesson._id);
-                      }}
-                    >
-                      <div className="mt-0.5">
-                        {canAccessLessons && i < completedCount ? (
-                          <CheckCircle className="h-5 w-5 text-emerald-500" />
-                        ) : !canAccessLessons ? (
-                          <Lock className="h-5 w-5 text-slate-400" />
-                        ) : (
-                          <PlayCircle className="h-5 w-5 text-indigo-500" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p
-                          className={`text-sm truncate ${
-                            !canAccessLessons ? "text-slate-500" : "font-medium text-slate-900 dark:text-white"
-                          }`}
-                        >
-                          {lesson.title}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
-                          <PlayCircle className="h-3 w-3" />
-                          <span>{formatDuration(lesson.duration)}</span>
+                    {weekGroup.topics.map((topicGroup) => (
+                      <div key={`${weekGroup.key}-${topicGroup.key}`}>
+                        <div className="px-4 py-2 text-[11px] font-medium text-slate-500 dark:text-slate-400 border-t border-slate-100/70 dark:border-slate-800/50">
+                          {topicGroup.title}
                         </div>
+
+                        {topicGroup.lessons.map(({ lesson, globalIndex }) => {
+                          const isSelected = selectedLesson?._id === lesson._id;
+
+                          return (
+                            <button
+                              key={lesson._id}
+                              className={`w-full flex items-start gap-3 p-4 transition-colors text-left ${
+                                !canAccessLessons
+                                  ? "opacity-60 cursor-not-allowed"
+                                  : isSelected
+                                    ? "bg-indigo-50 dark:bg-indigo-950/20"
+                                    : "hover:bg-slate-50 dark:hover:bg-slate-900"
+                              }`}
+                              onClick={() => {
+                                if (!canAccessLessons) return;
+                                setSelectedLessonId(lesson._id);
+                              }}
+                            >
+                              <div className="mt-0.5">
+                                {canAccessLessons && globalIndex < completedCount ? (
+                                  <CheckCircle className="h-5 w-5 text-emerald-500" />
+                                ) : !canAccessLessons ? (
+                                  <Lock className="h-5 w-5 text-slate-400" />
+                                ) : (
+                                  <PlayCircle className="h-5 w-5 text-indigo-500" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p
+                                  className={`text-sm truncate ${
+                                    !canAccessLessons ? "text-slate-500" : "font-medium text-slate-900 dark:text-white"
+                                  }`}
+                                >
+                                  {lesson.title}
+                                </p>
+                                <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
+                                  <PlayCircle className="h-3 w-3" />
+                                  <span>{formatDuration(lesson.duration)}</span>
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })}
                       </div>
-                    </button>
-                  );
-                })
+                    ))}
+                  </div>
+                ))
               ) : (
                 <div className="p-6 text-center text-slate-500 text-sm">
                   {isInstructor ? "Add lessons from instructor dashboard to populate this course." : "No lessons available yet."}
