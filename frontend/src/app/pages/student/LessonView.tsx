@@ -84,18 +84,38 @@ const formatNoteTime = (): string =>
     minute: "2-digit",
   });
 
-const getYoutubeEmbedUrl = (url: string): string | null => {
+const getEmbedVideoUrl = (url: string): string | null => {
   try {
     const parsed = new URL(url);
+    const hostname = parsed.hostname.toLowerCase();
 
-    if (parsed.hostname.includes("youtu.be")) {
+    if (hostname.includes("youtu.be")) {
       const id = parsed.pathname.replace("/", "");
       return id ? `https://www.youtube.com/embed/${id}` : null;
     }
 
-    if (parsed.hostname.includes("youtube.com")) {
+    if (hostname.includes("youtube.com") || hostname.includes("youtube-nocookie.com")) {
       const id = parsed.searchParams.get("v");
-      return id ? `https://www.youtube.com/embed/${id}` : null;
+      if (id) {
+        return `https://www.youtube.com/embed/${id}`;
+      }
+
+      const pathParts = parsed.pathname.split("/").filter(Boolean);
+      if (pathParts[0] === "shorts" && pathParts[1]) {
+        return `https://www.youtube.com/embed/${pathParts[1]}`;
+      }
+
+      if (pathParts[0] === "embed" && pathParts[1]) {
+        return `https://www.youtube.com/embed/${pathParts[1]}`;
+      }
+
+      return null;
+    }
+
+    if (hostname.includes("vimeo.com")) {
+      const pathParts = parsed.pathname.split("/").filter(Boolean);
+      const id = pathParts[pathParts.length - 1];
+      return id ? `https://player.vimeo.com/video/${id}` : null;
     }
 
     return null;
@@ -121,6 +141,16 @@ const getLessonVideoUrls = (lesson: Lesson | null): string[] => {
   });
 
   return Array.from(unique);
+};
+
+const toVideoLabel = (url: string, index: number): string => {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.replace(/^www\./, "");
+    return `Video ${index + 1} (${host})`;
+  } catch {
+    return `Video ${index + 1}`;
+  }
 };
 
 const toResourceName = (url: string, fallback: string): string => {
@@ -187,6 +217,7 @@ export function LessonView() {
   const [notes, setNotes] = useState<LessonNote[]>([]);
   const [newNote, setNewNote] = useState("");
   const [newComment, setNewComment] = useState("");
+  const [activeVideoIndex, setActiveVideoIndex] = useState(0);
 
   useEffect(() => {
     if (!courseId) {
@@ -264,6 +295,10 @@ export function LessonView() {
     return lessons.find((lesson) => lesson._id === lessonId) || lessons[0];
   }, [lessonId, lessons]);
 
+  useEffect(() => {
+    setActiveVideoIndex(0);
+  }, [activeLesson?._id]);
+
   const notesStorageKey = useMemo(() => {
     if (!courseId || !activeLesson?._id) {
       return "";
@@ -333,8 +368,9 @@ export function LessonView() {
   const lessonCompleted = !!activeLesson && mergedCompletedLessons.has(activeLesson._id);
   const lessonResources = useMemo(() => getLessonResources(activeLesson), [activeLesson]);
   const lessonVideoUrls = useMemo(() => getLessonVideoUrls(activeLesson), [activeLesson]);
-  const primaryLessonVideoUrl = lessonVideoUrls[0] || "";
-  const youtubeEmbedUrl = primaryLessonVideoUrl ? getYoutubeEmbedUrl(primaryLessonVideoUrl) : null;
+  const safeVideoIndex = activeVideoIndex >= 0 && activeVideoIndex < lessonVideoUrls.length ? activeVideoIndex : 0;
+  const selectedLessonVideoUrl = lessonVideoUrls[safeVideoIndex] || "";
+  const embedVideoUrl = selectedLessonVideoUrl ? getEmbedVideoUrl(selectedLessonVideoUrl) : null;
 
   const modules = useMemo(
     () => [
@@ -463,16 +499,16 @@ export function LessonView() {
         </div>
 
         <div className="aspect-video bg-slate-900 relative group shrink-0">
-          {youtubeEmbedUrl ? (
+          {embedVideoUrl ? (
             <iframe
-              src={youtubeEmbedUrl}
+              src={embedVideoUrl}
               title={activeLesson.title}
               className="w-full h-full"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen
             />
-          ) : primaryLessonVideoUrl ? (
-            <video src={primaryLessonVideoUrl} controls className="w-full h-full object-cover" />
+          ) : selectedLessonVideoUrl ? (
+            <video src={selectedLessonVideoUrl} controls className="w-full h-full object-cover" />
           ) : (
             <>
               <img
@@ -493,7 +529,7 @@ export function LessonView() {
             </>
           )}
 
-          {!youtubeEmbedUrl && !primaryLessonVideoUrl ? (
+          {!embedVideoUrl && !selectedLessonVideoUrl ? (
             <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
               <div className="flex items-center gap-3 mb-2">
                 <div className="flex-1 h-1 bg-white/30 rounded-full cursor-pointer relative group/bar">
@@ -527,6 +563,33 @@ export function LessonView() {
             </div>
           ) : null}
         </div>
+
+        {lessonVideoUrls.length > 1 ? (
+          <div className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 px-4 py-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-medium text-slate-500">Lesson videos:</span>
+              {lessonVideoUrls.map((videoUrl, index) => {
+                const isSelectedVideo = index === safeVideoIndex;
+
+                return (
+                  <button
+                    key={`lesson-video-${index}`}
+                    type="button"
+                    onClick={() => setActiveVideoIndex(index)}
+                    title={videoUrl}
+                    className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+                      isSelectedVideo
+                        ? "border-indigo-500 bg-indigo-500 text-white"
+                        : "border-slate-300 bg-white text-slate-600 hover:border-indigo-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                    }`}
+                  >
+                    {toVideoLabel(videoUrl, index)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
 
         <div className="flex-1 overflow-y-auto">
           <div className="p-4 md:p-6 space-y-4">
