@@ -75,6 +75,20 @@ const parseDurationInput = (input: string): number | undefined => {
   return undefined;
 };
 
+const normalizeVideoUrlEntries = (entries: string[]): string[] => {
+  const unique = new Set<string>();
+
+  entries
+    .flatMap((entry) => String(entry || "").split(/[\n,]+/))
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .forEach((entry) => {
+      unique.add(entry);
+    });
+
+  return Array.from(unique);
+};
+
 const getLessonVideoUrls = (lesson: Lesson | null | undefined): string[] => {
   if (!lesson) {
     return [];
@@ -287,7 +301,7 @@ export function InstructorLessons() {
     }
 
     const normalizedVideoUrls = form.lessonType === "video"
-      ? form.videoUrls.map((url) => url.trim()).filter(Boolean)
+      ? normalizeVideoUrlEntries(form.videoUrls)
       : [];
     const videoPayload = form.lessonType === "video" ? normalizedVideoUrls : [];
 
@@ -504,7 +518,7 @@ export function InstructorLessons() {
                             ),
                           }))
                         }
-                        placeholder={`YouTube/Vimeo URL #${index + 1}`}
+                        placeholder={`YouTube/Vimeo URL #${index + 1} (or paste multiple with comma/new line)`}
                       />
                       <Button
                         type="button"
