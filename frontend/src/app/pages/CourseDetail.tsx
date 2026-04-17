@@ -237,18 +237,37 @@ const parseDurationInput = (input: string): number | undefined => {
 };
 
 const parseVideoUrlsInput = (input: string): string[] => {
-  if (!input.trim()) {
+  const normalizedInput = input.trim();
+  if (!normalizedInput) {
     return [];
   }
 
   const unique = new Set<string>();
-  input
-    .split(/[\n,]+/)
-    .map((item) => item.trim())
+
+  const extractedUrls = normalizedInput.match(/https?:\/\/[^\s,]+/g) || [];
+  extractedUrls
+    .map((item) => item.trim().replace(/[).,;]+$/g, ""))
     .filter(Boolean)
     .forEach((url) => unique.add(url));
 
+  if (unique.size === 0) {
+    normalizedInput
+      .split(/[\n,]+/)
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .forEach((url) => unique.add(url));
+  }
+
   return Array.from(unique);
+};
+
+const isDirectVideoFileUrl = (url: string): boolean => {
+  const normalized = String(url || "").trim().toLowerCase();
+  if (!normalized) {
+    return false;
+  }
+
+  return /\.(mp4|webm|ogg|mov|m4v|m3u8)(\?|#|$)/i.test(normalized);
 };
 
 const parseOptionalOrderInput = (input: string): number | undefined => {
