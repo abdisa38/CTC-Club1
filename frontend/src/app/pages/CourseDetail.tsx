@@ -251,6 +251,159 @@ const parseVideoUrlsInput = (input: string): string[] => {
   return Array.from(unique);
 };
 
+const parseOptionalOrderInput = (input: string): number | undefined => {
+  const trimmed = input.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  const parsed = Number(trimmed);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return undefined;
+  }
+
+  return parsed;
+};
+
+const parseChecklistInput = (input: string): string[] => {
+  if (!input.trim()) {
+    return [];
+  }
+
+  return input
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+};
+
+const parseSectionBreakdownInput = (input: string): Array<{ title: string; durationMinutes?: number }> => {
+  if (!input.trim()) {
+    return [];
+  }
+
+  return input
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const parts = line.split("|");
+      const title = (parts[0] || "").trim();
+      const durationRaw = (parts[1] || "").trim();
+
+      if (!title) {
+        return null;
+      }
+
+      const durationMinutes = Number(durationRaw);
+      if (durationRaw && Number.isFinite(durationMinutes) && durationMinutes >= 0) {
+        return {
+          title,
+          durationMinutes,
+        };
+      }
+
+      return {
+        title,
+      };
+    })
+    .filter((entry): entry is { title: string; durationMinutes?: number } => Boolean(entry));
+};
+
+const parseClassNotesInput = (input: string): Array<{ title: string; url: string }> => {
+  if (!input.trim()) {
+    return [];
+  }
+
+  return input
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const parts = line.split("|");
+      const title = (parts[0] || "").trim();
+      const url = (parts[1] || "").trim();
+
+      if (!title || !url) {
+        return null;
+      }
+
+      return {
+        title,
+        url,
+      };
+    })
+    .filter((entry): entry is { title: string; url: string } => Boolean(entry));
+};
+
+const parseClassQuestionsInput = (input: string): Array<{ question: string; answer?: string }> => {
+  if (!input.trim()) {
+    return [];
+  }
+
+  return input
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const parts = line.split("|");
+      const question = (parts[0] || "").trim();
+      const answer = (parts[1] || "").trim();
+
+      if (!question) {
+        return null;
+      }
+
+      if (answer) {
+        return {
+          question,
+          answer,
+        };
+      }
+
+      return {
+        question,
+      };
+    })
+    .filter((entry): entry is { question: string; answer?: string } => Boolean(entry));
+};
+
+const readOrder = (value: unknown, fallback: number): number => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return fallback;
+  }
+
+  return parsed;
+};
+
+const sortCurriculumLessons = (left: Lesson, right: Lesson): number => {
+  const leftPhaseOrder = readOrder(left.phaseOrder, 0);
+  const rightPhaseOrder = readOrder(right.phaseOrder, 0);
+  if (leftPhaseOrder !== rightPhaseOrder) {
+    return leftPhaseOrder - rightPhaseOrder;
+  }
+
+  const leftWeekOrder = readOrder(left.weekOrder, 0);
+  const rightWeekOrder = readOrder(right.weekOrder, 0);
+  if (leftWeekOrder !== rightWeekOrder) {
+    return leftWeekOrder - rightWeekOrder;
+  }
+
+  const leftTopicOrder = readOrder(left.topicOrder, 0);
+  const rightTopicOrder = readOrder(right.topicOrder, 0);
+  if (leftTopicOrder !== rightTopicOrder) {
+    return leftTopicOrder - rightTopicOrder;
+  }
+
+  const leftLessonOrder = readOrder(left.order, 0);
+  const rightLessonOrder = readOrder(right.order, 0);
+  if (leftLessonOrder !== rightLessonOrder) {
+    return leftLessonOrder - rightLessonOrder;
+  }
+
+  return String(left.title || "").localeCompare(String(right.title || ""));
+};
+
 const getProjectRefId = (value?: { _id: string } | string | null): string => {
   if (!value) {
     return "";
