@@ -386,6 +386,78 @@ const parseClassQuestionsInput = (input: string): Array<{ question: string; answ
     .filter((entry): entry is { question: string; answer?: string } => Boolean(entry));
 };
 
+const stringifyVideoUrlsInput = (lesson: Lesson): string => {
+  return getLessonVideoUrls(lesson).join("\n");
+};
+
+const stringifySectionBreakdownInput = (lesson: Lesson): string => {
+  if (!Array.isArray(lesson.sectionBreakdown) || lesson.sectionBreakdown.length === 0) {
+    return "";
+  }
+
+  return lesson.sectionBreakdown
+    .map((section) => {
+      const title = String(section.title || "").trim();
+      if (!title) {
+        return "";
+      }
+
+      if (section.durationMinutes !== undefined && Number.isFinite(Number(section.durationMinutes))) {
+        return `${title} | ${section.durationMinutes}`;
+      }
+
+      return title;
+    })
+    .filter(Boolean)
+    .join("\n");
+};
+
+const stringifyChecklistInput = (lesson: Lesson): string => {
+  if (!Array.isArray(lesson.classChecklist) || lesson.classChecklist.length === 0) {
+    return "";
+  }
+
+  return lesson.classChecklist.join("\n");
+};
+
+const stringifyClassNotesInput = (lesson: Lesson): string => {
+  if (!Array.isArray(lesson.classNotes) || lesson.classNotes.length === 0) {
+    return "";
+  }
+
+  return lesson.classNotes
+    .map((note) => {
+      const title = String(note.title || "").trim();
+      const url = String(note.url || "").trim();
+      if (!title || !url) {
+        return "";
+      }
+
+      return `${title} | ${url}`;
+    })
+    .filter(Boolean)
+    .join("\n");
+};
+
+const stringifyClassQuestionsInput = (lesson: Lesson): string => {
+  if (!Array.isArray(lesson.classQuestions) || lesson.classQuestions.length === 0) {
+    return "";
+  }
+
+  return lesson.classQuestions
+    .map((item) => {
+      const question = String(item.question || "").trim();
+      const answer = String(item.answer || "").trim();
+      if (!question) {
+        return "";
+      }
+
+      return answer ? `${question} | ${answer}` : question;
+    })
+    .filter(Boolean)
+    .join("\n");
+};
+
 const readOrder = (value: unknown, fallback: number): number => {
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed < 0) {
