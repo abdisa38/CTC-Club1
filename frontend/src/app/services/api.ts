@@ -111,12 +111,57 @@ export interface Lesson {
   course?: string;
   order?: number;
   duration?: number | string;
+  phaseTitle?: string;
+  phaseOrder?: number;
+  weekTitle?: string;
+  weekOrder?: number;
+  topicTitle?: string;
+  topicOrder?: number;
+  sectionBreakdown?: Array<{
+    title: string;
+    durationMinutes?: number;
+  }>;
+  classChecklist?: string[];
+  classNotes?: Array<{
+    title: string;
+    url: string;
+  }>;
+  classQuestions?: Array<{
+    question: string;
+    answer?: string;
+  }>;
   isPublished?: boolean;
   attachments?: Array<{
     title?: string;
     url: string;
     fileType?: string;
   }>;
+}
+
+export interface LessonTopicGroup {
+  key: string;
+  title: string;
+  order: number;
+  lessons: Lesson[];
+}
+
+export interface LessonWeekGroup {
+  key: string;
+  title: string;
+  order: number;
+  topics: LessonTopicGroup[];
+}
+
+export interface LessonPhaseGroup {
+  key: string;
+  title: string;
+  order: number;
+  weeks: LessonWeekGroup[];
+}
+
+export interface GroupedLessonsPayload {
+  lessons: Lesson[];
+  phases: LessonPhaseGroup[];
 }
 
 export interface Project {
@@ -689,6 +734,11 @@ export const apiService = {
     return pickData<Lesson[]>(res.data);
   },
 
+  async getLessonsGrouped(courseId: string): Promise<GroupedLessonsPayload> {
+    const res = await api.get(`/courses/${courseId}/lessons`, { params: { grouped: true } });
+    return pickData<GroupedLessonsPayload>(res.data);
+  },
+
   async createLesson(
     courseId: string,
     input: {
@@ -698,6 +748,16 @@ export const apiService = {
       videoUrls?: string[];
       order?: number;
       duration?: number;
+      phaseTitle?: string;
+      phaseOrder?: number;
+      weekTitle?: string;
+      weekOrder?: number;
+      topicTitle?: string;
+      topicOrder?: number;
+      sectionBreakdown?: Array<{ title: string; durationMinutes?: number }>;
+      classChecklist?: string[];
+      classNotes?: Array<{ title: string; url: string }>;
+      classQuestions?: Array<{ question: string; answer?: string }>;
       attachments?: Array<{ title?: string; url: string; fileType?: string }>;
       isPublished?: boolean;
     }
@@ -716,6 +776,16 @@ export const apiService = {
       videoUrls?: string[];
       order?: number;
       duration?: number;
+      phaseTitle?: string;
+      phaseOrder?: number;
+      weekTitle?: string;
+      weekOrder?: number;
+      topicTitle?: string;
+      topicOrder?: number;
+      sectionBreakdown?: Array<{ title: string; durationMinutes?: number }>;
+      classChecklist?: string[];
+      classNotes?: Array<{ title: string; url: string }>;
+      classQuestions?: Array<{ question: string; answer?: string }>;
       attachments?: Array<{ title?: string; url: string; fileType?: string }>;
       isPublished?: boolean;
     }>

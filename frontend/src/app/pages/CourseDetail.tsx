@@ -38,10 +38,39 @@ type CourseResource = {
   lessonTitle: string;
 };
 
+type CurriculumLessonRow = {
+  lesson: Lesson;
+  globalIndex: number;
+};
+
+type CurriculumTopicGroup = {
+  key: string;
+  title: string;
+  order: number;
+  lessons: CurriculumLessonRow[];
+};
+
+type CurriculumWeekGroup = {
+  key: string;
+  title: string;
+  order: number;
+  topics: CurriculumTopicGroup[];
+};
+
 type NewLessonForm = {
   title: string;
+  phaseTitle: string;
+  phaseOrder: string;
+  weekTitle: string;
+  weekOrder: string;
+  topicTitle: string;
+  topicOrder: string;
   videoUrlsInput: string;
   duration: string;
+  sectionBreakdownInput: string;
+  classChecklistInput: string;
+  classNotesInput: string;
+  classQuestionsInput: string;
   isPublished: boolean;
   attachments: Array<{
     title: string;
