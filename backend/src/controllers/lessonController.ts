@@ -222,7 +222,10 @@ export const addLesson = async (req: AuthRequest, res: Response) => {
     }
 
     if (order !== undefined) {
-      lessonPayload.order = order;
+      const parsedOrder = parseNonNegativeNumber(order);
+      if (parsedOrder !== undefined) {
+        lessonPayload.order = parsedOrder;
+      }
     }
 
     if (duration !== undefined) {
@@ -335,7 +338,12 @@ export const updateLesson = async (req: AuthRequest, res: Response) => {
       lesson.set('videoUrl', normalizedVideoUrls[0] || undefined);
     }
 
-    lesson.order = order !== undefined ? order : lesson.order;
+    if (order !== undefined) {
+      const parsedOrder = parseNonNegativeNumber(order);
+      if (parsedOrder !== undefined) {
+        lesson.order = parsedOrder;
+      }
+    }
     if (duration !== undefined) {
       const parsedDuration = Number(duration);
       if (Number.isFinite(parsedDuration)) {
