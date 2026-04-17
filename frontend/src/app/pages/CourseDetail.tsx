@@ -1179,6 +1179,16 @@ export function CourseDetail() {
 
     try {
       const parsedVideoUrls = parseVideoUrlsInput(newLessonForm.videoUrlsInput);
+      const parsedPhaseTitle = newLessonForm.phaseTitle.trim();
+      const parsedPhaseOrder = parseOptionalOrderInput(newLessonForm.phaseOrder);
+      const parsedWeekTitle = newLessonForm.weekTitle.trim();
+      const parsedWeekOrder = parseOptionalOrderInput(newLessonForm.weekOrder);
+      const parsedTopicTitle = newLessonForm.topicTitle.trim();
+      const parsedTopicOrder = parseOptionalOrderInput(newLessonForm.topicOrder);
+      const parsedSectionBreakdown = parseSectionBreakdownInput(newLessonForm.sectionBreakdownInput);
+      const parsedChecklist = parseChecklistInput(newLessonForm.classChecklistInput);
+      const parsedClassNotes = parseClassNotesInput(newLessonForm.classNotesInput);
+      const parsedClassQuestions = parseClassQuestionsInput(newLessonForm.classQuestionsInput);
 
       const createdLesson = await apiService.createLesson(id, {
         title: newLessonForm.title.trim(),
@@ -1189,6 +1199,16 @@ export function CourseDetail() {
         order: lessons.length,
         isPublished: newLessonForm.isPublished,
         attachments: newLessonForm.attachments,
+        ...(parsedPhaseTitle ? { phaseTitle: parsedPhaseTitle } : {}),
+        ...(parsedPhaseOrder !== undefined ? { phaseOrder: parsedPhaseOrder } : {}),
+        ...(parsedWeekTitle ? { weekTitle: parsedWeekTitle } : {}),
+        ...(parsedWeekOrder !== undefined ? { weekOrder: parsedWeekOrder } : {}),
+        ...(parsedTopicTitle ? { topicTitle: parsedTopicTitle } : {}),
+        ...(parsedTopicOrder !== undefined ? { topicOrder: parsedTopicOrder } : {}),
+        ...(parsedSectionBreakdown.length > 0 ? { sectionBreakdown: parsedSectionBreakdown } : {}),
+        ...(parsedChecklist.length > 0 ? { classChecklist: parsedChecklist } : {}),
+        ...(parsedClassNotes.length > 0 ? { classNotes: parsedClassNotes } : {}),
+        ...(parsedClassQuestions.length > 0 ? { classQuestions: parsedClassQuestions } : {}),
       });
 
       setLessons((prev) => [...prev, createdLesson].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)));
