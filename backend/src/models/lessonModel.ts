@@ -1,5 +1,20 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
+export interface ILessonSection {
+  title: string;
+  durationMinutes?: number;
+}
+
+export interface ILessonNote {
+  title: string;
+  url: string;
+}
+
+export interface ILessonQuestion {
+  question: string;
+  answer?: string;
+}
+
 export interface ILesson extends Document {
   title: string;
   course: mongoose.Types.ObjectId;
@@ -9,6 +24,18 @@ export interface ILesson extends Document {
   videoUrls?: string[];
   duration?: number; // In minutes
   order: number;
+
+  // Curriculum structure metadata
+  phaseTitle?: string;
+  phaseOrder?: number;
+  weekTitle?: string;
+  weekOrder?: number;
+  topicTitle?: string;
+  topicOrder?: number;
+  sectionBreakdown: ILessonSection[];
+  classChecklist: string[];
+  classNotes: ILessonNote[];
+  classQuestions: ILessonQuestion[];
   
   // Attachments/Resources
   attachments: {
@@ -69,6 +96,78 @@ const lessonSchema = new Schema<ILesson>(
       default: 0,
       index: true, // Optimizes ordered find
     },
+    phaseTitle: {
+      type: String,
+      trim: true,
+      maxlength: [120, 'Phase title cannot exceed 120 characters'],
+    },
+    phaseOrder: {
+      type: Number,
+      min: 0,
+      default: 0,
+    },
+    weekTitle: {
+      type: String,
+      trim: true,
+      maxlength: [120, 'Week title cannot exceed 120 characters'],
+    },
+    weekOrder: {
+      type: Number,
+      min: 0,
+      default: 0,
+    },
+    topicTitle: {
+      type: String,
+      trim: true,
+      maxlength: [160, 'Topic title cannot exceed 160 characters'],
+    },
+    topicOrder: {
+      type: Number,
+      min: 0,
+      default: 0,
+    },
+    sectionBreakdown: [
+      {
+        title: {
+          type: String,
+          trim: true,
+        },
+        durationMinutes: {
+          type: Number,
+          min: 0,
+        },
+      },
+    ],
+    classChecklist: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
+    classNotes: [
+      {
+        title: {
+          type: String,
+          trim: true,
+        },
+        url: {
+          type: String,
+          trim: true,
+        },
+      },
+    ],
+    classQuestions: [
+      {
+        question: {
+          type: String,
+          trim: true,
+        },
+        answer: {
+          type: String,
+          trim: true,
+        },
+      },
+    ],
     attachments: [
       {
         title: String,
@@ -103,6 +202,7 @@ const lessonSchema = new Schema<ILesson>(
 // Compound Indexing for optimal queries inside course
 lessonSchema.index({ course: 1, order: 1 });
 lessonSchema.index({ course: 1, isPublished: 1, isDeleted: 1 });
+lessonSchema.index({ course: 1, weekOrder: 1, topicOrder: 1, order: 1 });
 
 // Automatically update Course total duration on save? Handled via service/controller
 // Query Middleware to automatically filter out soft-deleted lessons
