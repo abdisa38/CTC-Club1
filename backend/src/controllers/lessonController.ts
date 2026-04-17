@@ -12,6 +12,17 @@ const hasOwn = (value: unknown, key: string) => {
   return Object.prototype.hasOwnProperty.call(value, key);
 };
 
+const extractUrlsFromText = (input: string): string[] => {
+  if (!input.trim()) {
+    return [];
+  }
+
+  const matches = input.match(/https?:\/\/[^\s,]+/g) || [];
+  return matches
+    .map((item) => item.trim().replace(/[).,;]+$/g, ''))
+    .filter(Boolean);
+};
+
 const normalizeVideoUrls = (videoUrlInput: unknown, videoUrlsInput: unknown): string[] => {
   const candidates: unknown[] = [];
 
@@ -29,9 +40,17 @@ const normalizeVideoUrls = (videoUrlInput: unknown, videoUrlsInput: unknown): st
 
   candidates.forEach((candidate) => {
     const normalized = String(candidate ?? '').trim();
-    if (normalized) {
-      unique.add(normalized);
+    if (!normalized) {
+      return;
     }
+
+    const extractedUrls = extractUrlsFromText(normalized);
+    if (extractedUrls.length > 0) {
+      extractedUrls.forEach((url) => unique.add(url));
+      return;
+    }
+
+    unique.add(normalized);
   });
 
   return Array.from(unique);
