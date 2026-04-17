@@ -1718,13 +1718,13 @@ export function CourseDetail() {
   return (
     <div className="flex flex-col lg:flex-row h-[calc(100vh-8rem)] bg-white dark:bg-slate-950 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm">
       <div ref={scrollContainerRef} className="flex-1 flex flex-col overflow-y-auto bg-slate-50 dark:bg-slate-950/50">
-        <div className="aspect-video bg-slate-900 relative overflow-hidden">
+        <div className="relative w-full min-h-[280px] sm:min-h-[340px] lg:min-h-[400px] bg-slate-900 overflow-hidden">
           {!canAccessLessons ? (
             <>
               <img
                 src={course.coverImage || FALLBACK_COVER_IMAGE}
                 alt="Course cover"
-                className="w-full h-full object-cover opacity-60"
+                className="absolute inset-0 w-full h-full object-cover opacity-60"
               />
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center">
@@ -1761,26 +1761,46 @@ export function CourseDetail() {
               <iframe
                 title={selectedLesson.title}
                 src={embedVideoUrl}
-                className="w-full h-full"
+                className="absolute inset-0 w-full h-full"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
               />
-            ) : (
+            ) : isDirectVideoFileUrl(selectedLessonVideoUrl) ? (
               <video
-                className="w-full h-full"
+                className="absolute inset-0 w-full h-full"
                 controls
                 src={selectedLessonVideoUrl}
                 poster={course.coverImage || FALLBACK_COVER_IMAGE}
               >
                 Your browser does not support video playback.
               </video>
+            ) : (
+              <>
+                <img
+                  src={course.coverImage || FALLBACK_COVER_IMAGE}
+                  alt="Course cover"
+                  className="absolute inset-0 w-full h-full object-cover opacity-75"
+                />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/35">
+                  <div className="rounded-xl border border-white/20 bg-black/55 px-5 py-4 text-center text-white max-w-md">
+                    <p className="text-sm mb-3">This video link cannot be embedded inline. Open it directly:</p>
+                    <Button
+                      type="button"
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                      onClick={() => window.open(selectedLessonVideoUrl, "_blank", "noopener,noreferrer")}
+                    >
+                      Open Video Link
+                    </Button>
+                  </div>
+                </div>
+              </>
             )
           ) : (
             <div className="w-full h-full flex items-center justify-center">
               <img
                 src={course.coverImage || FALLBACK_COVER_IMAGE}
                 alt="Course cover"
-                className="w-full h-full object-cover opacity-70"
+                className="absolute inset-0 w-full h-full object-cover opacity-70"
               />
               <div className="absolute inset-0 flex items-center justify-center text-white text-sm bg-black/30">
                 No video URL available for the selected lesson.
@@ -1992,6 +2012,22 @@ export function CourseDetail() {
                       {selectedLesson.topicTitle ? <Badge variant="outline">{selectedLesson.topicTitle}</Badge> : null}
                     </div>
 
+                    {selectedLessonVideoUrls.length > 0 ? (
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Lesson Videos</p>
+                        <div className="space-y-1">
+                          {selectedLessonVideoUrls.map((videoUrl, index) => (
+                            <div key={`${selectedLesson._id}-video-${index}`} className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2 text-sm dark:border-slate-800">
+                              <span className="text-slate-700 dark:text-slate-200 truncate pr-2">{toVideoLabel(videoUrl, index)}</span>
+                              <Button size="sm" variant="outline" onClick={() => setSelectedLessonVideoIndex(index)}>
+                                {index === safeSelectedVideoIndex ? "Playing" : "Play"}
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+
                     {Array.isArray(selectedLesson.sectionBreakdown) && selectedLesson.sectionBreakdown.length > 0 ? (
                       <div className="space-y-2">
                         <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Section by Section</p>
@@ -2004,9 +2040,7 @@ export function CourseDetail() {
                           ))}
                         </div>
                       </div>
-                    ) : (
-                      <p className="text-sm text-slate-500">No section-by-section breakdown added yet.</p>
-                    )}
+                    ) : null}
 
                     {Array.isArray(selectedLesson.classChecklist) && selectedLesson.classChecklist.length > 0 ? (
                       <div className="space-y-2">
@@ -2051,6 +2085,14 @@ export function CourseDetail() {
                           ))}
                         </div>
                       </div>
+                    ) : null}
+
+                    {selectedLessonVideoUrls.length === 0
+                    && (!Array.isArray(selectedLesson.sectionBreakdown) || selectedLesson.sectionBreakdown.length === 0)
+                    && (!Array.isArray(selectedLesson.classChecklist) || selectedLesson.classChecklist.length === 0)
+                    && (!Array.isArray(selectedLesson.classNotes) || selectedLesson.classNotes.length === 0)
+                    && (!Array.isArray(selectedLesson.classQuestions) || selectedLesson.classQuestions.length === 0) ? (
+                      <p className="text-sm text-slate-500">No extra lesson structure has been added yet.</p>
                     ) : null}
                   </div>
                 ) : null}
@@ -2689,7 +2731,7 @@ export function CourseDetail() {
               </Button>
 
               {showLessonCreator ? (
-                <div className="rounded-lg border border-slate-200 bg-white p-3 space-y-2 dark:border-slate-800 dark:bg-slate-950">
+                <div className="rounded-lg border border-slate-200 bg-white p-3 space-y-2 dark:border-slate-800 dark:bg-slate-950 max-h-[52vh] overflow-y-auto">
                   <Input
                     placeholder="Lesson title"
                     value={newLessonForm.title}
@@ -2816,7 +2858,7 @@ export function CourseDetail() {
                     ) : null}
                   </div>
 
-                  <Button className="w-full" onClick={() => void handleCreateLessonInCourse()} disabled={contentActionBusy || isUploadingLessonResources}>
+                  <Button className="w-full sticky bottom-0" onClick={() => void handleCreateLessonInCourse()} disabled={contentActionBusy || isUploadingLessonResources}>
                     Save Lesson
                   </Button>
                 </div>
