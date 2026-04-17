@@ -1631,6 +1631,43 @@ export function CourseDetail() {
             </div>
           </div>
 
+          {canAccessLessons && selectedLesson && selectedLessonVideoUrls.length > 0 ? (
+            <div className="mb-6 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950 space-y-2">
+              <div className="flex items-center gap-2">
+                <PlayCircle className="h-4 w-4 text-indigo-500" />
+                <h3 className="font-semibold text-slate-900 dark:text-white">Lesson Videos</h3>
+              </div>
+              {selectedLessonVideoUrls.map((videoUrl, index) => {
+                const isSelectedVideo = index === safeSelectedVideoIndex;
+
+                return (
+                  <div
+                    key={`course-detail-video-row-${index}`}
+                    className={`flex items-center justify-between rounded-lg border px-3 py-2 ${
+                      isSelectedVideo
+                        ? "border-indigo-300 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-900/20"
+                        : "border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950"
+                    }`}
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-slate-900 dark:text-white">{toVideoLabel(videoUrl, index)}</p>
+                      <p className="text-xs text-slate-500 truncate">{videoUrl}</p>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={isSelectedVideo ? "default" : "outline"}
+                      onClick={() => setSelectedLessonVideoIndex(index)}
+                      className="ml-3 shrink-0"
+                    >
+                      {isSelectedVideo ? "Playing" : "Play"}
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
+
           <div className="border-b border-slate-200 dark:border-slate-800 mb-6">
             <nav className="flex gap-6">
               {["overview", "resources", "quizzes", "projects", "discussion"].map((tab) => (

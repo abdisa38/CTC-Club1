@@ -648,6 +648,46 @@ export function LessonView() {
               </div>
             </div>
 
+            {lessonVideoUrls.length > 0 ? (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <PlayCircle className="h-4 w-4 text-indigo-500" /> Lesson Videos
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {lessonVideoUrls.map((videoUrl, index) => {
+                    const isSelectedVideo = index === safeVideoIndex;
+
+                    return (
+                      <div
+                        key={`lesson-video-row-${index}`}
+                        className={`flex items-center justify-between rounded-lg border px-3 py-2 ${
+                          isSelectedVideo
+                            ? "border-indigo-300 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-900/20"
+                            : "border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950"
+                        }`}
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-slate-900 dark:text-white">{toVideoLabel(videoUrl, index)}</p>
+                          <p className="text-xs text-slate-500 truncate">{videoUrl}</p>
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={isSelectedVideo ? "default" : "outline"}
+                          onClick={() => setActiveVideoIndex(index)}
+                          className="ml-3 shrink-0"
+                        >
+                          {isSelectedVideo ? "Playing" : "Play"}
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+            ) : null}
+
             <div className="flex border-b border-slate-200 dark:border-slate-800 lg:hidden overflow-x-auto">
               {(["notes", "resources", "discussion"] as const).map((tab) => (
                 <button
