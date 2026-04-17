@@ -449,8 +449,18 @@ const extractErrorMessage = (error: any, fallback: string) => {
 
 const defaultLessonForm: NewLessonForm = {
   title: "",
+  phaseTitle: "",
+  phaseOrder: "0",
+  weekTitle: "",
+  weekOrder: "0",
+  topicTitle: "",
+  topicOrder: "0",
   videoUrlsInput: "",
   duration: "",
+  sectionBreakdownInput: "",
+  classChecklistInput: "",
+  classNotesInput: "",
+  classQuestionsInput: "",
   isPublished: true,
   attachments: [],
 };
