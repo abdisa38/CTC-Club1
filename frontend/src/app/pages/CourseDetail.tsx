@@ -1958,9 +1958,83 @@ export function CourseDetail() {
 
           <div className="flex-1 overflow-y-auto">
             {activeTab === "overview" ? (
-              <div className="prose dark:prose-invert max-w-none text-slate-600 dark:text-slate-400">
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">About this course</h3>
-                <p>{course.description}</p>
+              <div className="space-y-6">
+                <div className="prose dark:prose-invert max-w-none text-slate-600 dark:text-slate-400">
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">About this course</h3>
+                  <p>{course.description}</p>
+                </div>
+
+                {selectedLesson ? (
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950 space-y-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Current Lesson Structure</h4>
+                      {selectedLesson.phaseTitle ? <Badge variant="secondary">{selectedLesson.phaseTitle}</Badge> : null}
+                      {selectedLesson.weekTitle ? <Badge variant="secondary">{selectedLesson.weekTitle}</Badge> : null}
+                      {selectedLesson.topicTitle ? <Badge variant="outline">{selectedLesson.topicTitle}</Badge> : null}
+                    </div>
+
+                    {Array.isArray(selectedLesson.sectionBreakdown) && selectedLesson.sectionBreakdown.length > 0 ? (
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Section by Section</p>
+                        <div className="space-y-1">
+                          {selectedLesson.sectionBreakdown.map((section, index) => (
+                            <div key={`${selectedLesson._id}-section-${index}`} className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2 text-sm dark:border-slate-800">
+                              <span className="text-slate-700 dark:text-slate-200">{section.title}</span>
+                              <span className="text-xs text-slate-500">{section.durationMinutes !== undefined ? `${section.durationMinutes}m` : "-"}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-500">No section-by-section breakdown added yet.</p>
+                    )}
+
+                    {Array.isArray(selectedLesson.classChecklist) && selectedLesson.classChecklist.length > 0 ? (
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Class Checklist</p>
+                        <ul className="space-y-1">
+                          {selectedLesson.classChecklist.map((item, index) => (
+                            <li key={`${selectedLesson._id}-check-${index}`} className="text-sm text-slate-700 dark:text-slate-200">
+                              {index + 1}. {item}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+
+                    {Array.isArray(selectedLesson.classNotes) && selectedLesson.classNotes.length > 0 ? (
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Class Notes</p>
+                        <div className="space-y-1">
+                          {selectedLesson.classNotes.map((note, index) => (
+                            <div key={`${selectedLesson._id}-note-${index}`} className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2 text-sm dark:border-slate-800">
+                              <span className="text-slate-700 dark:text-slate-200">{note.title}</span>
+                              <Button size="sm" variant="outline" onClick={() => window.open(note.url, "_blank", "noopener,noreferrer")}>
+                                Open
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {Array.isArray(selectedLesson.classQuestions) && selectedLesson.classQuestions.length > 0 ? (
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Questions Asked In Class</p>
+                        <div className="space-y-2">
+                          {selectedLesson.classQuestions.map((questionItem, index) => (
+                            <div key={`${selectedLesson._id}-qa-${index}`} className="rounded-md border border-slate-200 px-3 py-2 dark:border-slate-800">
+                              <p className="text-sm font-medium text-slate-800 dark:text-slate-100">Q: {questionItem.question}</p>
+                              {questionItem.answer ? (
+                                <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">A: {questionItem.answer}</p>
+                              ) : null}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             ) : null}
 
