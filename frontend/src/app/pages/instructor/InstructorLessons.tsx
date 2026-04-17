@@ -289,6 +289,7 @@ export function InstructorLessons() {
     const normalizedVideoUrls = form.lessonType === "video"
       ? form.videoUrls.map((url) => url.trim()).filter(Boolean)
       : [];
+    const videoPayload = form.lessonType === "video" ? normalizedVideoUrls : [];
 
     if (form.lessonType === "video" && normalizedVideoUrls.length === 0) {
       setError("Video lessons require at least one YouTube/Vimeo URL or uploaded video file");
@@ -303,8 +304,8 @@ export function InstructorLessons() {
       const payload = {
         title: form.title.trim(),
         content: `${form.lessonType === "video" ? "Video" : "Document"} lesson: ${form.title.trim()}`,
-        videoUrl: normalizedVideoUrls[0] || undefined,
-        videoUrls: normalizedVideoUrls.length > 0 ? normalizedVideoUrls : undefined,
+        videoUrl: videoPayload[0] || undefined,
+        videoUrls: videoPayload,
         duration: durationInMinutes,
         order: currentLesson?.order ?? lessons.length,
         isPublished: !form.isLocked,

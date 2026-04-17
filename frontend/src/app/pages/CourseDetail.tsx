@@ -83,13 +83,14 @@ type CourseProjectForm = {
 const getEmbedVideoUrl = (url: string): string | null => {
   try {
     const parsed = new URL(url);
+    const hostname = parsed.hostname.toLowerCase();
 
-    if (parsed.hostname.includes("youtu.be")) {
+    if (hostname.includes("youtu.be")) {
       const id = parsed.pathname.replace("/", "");
       return id ? `https://www.youtube.com/embed/${id}` : null;
     }
 
-    if (parsed.hostname.includes("youtube.com")) {
+    if (hostname.includes("youtube.com") || hostname.includes("youtube-nocookie.com")) {
       const id = parsed.searchParams.get("v");
       if (id) {
         return `https://www.youtube.com/embed/${id}`;
@@ -105,7 +106,7 @@ const getEmbedVideoUrl = (url: string): string | null => {
       }
     }
 
-    if (parsed.hostname.includes("vimeo.com")) {
+    if (hostname.includes("vimeo.com")) {
       const pathParts = parsed.pathname.split("/").filter(Boolean);
       const id = pathParts[pathParts.length - 1];
       return id ? `https://player.vimeo.com/video/${id}` : null;
@@ -144,6 +145,16 @@ const toResourceName = (url: string, fallback: string): string => {
     return lastPart || fallback;
   } catch {
     return fallback;
+  }
+};
+
+const toVideoLabel = (url: string, index: number): string => {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.replace(/^www\./, "");
+    return `Video ${index + 1} (${host})`;
+  } catch {
+    return `Video ${index + 1}`;
   }
 };
 
@@ -333,6 +344,7 @@ export function CourseDetail() {
   const [showLessonCreator, setShowLessonCreator] = useState(false);
   const [newLessonForm, setNewLessonForm] = useState<NewLessonForm>(defaultLessonForm);
   const [isUploadingLessonResources, setIsUploadingLessonResources] = useState(false);
+  const [selectedLessonVideoIndex, setSelectedLessonVideoIndex] = useState(0);
   const lessonResourceInputRef = useRef<HTMLInputElement | null>(null);
 
   const [quizForm, setQuizForm] = useState<CourseQuizForm>(defaultQuizForm);
@@ -444,6 +456,10 @@ export function CourseDetail() {
     [visibleLessons, selectedLessonId]
   );
 
+  useEffect(() => {
+    setSelectedLessonVideoIndex(0);
+  }, [selectedLesson?._id]);
+
   const isEnrolled =
     !!user &&
     Array.isArray(course?.students) &&
@@ -463,8 +479,12 @@ export function CourseDetail() {
   const progress = visibleLessons.length > 0 ? Math.round((completedCount / visibleLessons.length) * 100) : 0;
 
   const selectedLessonVideoUrls = useMemo(() => getLessonVideoUrls(selectedLesson), [selectedLesson]);
-  const selectedLessonPrimaryVideoUrl = selectedLessonVideoUrls[0] || "";
-  const embedVideoUrl = selectedLessonPrimaryVideoUrl ? getEmbedVideoUrl(selectedLessonPrimaryVideoUrl) : null;
+  const safeSelectedVideoIndex =
+    selectedLessonVideoIndex >= 0 && selectedLessonVideoIndex < selectedLessonVideoUrls.length
+      ? selectedLessonVideoIndex
+      : 0;
+  const selectedLessonVideoUrl = selectedLessonVideoUrls[safeSelectedVideoIndex] || "";
+  const embedVideoUrl = selectedLessonVideoUrl ? getEmbedVideoUrl(selectedLessonVideoUrl) : null;
 
   useEffect(() => {
     scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
@@ -1448,7 +1468,7 @@ export function CourseDetail() {
                 </div>
               </div>
             </>
-          ) : selectedLessonPrimaryVideoUrl ? (
+          ) : selectedLessonVideoUrl ? (
             embedVideoUrl ? (
               <iframe
                 title={selectedLesson.title}
@@ -1461,7 +1481,7 @@ export function CourseDetail() {
               <video
                 className="w-full h-full"
                 controls
-                src={selectedLessonPrimaryVideoUrl}
+                src={selectedLessonVideoUrl}
                 poster={course.coverImage || FALLBACK_COVER_IMAGE}
               >
                 Your browser does not support video playback.
@@ -1480,6 +1500,33 @@ export function CourseDetail() {
             </div>
           )}
         </div>
+
+        {canAccessLessons && selectedLessonVideoUrls.length > 1 ? (
+          <div className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 px-4 py-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-medium text-slate-500">Lesson videos:</span>
+              {selectedLessonVideoUrls.map((videoUrl, index) => {
+                const isSelectedVideo = index === safeSelectedVideoIndex;
+
+                return (
+                  <button
+                    key={`course-lesson-video-${index}`}
+                    type="button"
+                    onClick={() => setSelectedLessonVideoIndex(index)}
+                    title={videoUrl}
+                    className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+                      isSelectedVideo
+                        ? "border-indigo-500 bg-indigo-500 text-white"
+                        : "border-slate-300 bg-white text-slate-600 hover:border-indigo-300 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
+                    }`}
+                  >
+                    {toVideoLabel(videoUrl, index)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
 
         <div className="p-6 md:p-8 flex-1 flex flex-col">
           {error ? (
