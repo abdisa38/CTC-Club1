@@ -3108,45 +3108,84 @@ export function CourseDetail() {
 
                         {topicGroup.lessons.map(({ lesson, globalIndex }) => {
                           const isSelected = selectedLesson?._id === lesson._id;
+                          const isLessonPublished = lesson.isPublished !== false;
 
                           return (
-                            <button
-                              key={lesson._id}
-                              className={`w-full flex items-start gap-3 p-4 transition-colors text-left ${
-                                !canAccessLessons
-                                  ? "opacity-60 cursor-not-allowed"
-                                  : isSelected
-                                    ? "bg-indigo-50 dark:bg-indigo-950/20"
-                                    : "hover:bg-slate-50 dark:hover:bg-slate-900"
-                              }`}
-                              onClick={() => {
-                                if (!canAccessLessons) return;
-                                setSelectedLessonId(lesson._id);
-                              }}
-                            >
-                              <div className="mt-0.5">
-                                {canAccessLessons && globalIndex < completedCount ? (
-                                  <CheckCircle className="h-5 w-5 text-emerald-500" />
-                                ) : !canAccessLessons ? (
-                                  <Lock className="h-5 w-5 text-slate-400" />
-                                ) : (
-                                  <PlayCircle className="h-5 w-5 text-indigo-500" />
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p
-                                  className={`text-sm truncate ${
-                                    !canAccessLessons ? "text-slate-500" : "font-medium text-slate-900 dark:text-white"
-                                  }`}
-                                >
-                                  {lesson.title}
-                                </p>
-                                <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
-                                  <PlayCircle className="h-3 w-3" />
-                                  <span>{formatDuration(lesson.duration)}</span>
+                            <div key={lesson._id} className="border-t border-slate-100 dark:border-slate-800/50 first:border-t-0">
+                              <button
+                                className={`w-full flex items-start gap-3 p-4 transition-colors text-left ${
+                                  !canAccessLessons
+                                    ? "opacity-60 cursor-not-allowed"
+                                    : isSelected
+                                      ? "bg-indigo-50 dark:bg-indigo-950/20"
+                                      : "hover:bg-slate-50 dark:hover:bg-slate-900"
+                                }`}
+                                onClick={() => {
+                                  if (!canAccessLessons) return;
+                                  setSelectedLessonId(lesson._id);
+                                }}
+                              >
+                                <div className="mt-0.5">
+                                  {canAccessLessons && globalIndex < completedCount ? (
+                                    <CheckCircle className="h-5 w-5 text-emerald-500" />
+                                  ) : !canAccessLessons ? (
+                                    <Lock className="h-5 w-5 text-slate-400" />
+                                  ) : (
+                                    <PlayCircle className="h-5 w-5 text-indigo-500" />
+                                  )}
                                 </div>
-                              </div>
-                            </button>
+                                <div className="flex-1 min-w-0">
+                                  <p
+                                    className={`text-sm truncate ${
+                                      !canAccessLessons ? "text-slate-500" : "font-medium text-slate-900 dark:text-white"
+                                    }`}
+                                  >
+                                    {lesson.title}
+                                  </p>
+                                  <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
+                                    <PlayCircle className="h-3 w-3" />
+                                    <span>{formatDuration(lesson.duration)}</span>
+                                    {isInstructor ? (
+                                      <Badge variant={isLessonPublished ? "outline" : "secondary"} className="text-[10px] px-1.5 py-0">
+                                        {isLessonPublished ? "Published" : "Draft"}
+                                      </Badge>
+                                    ) : null}
+                                  </div>
+                                </div>
+                              </button>
+
+                              {isInstructor ? (
+                                <div className="flex items-center gap-2 px-4 pb-3">
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleStartLessonEdit(lesson)}
+                                    disabled={contentActionBusy}
+                                  >
+                                    Edit
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => void handleToggleLessonPublish(lesson)}
+                                    disabled={contentActionBusy}
+                                  >
+                                    {isLessonPublished ? "Unpublish" : "Publish"}
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => void handleDeleteLessonInCourse(lesson)}
+                                    disabled={contentActionBusy}
+                                  >
+                                    Delete
+                                  </Button>
+                                </div>
+                              ) : null}
+                            </div>
                           );
                         })}
                       </div>
