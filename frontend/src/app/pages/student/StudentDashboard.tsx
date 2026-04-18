@@ -247,6 +247,74 @@ export function StudentDashboard({ metrics }: { metrics?: any }) {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between gap-3">
+            <CardTitle className="text-lg">Learning Fields (Ordered)</CardTitle>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/app/courses">Open Catalog</Link>
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {fieldProgressCards.length === 0 ? (
+            <EmptyState text="No published fields yet." />
+          ) : (
+            <div className="grid gap-3 md:grid-cols-2">
+              {fieldProgressCards.map((fieldCard) => (
+                <Link
+                  key={fieldCard.field}
+                  to={`/app/courses?field=${encodeURIComponent(fieldCard.field)}`}
+                  className="group rounded-xl border border-slate-200 bg-white p-3 transition-all hover:border-indigo-300 hover:shadow-sm dark:border-slate-800 dark:bg-slate-900/50 dark:hover:border-indigo-700"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-bold text-slate-900 dark:text-white">{fieldCard.field}</p>
+                      <p className="mt-0.5 text-xs text-slate-500">{fieldCard.phaseCount} phases • {fieldCard.paidCount} paid</p>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-slate-400 transition-transform group-hover:translate-x-0.5" />
+                  </div>
+
+                  <div className="mt-3 space-y-1.5">
+                    {fieldCard.phases.slice(0, 4).map((phase) => {
+                      const statusClass = phase.orderLocked
+                        ? "bg-amber-100 text-amber-700"
+                        : phase.paymentLocked
+                          ? "bg-rose-100 text-rose-700"
+                          : phase.isEnrolled
+                            ? "bg-emerald-100 text-emerald-700"
+                            : "bg-indigo-100 text-indigo-700";
+
+                      const statusLabel = phase.orderLocked
+                        ? "Locked"
+                        : phase.paymentLocked
+                          ? "Pay"
+                          : phase.isEnrolled
+                            ? "Open"
+                            : "Start";
+
+                      return (
+                        <div key={phase.courseId} className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 dark:border-slate-800 dark:bg-slate-900/70">
+                          <div className="min-w-0">
+                            <p className="truncate text-[12px] font-medium text-slate-800 dark:text-slate-200">{phase.title}</p>
+                          </div>
+                          <div className="ml-2 flex items-center gap-1.5">
+                            {phase.orderLocked ? <Lock className="h-3 w-3 text-amber-600" /> : null}
+                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusClass}`}>
+                              {phase.isPaid && !phase.isEnrolled && !phase.orderLocked ? `${phase.price.toFixed(0)} ETB` : statusLabel}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
           <Card>
