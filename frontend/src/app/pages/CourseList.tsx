@@ -699,76 +699,106 @@ export function CourseList() {
             </Card>
           ) : null}
 
-          {sortedSelectedFieldCourses.length === 0 ? (
+          {phaseCards.length === 0 ? (
             <div className="text-center py-14 px-4 border border-dashed border-slate-300 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-900/40">
               <h3 className="text-lg font-medium text-slate-900 dark:text-white">No phases available yet</h3>
               <p className="text-sm text-slate-500 mt-1">This field will appear here once phases are published.</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {sortedSelectedFieldCourses.map((course, index) => {
-                const phaseMatch = String(course.title || "").match(/phase\s*(\d+)/i);
-                const courseHref = `${courseDetailBasePath}/${course._id}`;
-                const isPaidCourse = Number(course.price || 0) > 0;
-                const isPaidLocked = isPaidCourse && role === "student" && !isUserEnrolled(course);
+            <div className="space-y-4">
+              {phaseCards.map((phase) => {
+                const course = phase.course;
+                const isBusy = enrollingId === course._id;
+                const previousPhaseNumber = phase.phaseNumber > 1 ? phase.phaseNumber - 1 : null;
+                const lockMessage = phase.orderLocked
+                  ? `Unlock Phase ${previousPhaseNumber} first to continue in order.`
+                  : phase.paymentLocked
+                    ? `Pay ${Number(course.price || 0).toFixed(2)} ETB with Chapa to unlock this phase.`
+                    : phase.isEnrolled
+                      ? "Access unlocked. You can continue this phase anytime."
+                      : "This phase is ready. Start now to unlock the next phase.";
+
+                const actionLabel = !user
+                  ? "Login to Open"
+                  : phase.orderLocked
+                    ? "Locked by Order"
+                    : phase.paymentLocked
+                      ? (isBusy ? "Opening checkout..." : "Pay with Chapa")
+                      : role === "student" && !phase.isEnrolled
+                        ? (isBusy ? "Enrolling..." : "Start Phase")
+                        : "Open Phase";
+
+                const actionDisabled = phase.orderLocked || (Boolean(user) && isBusy);
 
                 return (
-                  <Card key={course._id} className={isAppCatalogRoute ? "border-slate-200 bg-white rounded-2xl shadow-sm" : "border-slate-200/70 dark:border-slate-800/70 bg-white/70 dark:bg-slate-900/60 rounded-2xl"}>
+                  <Card key={course._id} className={isAppCatalogRoute ? "overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm" : "overflow-hidden rounded-2xl border-slate-200/70 bg-white/70 dark:border-slate-800/70 dark:bg-slate-900/60"}>
                     <CardContent className="p-4 md:p-5">
-                      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                        <div className="flex min-w-0 items-start gap-3">
+                      <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+                        <div className="relative h-36 w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-100 lg:w-64 dark:border-slate-700 dark:bg-slate-800/70">
                           <img
                             src={course.coverImage || fieldFallbackCovers[selectedField] || fieldFallbackCovers["General Technology"]}
-                            alt={course.title}
-                            className="h-16 w-16 rounded-xl object-cover border border-slate-200 dark:border-slate-700 shrink-0"
+                            alt={phase.heading}
+                            className="h-full w-full object-cover"
                           />
-                          <div className="min-w-0">
-                            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                              {phaseMatch ? `Phase ${phaseMatch[1]}` : `Module ${index + 1}`}
-                            </p>
-                            <h3 className="mt-1 text-lg font-semibold leading-tight text-slate-900 dark:text-white">
-                              {course.title}
-                            </h3>
-                            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300 line-clamp-2">
-                              {course.description || "Open this phase to see lessons, videos, resources, quizzes, and projects."}
-                            </p>
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/65 via-slate-900/10 to-transparent" />
+                          <Badge className="absolute left-3 top-3 border-0 bg-white text-slate-900">PHASE {phase.phaseNumber}</Badge>
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-2 flex flex-wrap items-center gap-2">
+                            <Badge className={`border-0 ${phase.isPaidCourse ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
+                              {phase.isPaidCourse ? `${Number(course.price || 0).toFixed(2)} ETB` : "Free"}
+                            </Badge>
+                            {phase.orderLocked ? (
+                              <Badge className="border-0 bg-amber-500 text-white">
+                                <Lock className="mr-1 h-3 w-3" />
+                                Order Locked
+                              </Badge>
+                            ) : null}
+                            {!phase.orderLocked && phase.paymentLocked ? (
+                              <Badge className="border-0 bg-rose-600 text-white">
+                                <Lock className="mr-1 h-3 w-3" />
+                                Payment Locked
+                              </Badge>
+                            ) : null}
+                            {phase.isEnrolled ? (
+                              <Badge className="border-0 bg-emerald-600 text-white">Unlocked</Badge>
+                            ) : null}
+                          </div>
+
+                          <h3 className="text-xl font-bold leading-tight text-slate-900 dark:text-white">
+                            {phase.heading}
+                          </h3>
+                          <p className="mt-1.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                            {phase.summary}
+                          </p>
+                          <div className={`mt-3 rounded-lg border px-3 py-2 text-xs ${phase.orderLocked
+                            ? "border-amber-300 bg-amber-50 text-amber-700"
+                            : phase.paymentLocked
+                              ? "border-rose-200 bg-rose-50 text-rose-700"
+                              : "border-emerald-200 bg-emerald-50 text-emerald-700"
+                          }`}>
+                            {lockMessage}
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2 md:pl-4">
-                          <Badge className={`border-0 ${isPaidCourse ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
-                            {isPaidCourse ? `${Number(course.price || 0).toFixed(2)} ETB` : "Free"}
-                          </Badge>
-                          {isPaidLocked ? (
-                            <Badge className="border-0 bg-amber-500 text-white">
-                              <Lock className="mr-1 h-3 w-3" />
-                              Locked
-                            </Badge>
-                          ) : null}
-
-                          {!user ? (
-                            <Button asChild className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                              <Link to={loginPath}>
-                                Open
-                                <ChevronRight className="ml-1 h-4 w-4" />
-                              </Link>
-                            </Button>
-                          ) : isPaidLocked ? (
-                            <Button
-                              className="bg-rose-600 hover:bg-rose-700 text-white"
-                              onClick={() => void handleEnroll(course)}
-                              disabled={enrollingId === course._id}
-                            >
-                              {enrollingId === course._id ? "Opening checkout..." : "Pay to Unlock"}
-                            </Button>
-                          ) : (
-                            <Button asChild className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                              <Link to={courseHref}>
-                                Open
-                                <ChevronRight className="ml-1 h-4 w-4" />
-                              </Link>
-                            </Button>
-                          )}
+                        <div className="flex shrink-0 flex-col gap-2 lg:w-44">
+                          <Button
+                            className={phase.paymentLocked
+                              ? "w-full bg-rose-600 text-white hover:bg-rose-700"
+                              : "w-full bg-indigo-600 text-white hover:bg-indigo-700"
+                            }
+                            onClick={() => {
+                              void handlePhaseAction(phase);
+                            }}
+                            disabled={actionDisabled}
+                          >
+                            {actionLabel}
+                            {!phase.orderLocked ? <ChevronRight className="ml-1.5 h-4 w-4" /> : null}
+                          </Button>
+                          <Button variant="outline" className="w-full" asChild>
+                            <Link to={phase.courseHref}>Preview Details</Link>
+                          </Button>
                         </div>
                       </div>
                     </CardContent>
