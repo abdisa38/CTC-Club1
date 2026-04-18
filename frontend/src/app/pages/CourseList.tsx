@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "motion/react";
-import { Link, useLocation } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { Button } from "../components/ui/Button";
 import { Card, CardContent } from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
 import { Badge } from "../components/ui/Badge";
-import { Search, Filter, Star, Clock, Users, PlayCircle, PlusCircle, X, Heart } from "lucide-react";
+import { Search, Filter, Star, Clock, Users, PlayCircle, PlusCircle, X, Heart, ArrowLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import apiService, { Course as ApiCourse } from "../services/api";
 import { FIELD_PRIORITY, resolveLearningFieldFromCourse } from "../utils/learningFields";
@@ -31,11 +31,28 @@ const extractErrorMessage = (error: any, fallback: string) => {
 
 export function CourseList() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { role, user } = useAuth();
   const isAdmin = role === 'admin';
   const isInstructor = role === 'instructor' || isAdmin;
   const queryField = new URLSearchParams(location.search).get("field")?.trim() || "";
   const courseDetailBasePath = user ? "/app/courses" : "/courses";
+
+  const fieldDescriptions: Record<string, string> = {
+    "Web Development": "All web phases grouped together in one learning field.",
+    "Graphics Design": "Design-focused track for visual communication and UI/UX skills.",
+    "App Development": "Application development track for mobile and cross-platform products.",
+    "Maintenance": "Maintenance track for support, QA, reliability, and operations.",
+    "General Technology": "General technology courses that are not assigned to a specific field yet.",
+  };
+
+  const fieldFallbackCovers: Record<string, string> = {
+    "Web Development": "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80&w=900",
+    "Graphics Design": "https://images.unsplash.com/photo-1626785774573-4b799315345d?auto=format&fit=crop&q=80&w=900",
+    "App Development": "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&q=80&w=900",
+    "Maintenance": "https://images.unsplash.com/photo-1580894732444-8ecded7900cd?auto=format&fit=crop&q=80&w=900",
+    "General Technology": "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&q=80&w=900",
+  };
 
   const [courses, setCourses] = useState<CourseType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -124,6 +141,92 @@ export function CourseList() {
   });
 
   const activeFilters = [selectedField, selectedCategory, selectedLevel, selectedDuration].filter(Boolean).length;
+
+  const groupedCoursesByField = useMemo(() => {
+    const grouped = new Map<string, CourseType[]>();
+
+    courses.forEach((course) => {
+      const field = resolveLearningFieldFromCourse({
+        title: course.title,
+        category: course.category,
+        description: course.description,
+      });
+
+      const existing = grouped.get(field);
+      if (existing) {
+        existing.push(course);
+      } else {
+        grouped.set(field, [course]);
+      }
+    });
+
+    return grouped;
+  }, [courses]);
+
+  const overviewFields = useMemo(() => {
+    const preferred = ["Web Development", "Graphics Design", "App Development", "Maintenance"];
+    const discovered = Array.from(groupedCoursesByField.keys()).filter((field) => !preferred.includes(field));
+    const ordered = [...preferred, ...discovered];
+
+    return ordered.map((field) => {
+      const fieldCourses = groupedCoursesByField.get(field) || [];
+      const coverImage = fieldCourses[0]?.coverImage || fieldFallbackCovers[field] || fieldFallbackCovers["General Technology"];
+      const totalStudents = fieldCourses.reduce((sum, item) => sum + (Array.isArray(item.students) ? item.students.length : 0), 0);
+
+      return {
+        field,
+        courses: fieldCourses,
+        coverImage,
+        totalStudents,
+      };
+    });
+  }, [groupedCoursesByField]);
+
+  const sortedSelectedFieldCourses = useMemo(() => {
+    if (!selectedField) {
+      return [] as CourseType[];
+    }
+
+    const fieldCourses = groupedCoursesByField.get(selectedField) || [];
+    return [...fieldCourses].sort((left, right) => {
+      const leftMatch = String(left.title || "").match(/phase\s*(\d+)/i);
+      const rightMatch = String(right.title || "").match(/phase\s*(\d+)/i);
+
+      const leftPhase = leftMatch ? Number(leftMatch[1]) : -1;
+      const rightPhase = rightMatch ? Number(rightMatch[1]) : -1;
+
+      if (leftPhase !== rightPhase) {
+        return leftPhase - rightPhase;
+      }
+
+      return String(left.title || "").localeCompare(String(right.title || ""));
+    });
+  }, [groupedCoursesByField, selectedField]);
+
+  const isFieldOverviewMode = !selectedField && !searchQuery.trim() && !selectedCategory && !selectedLevel && !selectedDuration;
+  const isFieldPhaseMode = Boolean(selectedField);
+
+  const updateSelectedField = (field: string) => {
+    const normalized = field.trim();
+    const params = new URLSearchParams(location.search);
+
+    if (normalized) {
+      params.set("field", normalized);
+    } else {
+      params.delete("field");
+    }
+
+    const nextSearch = params.toString();
+    setSelectedField(normalized);
+
+    navigate(
+      {
+        pathname: "/courses",
+        search: nextSearch ? `?${nextSearch}` : "",
+      },
+      { replace: false }
+    );
+  };
 
   const toggleFavorite = async (id: string) => {
     if (!user || role !== 'student') {
@@ -295,7 +398,7 @@ export function CourseList() {
               <select
                 className="h-10 flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-800 dark:bg-slate-950 text-slate-900 dark:text-slate-100"
                 value={selectedField}
-                onChange={(e) => setSelectedField(e.target.value)}
+                onChange={(e) => updateSelectedField(e.target.value)}
               >
                 <option value="">All Fields</option>
                 {fieldOptions.map((field) => (
@@ -336,7 +439,7 @@ export function CourseList() {
                 <option value="long">Long (25h+)</option>
               </select>
               {activeFilters > 0 && (
-                <Button variant="ghost" size="sm" onClick={() => { setSelectedField(""); setSelectedCategory(""); setSelectedLevel(""); setSelectedDuration(""); }}>
+                <Button variant="ghost" size="sm" onClick={() => { updateSelectedField(""); setSelectedCategory(""); setSelectedLevel(""); setSelectedDuration(""); }}>
                   <X className="h-4 w-4 mr-1" /> Clear
                 </Button>
               )}
@@ -356,7 +459,7 @@ export function CourseList() {
           <Search className="mx-auto h-12 w-12 text-slate-400 mb-4" />
           <h3 className="text-lg font-medium text-slate-900 dark:text-white">No courses found</h3>
           <p className="text-sm text-slate-500 mt-1">Try adjusting your search or filters.</p>
-          <Button variant="outline" className="mt-4" onClick={() => { setSearchQuery(""); setSelectedField(""); setSelectedCategory(""); setSelectedLevel(""); setSelectedDuration(""); }}>Clear all filters</Button>
+          <Button variant="outline" className="mt-4" onClick={() => { setSearchQuery(""); updateSelectedField(""); setSelectedCategory(""); setSelectedLevel(""); setSelectedDuration(""); }}>Clear all filters</Button>
         </div>
       ) : (
         <>
