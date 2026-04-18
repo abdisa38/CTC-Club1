@@ -379,7 +379,11 @@ export function CourseList() {
           throw new Error("Checkout URL was not returned by the server.");
         }
 
-        window.location.href = init.checkoutUrl;
+        const checkoutUrl = /^https?:\/\//i.test(init.checkoutUrl)
+          ? init.checkoutUrl
+          : `https://${String(init.checkoutUrl).replace(/^\/+/, "")}`;
+
+        window.location.assign(checkoutUrl);
         return "redirected";
       }
 
@@ -439,7 +443,10 @@ export function CourseList() {
     }
 
     if (phase.paymentLocked) {
-      await handleEnroll(phase.course);
+      const result = await handleEnroll(phase.course);
+      if (result === "enrolled") {
+        navigate(phase.courseHref);
+      }
       return;
     }
 
@@ -640,7 +647,7 @@ export function CourseList() {
                                   <CheckCircle2 className={isAppCatalogRoute ? "h-4 w-4 shrink-0 text-indigo-500" : "h-4 w-4 shrink-0 text-cyan-400"} />
                                   <p className={isAppCatalogRoute ? "truncate text-sm text-slate-800" : "truncate text-sm text-slate-100"}>{phaseHeading}</p>
                                 </div>
-                                <Badge className={`shrink-0 border-0 text-[10px] font-bold ${Number(course.price || 0) > 0 ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
+                                <Badge className={`shrink-0 border-0 px-2.5 py-1 text-[11px] font-extrabold tracking-wide ${Number(course.price || 0) > 0 ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
                                   {Number(course.price || 0) > 0 ? `${Number(course.price || 0).toFixed(2)} ETB` : "FREE"}
                                 </Badge>
                               </div>
@@ -767,7 +774,7 @@ export function CourseList() {
 
                         <div className="min-w-0 flex-1">
                           <div className="mb-2 flex flex-wrap items-center gap-2">
-                            <Badge className={`border-0 ${phase.isPaidCourse ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
+                            <Badge className={`border-0 px-3 py-1 text-[13px] font-black tracking-wide shadow-sm ${phase.isPaidCourse ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
                               {phase.isPaidCourse ? `${Number(course.price || 0).toFixed(2)} ETB` : "Free"}
                             </Badge>
                             {phase.orderLocked ? (

@@ -280,7 +280,7 @@ export function StudentDashboard({ metrics }: { metrics?: any }) {
                       const statusClass = phase.orderLocked
                         ? "bg-amber-100 text-amber-700"
                         : phase.paymentLocked
-                          ? "bg-rose-100 text-rose-700"
+                          ? "bg-rose-600 text-white"
                           : phase.isEnrolled
                             ? "bg-emerald-100 text-emerald-700"
                             : "bg-indigo-100 text-indigo-700";
@@ -300,7 +300,7 @@ export function StudentDashboard({ metrics }: { metrics?: any }) {
                           </div>
                           <div className="ml-2 flex items-center gap-1.5">
                             {phase.orderLocked ? <Lock className="h-3 w-3 text-amber-600" /> : null}
-                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusClass}`}>
+                            <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-extrabold tracking-wide ${statusClass}`}>
                               {phase.isPaid && !phase.isEnrolled && !phase.orderLocked ? `${phase.price.toFixed(0)} ETB` : statusLabel}
                             </span>
                           </div>
