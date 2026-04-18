@@ -5,6 +5,7 @@ import PaymentTransaction, { PaymentStatus } from '../models/paymentTransactionM
 import User from '../models/userModel';
 import Course from '../models/courseModel';
 import { AuthRequest } from '../middleware/authMiddleware';
+import { evaluateStudentCourseAccess } from '../utils/courseAccess';
 import { sendSuccess } from '../utils/apiResponse';
 
 const CHAPA_API_BASE_URL = process.env.CHAPA_API_BASE_URL || 'https://api.chapa.co';
@@ -531,7 +532,9 @@ export const initializeCoursePayment = asyncHandler(async (req: AuthRequest, res
     throw new Error('User not found');
   }
 
-  const course = await Course.findById(courseId).select('title price currency status students instructor');
+  const course = await Course.findById(courseId).select(
+    'title price currency status students instructor accessMode lockedStudentIds unlockedStudentIds'
+  );
   if (!course) {
     res.status(404);
     throw new Error('Course not found');
@@ -539,8 +542,8 @@ export const initializeCoursePayment = asyncHandler(async (req: AuthRequest, res
 
   const isInstructorOwner = String(course.instructor) === String(user._id);
   const isAdmin = user.role === 'admin';
-  const isAlreadyEnrolled = Array.isArray(course.students)
-    && course.students.some((studentId: any) => String(studentId) === String(user._id));
+  const isPrivilegedUser = isInstructorOwner || isAdmin;
+  const studentId = String(user._id);
 
   const coursePrice = Number(course.price || 0);
   if (!Number.isFinite(coursePrice) || coursePrice < 0) {
@@ -548,7 +551,14 @@ export const initializeCoursePayment = asyncHandler(async (req: AuthRequest, res
     throw new Error('Invalid course price.');
   }
 
-  const hasSuccessfulCoursePayment = coursePrice > 0
+  const accessWithoutPayment = evaluateStudentCourseAccess({
+    course,
+    studentId,
+    isPrivilegedUser,
+    hasSuccessfulPayment: false,
+  });
+
+  const hasSuccessfulCoursePayment = accessWithoutPayment.requiresPayment && !isPrivilegedUser
     ? Boolean(
         await PaymentTransaction.findOne({
           user: user._id,
@@ -561,12 +571,32 @@ export const initializeCoursePayment = asyncHandler(async (req: AuthRequest, res
       )
     : false;
 
-  if (isInstructorOwner || isAdmin || hasSuccessfulCoursePayment) {
+  const accessState = evaluateStudentCourseAccess({
+    course,
+    studentId,
+    isPrivilegedUser,
+    hasSuccessfulPayment: hasSuccessfulCoursePayment,
+  });
+
+  if (accessState.blockedByInstructor) {
+    res.status(403);
+    throw new Error('This phase is currently locked by your instructor for your account.');
+  }
+
+  if (isPrivilegedUser || accessState.hasAccess) {
+    if (!isPrivilegedUser && !accessState.isEnrolled) {
+      await ensureCourseEnrollment(String(user._id), String(course._id));
+    }
+
+    const effectiveAccessAmount = Number(course.price || 0) > 0
+      ? Number(course.price || 0)
+      : PREMIUM_AMOUNT_ETB;
+
     sendSuccess(res, {
       courseId: String(course._id),
       alreadyEnrolled: true,
       isEnrolled: true,
-      amount: Number(course.price || 0),
+      amount: Number(effectiveAccessAmount.toFixed(2)),
       currency: 'ETB',
       requiresPayment: false,
     }, { message: 'Course access is already active for this user.' });
@@ -578,8 +608,8 @@ export const initializeCoursePayment = asyncHandler(async (req: AuthRequest, res
     await Course.findByIdAndUpdate(course._id, { currency: 'ETB' });
   }
 
-  if (coursePrice === 0) {
-    if (!isAlreadyEnrolled) {
+  if (!accessState.requiresPayment) {
+    if (!accessState.isEnrolled) {
       await ensureCourseEnrollment(String(user._id), String(course._id));
     }
 
@@ -594,6 +624,10 @@ export const initializeCoursePayment = asyncHandler(async (req: AuthRequest, res
     return;
   }
 
+  const checkoutAmount = coursePrice > 0
+    ? Number(coursePrice.toFixed(2))
+    : PREMIUM_AMOUNT_ETB;
+
   const secretKey = requireChapaSecretKey(res);
   const txRef = createCourseTxRef(String(course._id), String(user._id));
   const { firstName, lastName } = splitName(user.name);
@@ -601,13 +635,13 @@ export const initializeCoursePayment = asyncHandler(async (req: AuthRequest, res
     maxLength: 16,
     fallback: 'CTC Course',
   });
-  const courseDescriptionForCheckout = sanitizeChapaCustomizationText(`${coursePrice.toFixed(2)} ETB course payment`, {
+  const courseDescriptionForCheckout = sanitizeChapaCustomizationText(`${checkoutAmount.toFixed(2)} ETB course payment`, {
     maxLength: 64,
     fallback: 'Course payment',
   });
 
   const initializePayload = {
-    amount: coursePrice.toFixed(2),
+    amount: checkoutAmount.toFixed(2),
     currency: 'ETB',
     email: user.email,
     first_name: firstName,
@@ -652,7 +686,7 @@ export const initializeCoursePayment = asyncHandler(async (req: AuthRequest, res
     transactionType: 'course',
     course: course._id,
     txRef,
-    amount: coursePrice,
+    amount: checkoutAmount,
     currency: 'ETB',
     status: 'initialized',
     checkoutUrl,
@@ -663,7 +697,7 @@ export const initializeCoursePayment = asyncHandler(async (req: AuthRequest, res
     courseId: String(course._id),
     txRef,
     checkoutUrl,
-    amount: coursePrice,
+    amount: checkoutAmount,
     currency: 'ETB',
     requiresPayment: true,
     isEnrolled: false,
