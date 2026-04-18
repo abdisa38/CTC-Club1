@@ -67,6 +67,148 @@ export function InstructorCourses() {
     });
   }, [courses, search, statusFilter]);
 
+  const visibleAccessStudents = useMemo(() => {
+    const keyword = accessStudentSearch.trim().toLowerCase();
+    if (!keyword) {
+      return accessDialogStudents;
+    }
+
+    return accessDialogStudents.filter((student) => (
+      student.name.toLowerCase().includes(keyword)
+      || student.email.toLowerCase().includes(keyword)
+    ));
+  }, [accessDialogStudents, accessStudentSearch]);
+
+  const readCourseAccessMode = (course: Course): CourseAccessMode => {
+    if (course.accessMode === "paid" || course.accessMode === "locked") {
+      return course.accessMode;
+    }
+
+    return "open";
+  };
+
+  const getStudentOverrideForCourse = (course: Course, studentId: string): CourseStudentAccessOverride => {
+    const isLocked = Array.isArray(course.lockedStudentIds)
+      && course.lockedStudentIds.some((id) => String(id) === studentId);
+
+    if (isLocked) {
+      return "locked";
+    }
+
+    const isUnlocked = Array.isArray(course.unlockedStudentIds)
+      && course.unlockedStudentIds.some((id) => String(id) === studentId);
+
+    if (isUnlocked) {
+      return "unlocked";
+    }
+
+    return "none";
+  };
+
+  const closeAccessDialog = () => {
+    setAccessDialogCourse(null);
+    setAccessDialogStudents([]);
+    setAccessStudentSearch("");
+    setIsAccessDialogLoading(false);
+    setIsAccessSaving(false);
+  };
+
+  const openAccessDialog = async (course: Course) => {
+    setAccessDialogCourse(course);
+    setAccessModeDraft(readCourseAccessMode(course));
+    setPaidPriceDraft(String(Number(course.price || 0) > 0 ? Number(course.price || 0) : 200));
+    setAccessStudentSearch("");
+    setIsAccessDialogLoading(true);
+
+    try {
+      const payload = await apiService.getInstructorStudents({ courseId: course._id });
+      setAccessDialogStudents(Array.isArray(payload.students) ? payload.students : []);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to load course students");
+      setAccessDialogStudents([]);
+    } finally {
+      setIsAccessDialogLoading(false);
+    }
+  };
+
+  const handleSaveAccessMode = async () => {
+    if (!accessDialogCourse) {
+      return;
+    }
+
+    let paidPrice: number | undefined;
+    if (accessModeDraft === "paid") {
+      const parsed = Number(paidPriceDraft);
+      if (!Number.isFinite(parsed) || parsed <= 0) {
+        setError("Paid price must be greater than 0 ETB.");
+        return;
+      }
+
+      paidPrice = Number(parsed.toFixed(2));
+    }
+
+    setIsAccessSaving(true);
+    setError("");
+
+    try {
+      const updated = await apiService.updateCourseAccessMode(accessDialogCourse._id, {
+        mode: accessModeDraft,
+        ...(accessModeDraft === "paid" && paidPrice !== undefined ? { paidPrice } : {}),
+      });
+
+      setCourses((prev) => prev.map((course) => (course._id === updated._id ? { ...course, ...updated } : course)));
+      setAccessDialogCourse((prev) => (prev && prev._id === updated._id ? { ...prev, ...updated } : prev));
+
+      if (accessModeDraft === "paid") {
+        setPaidPriceDraft(String(Number(updated.price || paidPrice || 200)));
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to update access mode");
+    } finally {
+      setIsAccessSaving(false);
+    }
+  };
+
+  const handleStudentAccessAction = async (studentId: string, action: CourseStudentAccessAction) => {
+    if (!accessDialogCourse) {
+      return;
+    }
+
+    setIsAccessSaving(true);
+    setError("");
+
+    try {
+      const updated = await apiService.updateCourseStudentAccess(accessDialogCourse._id, {
+        studentId,
+        action,
+      });
+
+      setCourses((prev) => prev.map((course) => (
+        course._id === updated.courseId
+          ? {
+              ...course,
+              lockedStudentIds: updated.lockedStudentIds,
+              unlockedStudentIds: updated.unlockedStudentIds,
+            }
+          : course
+      )));
+
+      setAccessDialogCourse((prev) => (
+        prev && prev._id === updated.courseId
+          ? {
+              ...prev,
+              lockedStudentIds: updated.lockedStudentIds,
+              unlockedStudentIds: updated.unlockedStudentIds,
+            }
+          : prev
+      ));
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to update student access");
+    } finally {
+      setIsAccessSaving(false);
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this course? This action cannot be undone.")) return;
 
