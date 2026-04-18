@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 
+const STUDENT_ONLY_AUTH_MESSAGE = 'Only student accounts can sign in on this page. Admin and instructor accounts are managed by the administrator.';
+
 export default function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -19,13 +21,16 @@ export default function LoginPage() {
 
     try {
       const response = await api.post('/auth/login', { email, password });
-      login(response.data);
+      const payload = response.data?.data ?? response.data;
 
-      // Redirect based on role
-      const role = response.data.role;
-      if (role === 'admin') navigate('/admin/dashboard');
-      else if (role === 'instructor') navigate('/instructor/dashboard');
-      else navigate('/student/dashboard');
+      if (payload?.role !== 'student') {
+        await api.post('/auth/logout').catch(() => undefined);
+        setError(STUDENT_ONLY_AUTH_MESSAGE);
+        return;
+      }
+
+      login(payload);
+      navigate('/app/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to login. Please try again.');
     } finally {

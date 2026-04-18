@@ -556,6 +556,12 @@ export const requestPasswordResetCode = asyncHandler(async (req: Request, res: R
     return;
   }
 
+  if (user.role !== 'student') {
+    // Keep response generic to avoid leaking account role details.
+    sendSuccess(res, { sent: true }, { message: 'If that email is registered, a reset code has been sent.' });
+    return;
+  }
+
   const resetCode = String(Math.floor(100000 + Math.random() * 900000));
 
   user.passwordResetCodeHash = hashResetCode(resetCode);
@@ -598,6 +604,11 @@ export const resetPasswordWithCode = asyncHandler(async (req: Request, res: Resp
   if (!user || !user.passwordResetCodeHash || !user.passwordResetCodeExpiresAt) {
     res.status(400);
     throw new Error('Invalid or expired reset code');
+  }
+
+  if (user.role !== 'student') {
+    res.status(403);
+    throw new Error(STUDENT_ONLY_AUTH_MESSAGE);
   }
 
   if (user.passwordResetCodeExpiresAt.getTime() < Date.now()) {
