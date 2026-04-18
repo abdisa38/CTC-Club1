@@ -19,7 +19,9 @@ type PhaseCard = {
   heading: string;
   summary: string;
   isPaidCourse: boolean;
+  requiresPayment: boolean;
   isEnrolled: boolean;
+  blockedByInstructor: boolean;
   orderLocked: boolean;
   paymentLocked: boolean;
 };
@@ -323,13 +325,23 @@ export function CourseList() {
 
   const hasStudentCourseAccess = (course: CourseType) => {
     const isPaidCourse = Number(course.price || 0) > 0;
+    const requiresPayment = Boolean(course.requiresPayment ?? isPaidCourse);
+    const blockedByInstructor = Boolean(course.isLockedForStudent);
 
     if (role !== "student") {
       return isUserEnrolled(course);
     }
 
-    if (isPaidCourse) {
+    if (blockedByInstructor) {
+      return false;
+    }
+
+    if (requiresPayment) {
       return Boolean(course.hasPaidAccess);
+    }
+
+    if (course.studentAccessOverride === "unlocked") {
+      return true;
     }
 
     return isUserEnrolled(course);
@@ -422,13 +434,15 @@ export function CourseList() {
       const summary = String(course.description || "").trim() || "Open this phase to access lessons, projects, quizzes, and resources.";
 
       const isPaidCourse = Number(course.price || 0) > 0;
+      const requiresPayment = Boolean(course.requiresPayment ?? isPaidCourse);
+      const blockedByInstructor = role === "student" && Boolean(course.isLockedForStudent);
       const isEnrolled = hasStudentCourseAccess(course);
       const previousPhaseNumber = phaseNumber - 1;
       const previousPhaseExists = previousPhaseNumber > 0 && phaseNumbersPresent.has(previousPhaseNumber);
       const previousPhaseUnlocked = !previousPhaseExists || Boolean(phaseAccessByNumber.get(previousPhaseNumber));
 
       const orderLocked = role === "student" && phaseNumber > 1 && !previousPhaseUnlocked;
-      const paymentLocked = role === "student" && isPaidCourse && !isEnrolled;
+      const paymentLocked = role === "student" && !blockedByInstructor && requiresPayment && !isEnrolled;
 
       return {
         course,
@@ -437,7 +451,9 @@ export function CourseList() {
         heading,
         summary,
         isPaidCourse,
+        requiresPayment,
         isEnrolled,
+        blockedByInstructor,
         orderLocked,
         paymentLocked,
       };
@@ -451,6 +467,10 @@ export function CourseList() {
     }
 
     if (phase.orderLocked) {
+      return;
+    }
+
+    if (phase.blockedByInstructor) {
       return;
     }
 
@@ -750,7 +770,9 @@ export function CourseList() {
                 const course = phase.course;
                 const isBusy = enrollingId === course._id;
                 const previousPhaseNumber = phase.phaseNumber > 1 ? phase.phaseNumber - 1 : null;
-                const lockMessage = phase.orderLocked
+                const lockMessage = phase.blockedByInstructor
+                  ? "This phase is locked by your instructor for your account."
+                  : phase.orderLocked
                   ? `Unlock Phase ${previousPhaseNumber} first to continue in order.`
                   : phase.paymentLocked
                     ? `Pay ${Number(course.price || 0).toFixed(2)} ETB with Chapa to unlock this phase.`
@@ -760,7 +782,9 @@ export function CourseList() {
 
                 const actionLabel = !user
                   ? "Login to Open"
-                  : phase.orderLocked
+                  : phase.blockedByInstructor
+                    ? "Locked by Instructor"
+                    : phase.orderLocked
                     ? "Locked by Order"
                     : phase.paymentLocked
                       ? (isBusy ? "Opening checkout..." : "Pay with Chapa")
@@ -768,7 +792,9 @@ export function CourseList() {
                         ? (isBusy ? "Enrolling..." : "Start Phase")
                         : "Open Phase";
 
-                const paidStatusLabel = phase.isEnrolled
+                const paidStatusLabel = phase.blockedByInstructor
+                  ? "Locked"
+                  : phase.isEnrolled
                   ? "Unlocked"
                   : phase.orderLocked
                     ? "Order Locked"
@@ -776,7 +802,9 @@ export function CourseList() {
                       ? "Payment Locked"
                       : "Open";
 
-                const paidStatusClass = phase.isEnrolled
+                const paidStatusClass = phase.blockedByInstructor
+                  ? "bg-slate-600 text-white"
+                  : phase.isEnrolled
                   ? "bg-emerald-600 text-white"
                   : phase.orderLocked
                     ? "bg-amber-500 text-white"
@@ -784,7 +812,7 @@ export function CourseList() {
                       ? "bg-rose-600 text-white"
                       : "bg-indigo-600 text-white";
 
-                const actionDisabled = phase.orderLocked || (Boolean(user) && isBusy);
+                const actionDisabled = phase.orderLocked || phase.blockedByInstructor || (Boolean(user) && isBusy);
 
                 return (
                   <Card key={course._id} className={isAppCatalogRoute ? "overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm" : "overflow-hidden rounded-2xl border-slate-200/70 bg-white/70 dark:border-slate-800/70 dark:bg-slate-900/60"}>
@@ -805,6 +833,12 @@ export function CourseList() {
                             {!phase.isPaidCourse ? (
                               <Badge className="border-0 px-3 py-1 text-[13px] font-black tracking-wide shadow-sm bg-emerald-600 text-white">
                                 Free
+                              </Badge>
+                            ) : null}
+                            {phase.blockedByInstructor ? (
+                              <Badge className="border-0 bg-slate-600 text-white">
+                                <Lock className="mr-1 h-3 w-3" />
+                                Instructor Locked
                               </Badge>
                             ) : null}
                             {phase.orderLocked ? (
@@ -830,8 +864,10 @@ export function CourseList() {
                           <p className="mt-1.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
                             {phase.summary}
                           </p>
-                          <div className={`mt-3 rounded-lg border px-3 py-2 text-xs ${phase.orderLocked
-                            ? "border-amber-300 bg-amber-50 text-amber-700"
+                          <div className={`mt-3 rounded-lg border px-3 py-2 text-xs ${phase.blockedByInstructor
+                            ? "border-slate-300 bg-slate-50 text-slate-700"
+                            : phase.orderLocked
+                              ? "border-amber-300 bg-amber-50 text-amber-700"
                             : phase.paymentLocked
                               ? "border-rose-200 bg-rose-50 text-rose-700"
                               : "border-emerald-200 bg-emerald-50 text-emerald-700"
@@ -852,7 +888,9 @@ export function CourseList() {
                             </div>
                           ) : null}
                           <Button
-                            className={phase.paymentLocked
+                            className={phase.blockedByInstructor
+                              ? "w-full bg-slate-500 text-white hover:bg-slate-600"
+                              : phase.paymentLocked
                               ? "w-full bg-rose-600 text-white hover:bg-rose-700"
                               : "w-full bg-indigo-600 text-white hover:bg-indigo-700"
                             }
@@ -862,9 +900,9 @@ export function CourseList() {
                             disabled={actionDisabled}
                           >
                             {actionLabel}
-                            {!phase.orderLocked ? <ChevronRight className="ml-1.5 h-4 w-4" /> : null}
+                            {!phase.orderLocked && !phase.blockedByInstructor ? <ChevronRight className="ml-1.5 h-4 w-4" /> : null}
                           </Button>
-                          {role === "student" && (phase.orderLocked || phase.paymentLocked) ? (
+                          {role === "student" && (phase.orderLocked || phase.paymentLocked || phase.blockedByInstructor) ? (
                             <Button variant="outline" className="w-full" disabled>
                               Preview Locked
                             </Button>
