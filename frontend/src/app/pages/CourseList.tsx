@@ -5,7 +5,7 @@ import { Button } from "../components/ui/Button";
 import { Card, CardContent } from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
 import { Badge } from "../components/ui/Badge";
-import { Search, Filter, Star, Clock, Users, PlayCircle, PlusCircle, X, Heart, ArrowLeft, ChevronRight, CheckCircle2, Lock } from "lucide-react";
+import { Search, Filter, Star, Clock, Users, PlayCircle, PlusCircle, X, Heart, ArrowLeft, ChevronRight, CheckCircle2, Lock, CreditCard, Sparkles, ShieldCheck } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import apiService, { Course as ApiCourse } from "../services/api";
 import { FIELD_PRIORITY, resolveLearningFieldFromCourse } from "../utils/learningFields";
@@ -27,6 +27,27 @@ const extractErrorMessage = (error: any, fallback: string) => {
   }
 
   return fallback;
+};
+
+const extractPhaseNumber = (title: string) => {
+  const match = String(title || "").match(/phase\s*(\d+)/i);
+  return match ? Number(match[1]) : null;
+};
+
+const resolvePhaseOrderValue = (title: string, fallbackIndex: number) => {
+  const extracted = extractPhaseNumber(title);
+  return Number.isFinite(extracted) && extracted !== null ? extracted : fallbackIndex + 1;
+};
+
+const formatCoursePrice = (course: CourseType) => {
+  const amount = Number(course.price || 0);
+  const currency = course.currency || "ETB";
+
+  if (amount <= 0) {
+    return "Free";
+  }
+
+  return `${amount.toFixed(2)} ${currency}`;
 };
 
 export function CourseList() {
@@ -68,6 +89,7 @@ export function CourseList() {
   const [favoritingIds, setFavoritingIds] = useState<Set<string>>(new Set());
   const [enrollingId, setEnrollingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState("");
+  const [actionSuccess, setActionSuccess] = useState("");
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -193,11 +215,8 @@ export function CourseList() {
 
     const fieldCourses = groupedCoursesByField.get(selectedField) || [];
     return [...fieldCourses].sort((left, right) => {
-      const leftMatch = String(left.title || "").match(/phase\s*(\d+)/i);
-      const rightMatch = String(right.title || "").match(/phase\s*(\d+)/i);
-
-      const leftPhase = leftMatch ? Number(leftMatch[1]) : -1;
-      const rightPhase = rightMatch ? Number(rightMatch[1]) : -1;
+      const leftPhase = extractPhaseNumber(String(left.title || "")) ?? -1;
+      const rightPhase = extractPhaseNumber(String(right.title || "")) ?? -1;
 
       if (leftPhase !== rightPhase) {
         return leftPhase - rightPhase;
@@ -310,6 +329,7 @@ export function CourseList() {
 
   const handleEnroll = async (course: CourseType) => {
     if (!user) return; // need to be logged in
+    setActionSuccess("");
     setActionError("");
 
     const id = course._id;
@@ -322,6 +342,7 @@ export function CourseList() {
 
         if (init.isEnrolled || init.alreadyEnrolled || init.requiresPayment === false) {
           markCourseEnrolledLocally(id);
+          setActionSuccess("Course unlocked successfully. You can open this phase now.");
           return;
         }
 
@@ -335,6 +356,7 @@ export function CourseList() {
 
       await apiService.enrollCourse(id);
       markCourseEnrolledLocally(id);
+      setActionSuccess("Enrollment successful. Phase unlocked.");
     } catch (error) {
       setActionError(extractErrorMessage(error, "Failed to start enrollment/checkout."));
       console.error("Failed to enroll:", error);
@@ -461,6 +483,12 @@ export function CourseList() {
       {actionError ? (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {actionError}
+        </div>
+      ) : null}
+
+      {actionSuccess ? (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          {actionSuccess}
         </div>
       ) : null}
 
