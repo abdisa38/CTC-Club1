@@ -111,9 +111,25 @@ export const getCourses = asyncHandler(async (req: AuthRequest, res: Response) =
   let responseCourses: any[] = courses as any[];
 
   if (req.user?.role === 'student') {
+    const studentId = String(req.user._id);
+
     const paidCourseIds = courses
-      .filter((course: any) => Number(course.price || 0) > 0)
-      .map((course: any) => String(course._id));
+      .map((course: any) => {
+        const plain = typeof course.toObject === 'function' ? course.toObject() : course;
+        const accessState = evaluateStudentCourseAccess({
+          course: plain,
+          studentId,
+          isPrivilegedUser: false,
+          hasSuccessfulPayment: false,
+        });
+
+        return {
+          id: String(plain._id),
+          requiresPayment: accessState.requiresPayment,
+        };
+      })
+      .filter((course) => course.requiresPayment)
+      .map((course) => course.id);
 
     const paidAccessTransactions = paidCourseIds.length > 0
       ? await PaymentTransaction.find({
@@ -134,11 +150,23 @@ export const getCourses = asyncHandler(async (req: AuthRequest, res: Response) =
 
     responseCourses = courses.map((course: any) => {
       const plain = typeof course.toObject === 'function' ? course.toObject() : course;
-      const isPaidCourse = Number(plain.price || 0) > 0;
+      const hasSuccessfulPayment = paidAccessSet.has(String(plain._id));
+      const accessState = evaluateStudentCourseAccess({
+        course: plain,
+        studentId,
+        isPrivilegedUser: false,
+        hasSuccessfulPayment,
+      });
+
+      const { lockedStudentIds, unlockedStudentIds, ...safePlain } = plain;
 
       return {
-        ...plain,
-        hasPaidAccess: !isPaidCourse || paidAccessSet.has(String(plain._id)),
+        ...safePlain,
+        hasPaidAccess: accessState.hasAccess,
+        accessMode: accessState.accessMode,
+        studentAccessOverride: accessState.studentAccessOverride,
+        isLockedForStudent: accessState.blockedByInstructor,
+        requiresPayment: accessState.requiresPayment,
       };
     });
   }
@@ -162,13 +190,35 @@ export const getCourseById = asyncHandler(async (req: AuthRequest, res: Response
 
   if (course) {
     if (req.user?.role === 'student') {
-      const isPaidCourse = Number(course.price || 0) > 0;
-      const hasPaidAccess = !isPaidCourse
-        || await hasSuccessfulCoursePayment(String(req.user._id), String(course._id));
+      const studentId = String(req.user._id);
+      const plainCourse = course.toObject();
+      const accessWithoutPayment = evaluateStudentCourseAccess({
+        course: plainCourse,
+        studentId,
+        isPrivilegedUser: false,
+        hasSuccessfulPayment: false,
+      });
+
+      const hasSuccessfulPayment = accessWithoutPayment.requiresPayment
+        ? await hasSuccessfulCoursePayment(studentId, String(course._id))
+        : false;
+
+      const accessState = evaluateStudentCourseAccess({
+        course: plainCourse,
+        studentId,
+        isPrivilegedUser: false,
+        hasSuccessfulPayment,
+      });
+
+      const { lockedStudentIds, unlockedStudentIds, ...safePlain } = plainCourse;
 
       const payload = {
-        ...course.toObject(),
-        hasPaidAccess,
+        ...safePlain,
+        hasPaidAccess: accessState.hasAccess,
+        accessMode: accessState.accessMode,
+        studentAccessOverride: accessState.studentAccessOverride,
+        isLockedForStudent: accessState.blockedByInstructor,
+        requiresPayment: accessState.requiresPayment,
       };
 
       sendSuccess(res, payload);
