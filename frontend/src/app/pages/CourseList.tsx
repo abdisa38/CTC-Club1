@@ -348,9 +348,13 @@ export function CourseList() {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-            Course Catalog
+            {isFieldPhaseMode ? `${selectedField} Phases` : "Course Catalog"}
           </h1>
-          <p className="text-slate-500 dark:text-slate-400">Discover hundreds of university-grade courses.</p>
+          <p className="text-slate-500 dark:text-slate-400">
+            {isFieldPhaseMode
+              ? "Open any phase to continue learning in order."
+              : "Browse by major learning fields, then open each field to view all phases."}
+          </p>
         </div>
         {isInstructor && (
           <Button asChild className="shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white">
@@ -359,94 +363,96 @@ export function CourseList() {
         )}
       </div>
 
-      <Card className="bg-white/50 dark:bg-slate-900/50">
-        <CardContent className="p-4 space-y-4">
-          <div className="flex flex-col md:flex-row gap-4 items-center">
-            <div className="relative flex-1 w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
-              <Input
-                placeholder="Search courses by title, instructor, or tags..."
-                className="pl-10 h-12 bg-white dark:bg-slate-950"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              {searchQuery && (
-                <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                  <X className="h-4 w-4" />
-                </button>
-              )}
+      {!isFieldOverviewMode && !isFieldPhaseMode ? (
+        <Card className="bg-white/50 dark:bg-slate-900/50">
+          <CardContent className="p-4 space-y-4">
+            <div className="flex flex-col md:flex-row gap-4 items-center">
+              <div className="relative flex-1 w-full">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                <Input
+                  placeholder="Search courses by title, instructor, or tags..."
+                  className="pl-10 h-12 bg-white dark:bg-slate-950"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+              <Button
+                variant={showFilters ? "default" : "outline"}
+                className="h-12 px-4"
+                onClick={() => setShowFilters(!showFilters)}
+              >
+                <Filter className="h-5 w-5 mr-2" /> Filters
+                {activeFilters > 0 && (
+                  <Badge className="ml-2 bg-white text-indigo-600 h-5 w-5 p-0 flex items-center justify-center">{activeFilters}</Badge>
+                )}
+              </Button>
             </div>
-            <Button
-              variant={showFilters ? "default" : "outline"}
-              className="h-12 px-4"
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              <Filter className="h-5 w-5 mr-2" /> Filters
-              {activeFilters > 0 && (
-                <Badge className="ml-2 bg-white text-indigo-600 h-5 w-5 p-0 flex items-center justify-center">{activeFilters}</Badge>
-              )}
-            </Button>
-          </div>
 
-          {showFilters && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="flex flex-col sm:flex-row gap-3 pt-2 border-t border-slate-200 dark:border-slate-800"
-            >
-              <select
-                className="h-10 flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-800 dark:bg-slate-950 text-slate-900 dark:text-slate-100"
-                value={selectedField}
-                onChange={(e) => updateSelectedField(e.target.value)}
+            {showFilters && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="flex flex-col sm:flex-row gap-3 pt-2 border-t border-slate-200 dark:border-slate-800"
               >
-                <option value="">All Fields</option>
-                {fieldOptions.map((field) => (
-                  <option key={field} value={field}>{field}</option>
-                ))}
-              </select>
-              <select
-                className="h-10 flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-800 dark:bg-slate-950 text-slate-900 dark:text-slate-100"
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-              >
-                <option value="">All Categories</option>
-                <option value="Web Dev">Web Development</option>
-                <option value="Computer Science">Computer Science</option>
-                <option value="AI/ML">AI / ML</option>
-                <option value="Design">Design</option>
-                <option value="Cloud">Cloud / DevOps</option>
-                <option value="Tools">Tools</option>
-              </select>
-              <select
-                className="h-10 flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-800 dark:bg-slate-950 text-slate-900 dark:text-slate-100"
-                value={selectedLevel}
-                onChange={(e) => setSelectedLevel(e.target.value)}
-              >
-                <option value="">All Levels</option>
-                <option value="Beginner">Beginner</option>
-                <option value="Intermediate">Intermediate</option>
-                <option value="Advanced">Advanced</option>
-              </select>
-              <select
-                className="h-10 flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-800 dark:bg-slate-950 text-slate-900 dark:text-slate-100"
-                value={selectedDuration}
-                onChange={(e) => setSelectedDuration(e.target.value)}
-              >
-                <option value="">Any Duration</option>
-                <option value="short">Short (&lt; 10h)</option>
-                <option value="medium">Medium (10-25h)</option>
-                <option value="long">Long (25h+)</option>
-              </select>
-              {activeFilters > 0 && (
-                <Button variant="ghost" size="sm" onClick={() => { updateSelectedField(""); setSelectedCategory(""); setSelectedLevel(""); setSelectedDuration(""); }}>
-                  <X className="h-4 w-4 mr-1" /> Clear
-                </Button>
-              )}
-            </motion.div>
-          )}
-        </CardContent>
-      </Card>
+                <select
+                  className="h-10 flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-800 dark:bg-slate-950 text-slate-900 dark:text-slate-100"
+                  value={selectedField}
+                  onChange={(e) => updateSelectedField(e.target.value)}
+                >
+                  <option value="">All Fields</option>
+                  {fieldOptions.map((field) => (
+                    <option key={field} value={field}>{field}</option>
+                  ))}
+                </select>
+                <select
+                  className="h-10 flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-800 dark:bg-slate-950 text-slate-900 dark:text-slate-100"
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                >
+                  <option value="">All Categories</option>
+                  <option value="Web Dev">Web Development</option>
+                  <option value="Computer Science">Computer Science</option>
+                  <option value="AI/ML">AI / ML</option>
+                  <option value="Design">Design</option>
+                  <option value="Cloud">Cloud / DevOps</option>
+                  <option value="Tools">Tools</option>
+                </select>
+                <select
+                  className="h-10 flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-800 dark:bg-slate-950 text-slate-900 dark:text-slate-100"
+                  value={selectedLevel}
+                  onChange={(e) => setSelectedLevel(e.target.value)}
+                >
+                  <option value="">All Levels</option>
+                  <option value="Beginner">Beginner</option>
+                  <option value="Intermediate">Intermediate</option>
+                  <option value="Advanced">Advanced</option>
+                </select>
+                <select
+                  className="h-10 flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-800 dark:bg-slate-950 text-slate-900 dark:text-slate-100"
+                  value={selectedDuration}
+                  onChange={(e) => setSelectedDuration(e.target.value)}
+                >
+                  <option value="">Any Duration</option>
+                  <option value="short">Short (&lt; 10h)</option>
+                  <option value="medium">Medium (10-25h)</option>
+                  <option value="long">Long (25h+)</option>
+                </select>
+                {activeFilters > 0 && (
+                  <Button variant="ghost" size="sm" onClick={() => { updateSelectedField(""); setSelectedCategory(""); setSelectedLevel(""); setSelectedDuration(""); }}>
+                    <X className="h-4 w-4 mr-1" /> Clear
+                  </Button>
+                )}
+              </motion.div>
+            )}
+          </CardContent>
+        </Card>
+      ) : null}
 
       {actionError ? (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -454,12 +460,159 @@ export function CourseList() {
         </div>
       ) : null}
 
-      {filteredCourses.length === 0 ? (
+      {isFieldOverviewMode ? (
+        <div className="space-y-5">
+          <p className="text-sm text-slate-500">Choose a field to open all its phases at once.</p>
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            {overviewFields.map((entry, index) => {
+              const hasCourses = entry.courses.length > 0;
+
+              return (
+                <motion.div
+                  key={entry.field}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.06 }}
+                >
+                  <Card className="overflow-hidden border-slate-200/70 dark:border-slate-800/70 bg-white/70 dark:bg-slate-900/60 shadow-sm">
+                    <div className="relative h-48 w-full overflow-hidden">
+                      <img
+                        src={entry.coverImage}
+                        alt={entry.field}
+                        className={`h-full w-full object-cover transition-transform duration-300 ${hasCourses ? "hover:scale-105" : "opacity-70"}`}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent" />
+                      <div className="absolute left-4 right-4 bottom-4 flex items-end justify-between gap-2">
+                        <div>
+                          <p className="text-xl font-bold text-white">{entry.field}</p>
+                          <p className="text-xs text-slate-200">{entry.courses.length} {entry.courses.length === 1 ? "phase" : "phases"}</p>
+                        </div>
+                        <Badge className={`${hasCourses ? "bg-emerald-600 text-white" : "bg-slate-600 text-white"} border-0`}>
+                          {hasCourses ? "Active" : "Coming Soon"}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    <CardContent className="p-5 space-y-4">
+                      <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                        {fieldDescriptions[entry.field] || fieldDescriptions["General Technology"]}
+                      </p>
+
+                      <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                        <span>{entry.totalStudents.toLocaleString()} learners</span>
+                        <span>{entry.courses.filter((course) => Number(course.price || 0) > 0).length} paid phases</span>
+                      </div>
+
+                      {hasCourses ? (
+                        <Button className="w-full bg-gradient-to-r from-indigo-600 to-cyan-500 text-white hover:from-indigo-700 hover:to-cyan-600" asChild>
+                          <Link to={`/courses?field=${encodeURIComponent(entry.field)}`}>
+                            Open {entry.field}
+                            <ChevronRight className="ml-1.5 h-4 w-4" />
+                          </Link>
+                        </Button>
+                      ) : (
+                        <Button className="w-full" variant="outline" disabled>
+                          Coming Soon
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      ) : isFieldPhaseMode ? (
+        <div className="space-y-4">
+          <Card className="border-slate-200/70 dark:border-slate-800/70 bg-white/70 dark:bg-slate-900/60">
+            <CardContent className="p-5 md:p-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-slate-500">Learning Field</p>
+                <h2 className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{selectedField}</h2>
+                <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                  {fieldDescriptions[selectedField] || fieldDescriptions["General Technology"]}
+                </p>
+              </div>
+
+              <Button
+                variant="outline"
+                onClick={() => {
+                  updateSelectedField("");
+                  setSearchQuery("");
+                  setSelectedCategory("");
+                  setSelectedLevel("");
+                  setSelectedDuration("");
+                }}
+              >
+                <ArrowLeft className="mr-1.5 h-4 w-4" />
+                All Fields
+              </Button>
+            </CardContent>
+          </Card>
+
+          {sortedSelectedFieldCourses.length === 0 ? (
+            <div className="text-center py-14 px-4 border border-dashed border-slate-300 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-900/40">
+              <h3 className="text-lg font-medium text-slate-900 dark:text-white">No phases available yet</h3>
+              <p className="text-sm text-slate-500 mt-1">This field will appear here once phases are published.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {sortedSelectedFieldCourses.map((course, index) => {
+                const phaseMatch = String(course.title || "").match(/phase\s*(\d+)/i);
+                const courseHref = `${courseDetailBasePath}/${course._id}`;
+                const isPaidCourse = Number(course.price || 0) > 0;
+
+                return (
+                  <Card key={course._id} className="border-slate-200/70 dark:border-slate-800/70 bg-white/70 dark:bg-slate-900/60">
+                    <CardContent className="p-4 md:p-5">
+                      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                        <div className="flex min-w-0 items-start gap-3">
+                          <img
+                            src={course.coverImage || fieldFallbackCovers[selectedField] || fieldFallbackCovers["General Technology"]}
+                            alt={course.title}
+                            className="h-16 w-16 rounded-xl object-cover border border-slate-200 dark:border-slate-700 shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                              {phaseMatch ? `Phase ${phaseMatch[1]}` : `Module ${index + 1}`}
+                            </p>
+                            <h3 className="mt-1 text-lg font-semibold leading-tight text-slate-900 dark:text-white">
+                              {course.title}
+                            </h3>
+                            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300 line-clamp-2">
+                              {course.description || "Open this phase to see lessons, videos, resources, quizzes, and projects."}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 md:pl-4">
+                          <Badge className={`border-0 ${isPaidCourse ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
+                            {isPaidCourse ? `${Number(course.price || 0).toFixed(2)} ETB` : "Free"}
+                          </Badge>
+                          <Button asChild className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                            <Link to={courseHref}>
+                              Open
+                              <ChevronRight className="ml-1 h-4 w-4" />
+                            </Link>
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ) : filteredCourses.length === 0 ? (
         <div className="text-center py-20 px-4 border border-dashed border-slate-300 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-900/50">
           <Search className="mx-auto h-12 w-12 text-slate-400 mb-4" />
           <h3 className="text-lg font-medium text-slate-900 dark:text-white">No courses found</h3>
           <p className="text-sm text-slate-500 mt-1">Try adjusting your search or filters.</p>
-          <Button variant="outline" className="mt-4" onClick={() => { setSearchQuery(""); updateSelectedField(""); setSelectedCategory(""); setSelectedLevel(""); setSelectedDuration(""); }}>Clear all filters</Button>
+          <Button variant="outline" className="mt-4" onClick={() => { setSearchQuery(""); updateSelectedField(""); setSelectedCategory(""); setSelectedLevel(""); setSelectedDuration(""); }}>
+            Clear all filters
+          </Button>
         </div>
       ) : (
         <>
@@ -484,89 +637,89 @@ export function CourseList() {
                   transition={{ delay: i * 0.05 }}
                 >
                   <Card className="overflow-hidden group flex flex-col hover:border-indigo-200 hover:shadow-md transition-all dark:hover:border-indigo-800">
-                  <div className="relative aspect-video w-full overflow-hidden">
-                    <img
-                      src={course.coverImage || 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80&w=800'}
-                      alt={course.title}
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <Button size="icon" className="rounded-full h-12 w-12 bg-indigo-600 hover:bg-indigo-700" asChild>
-                        <Link to={courseHref}><PlayCircle className="h-6 w-6 text-white" /></Link>
-                      </Button>
-                    </div>
-                    <div className="absolute top-3 left-3 flex flex-col gap-2">
-                      <Badge className="bg-white/90 text-slate-900 hover:bg-white">{learningField}</Badge>
-                      <Badge className={`font-extrabold tracking-wide ${Number(course.price || 0) > 0 ? "bg-indigo-600 text-white hover:bg-indigo-600" : "bg-emerald-600 text-white hover:bg-emerald-600"}`}>
-                        {Number(course.price || 0) > 0 ? "PAID COURSE" : "FREE COURSE"}
-                      </Badge>
-                    </div>
-                    <button
-                      onClick={(e) => { e.preventDefault(); void toggleFavorite(course._id); }}
-                      disabled={role !== 'student' || favoritingIds.has(course._id)}
-                      className="absolute top-3 right-3 h-8 w-8 bg-white/90 hover:bg-white rounded-full flex items-center justify-center transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                      title={role === 'student' ? (favorites.has(course._id) ? 'Remove from favorites' : 'Add to favorites') : 'Favorites are available for students'}
-                    >
-                      <Heart className={`h-4 w-4 ${favorites.has(course._id) ? "text-red-500 fill-red-500" : "text-slate-600"}`} />
-                    </button>
-                    {isUserEnrolled(course) && (
-                      <Badge className="absolute bottom-3 left-3 bg-emerald-600 text-white hover:bg-emerald-600">Enrolled</Badge>
-                    )}
-                  </div>
-
-                  <CardContent className="p-5 flex-1 flex flex-col">
-                    <div className="flex items-center gap-1 text-sm text-amber-500 font-medium mb-2">
-                      <Star className="h-4 w-4 fill-amber-500" />
-                      <span>{ratingLabel}</span>
-                      <span className="text-slate-400 mx-1">·</span>
-                      <span className="text-slate-500">({Array.isArray(course.students) ? course.students.length : 0})</span>
-                    </div>
-
-                    <Link to={courseHref} className="block mb-2">
-                      <h3 className="font-bold text-lg leading-tight text-slate-900 dark:text-white hover:text-indigo-600 transition-colors line-clamp-2">
-                        {course.title}
-                      </h3>
-                    </Link>
-
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{course.instructor?.name || 'Unknown Instructor'}</p>
-
-                    <div className="flex flex-wrap gap-2 mb-4 mt-auto">
-                      <Badge variant="secondary" className="text-xs px-2 py-0.5">
-                        {learningField}
-                      </Badge>
-                      {course.category ? (
-                        <Badge variant="secondary" className="text-xs px-2 py-0.5">
-                          {course.category}
-                        </Badge>
-                      ) : null}
-                      <Badge className={`text-xs px-2 py-0.5 font-bold ${Number(course.price || 0) > 0 ? "bg-indigo-100 text-indigo-700" : "bg-emerald-100 text-emerald-700"}`}>
-                        {Number(course.price || 0) > 0
-                          ? `${Number(course.price || 0).toFixed(2)} ETB`
-                          : "Free"}
-                      </Badge>
-                    </div>
-
-                    <div className="flex items-center justify-between text-sm text-slate-500 pt-4 border-t border-slate-100 dark:border-slate-800">
-                      <div className="flex items-center gap-4">
-                        <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> 10h</span>
-                        <span className="flex items-center gap-1"><Users className="h-4 w-4" /> All Levels</span>
-                      </div>
-                      {!isUserEnrolled(course) ? (
-                        <Button
-                          size="sm"
-                          className={`h-9 px-4 text-[12px] font-extrabold rounded-xl border-0 shadow-md ${isPaidCourse
-                            ? "bg-gradient-to-r from-rose-600 to-orange-500 hover:from-rose-700 hover:to-orange-600 text-white shadow-rose-500/30"
-                            : "bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white shadow-emerald-500/30"}`}
-                          onClick={() => handleEnroll(course)}
-                          disabled={enrollingId === course._id}
-                        >
-                          {enrollingId === course._id
-                            ? (isPaidCourse ? "Opening checkout..." : "Enrolling...")
-                            : (isPaidCourse ? `Pay ${Number(course.price || 0).toFixed(2)} ETB` : "Enroll Free")}
+                    <div className="relative aspect-video w-full overflow-hidden">
+                      <img
+                        src={course.coverImage || 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80&w=800'}
+                        alt={course.title}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Button size="icon" className="rounded-full h-12 w-12 bg-indigo-600 hover:bg-indigo-700" asChild>
+                          <Link to={courseHref}><PlayCircle className="h-6 w-6 text-white" /></Link>
                         </Button>
-                      ) : null}
+                      </div>
+                      <div className="absolute top-3 left-3 flex flex-col gap-2">
+                        <Badge className="bg-white/90 text-slate-900 hover:bg-white">{learningField}</Badge>
+                        <Badge className={`font-extrabold tracking-wide ${Number(course.price || 0) > 0 ? "bg-indigo-600 text-white hover:bg-indigo-600" : "bg-emerald-600 text-white hover:bg-emerald-600"}`}>
+                          {Number(course.price || 0) > 0 ? "PAID COURSE" : "FREE COURSE"}
+                        </Badge>
+                      </div>
+                      <button
+                        onClick={(e) => { e.preventDefault(); void toggleFavorite(course._id); }}
+                        disabled={role !== 'student' || favoritingIds.has(course._id)}
+                        className="absolute top-3 right-3 h-8 w-8 bg-white/90 hover:bg-white rounded-full flex items-center justify-center transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                        title={role === 'student' ? (favorites.has(course._id) ? 'Remove from favorites' : 'Add to favorites') : 'Favorites are available for students'}
+                      >
+                        <Heart className={`h-4 w-4 ${favorites.has(course._id) ? "text-red-500 fill-red-500" : "text-slate-600"}`} />
+                      </button>
+                      {isUserEnrolled(course) && (
+                        <Badge className="absolute bottom-3 left-3 bg-emerald-600 text-white hover:bg-emerald-600">Enrolled</Badge>
+                      )}
                     </div>
-                  </CardContent>
+
+                    <CardContent className="p-5 flex-1 flex flex-col">
+                      <div className="flex items-center gap-1 text-sm text-amber-500 font-medium mb-2">
+                        <Star className="h-4 w-4 fill-amber-500" />
+                        <span>{ratingLabel}</span>
+                        <span className="text-slate-400 mx-1">·</span>
+                        <span className="text-slate-500">({Array.isArray(course.students) ? course.students.length : 0})</span>
+                      </div>
+
+                      <Link to={courseHref} className="block mb-2">
+                        <h3 className="font-bold text-lg leading-tight text-slate-900 dark:text-white hover:text-indigo-600 transition-colors line-clamp-2">
+                          {course.title}
+                        </h3>
+                      </Link>
+
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{course.instructor?.name || 'Unknown Instructor'}</p>
+
+                      <div className="flex flex-wrap gap-2 mb-4 mt-auto">
+                        <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                          {learningField}
+                        </Badge>
+                        {course.category ? (
+                          <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                            {course.category}
+                          </Badge>
+                        ) : null}
+                        <Badge className={`text-xs px-2 py-0.5 font-bold ${Number(course.price || 0) > 0 ? "bg-indigo-100 text-indigo-700" : "bg-emerald-100 text-emerald-700"}`}>
+                          {Number(course.price || 0) > 0
+                            ? `${Number(course.price || 0).toFixed(2)} ETB`
+                            : "Free"}
+                        </Badge>
+                      </div>
+
+                      <div className="flex items-center justify-between text-sm text-slate-500 pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <div className="flex items-center gap-4">
+                          <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> 10h</span>
+                          <span className="flex items-center gap-1"><Users className="h-4 w-4" /> All Levels</span>
+                        </div>
+                        {!isUserEnrolled(course) ? (
+                          <Button
+                            size="sm"
+                            className={`h-9 px-4 text-[12px] font-extrabold rounded-xl border-0 shadow-md ${isPaidCourse
+                              ? "bg-gradient-to-r from-rose-600 to-orange-500 hover:from-rose-700 hover:to-orange-600 text-white shadow-rose-500/30"
+                              : "bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white shadow-emerald-500/30"}`}
+                            onClick={() => handleEnroll(course)}
+                            disabled={enrollingId === course._id}
+                          >
+                            {enrollingId === course._id
+                              ? (isPaidCourse ? "Opening checkout..." : "Enrolling...")
+                              : (isPaidCourse ? `Pay ${Number(course.price || 0).toFixed(2)} ETB` : "Enroll Free")}
+                          </Button>
+                        ) : null}
+                      </div>
+                    </CardContent>
                   </Card>
                 </motion.div>
               );

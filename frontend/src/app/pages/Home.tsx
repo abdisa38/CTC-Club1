@@ -186,6 +186,9 @@ const howItWorks = [
 export function Home() {
   const location = useLocation();
   const TELEGRAM_CHANNEL_URL = "https://t.me/officialCTCclub";
+  const showStatsSection = false;
+  const showFeatureHighlightsSection = false;
+  const showLearningPathsSection = false;
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
 
@@ -528,58 +531,60 @@ export function Home() {
         </div>
       </section>
 
-      {/* ═══ 2. TRUSTED BY / STATS ═══ */}
-      <section className="py-20 bg-transparent border-y border-slate-100 dark:border-white/[0.04]">
-        <div className="max-w-[1200px] mx-auto px-6 lg:px-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 lg:gap-12">
-            {[
-              { value: stats.activeStudents, suffix: "+", label: "Active Students", icon: Users, color: "text-sky-600 dark:text-sky-400", bg: "bg-sky-50 dark:bg-sky-500/10" },
-              { value: stats.videoCourses, suffix: "+", label: "Video Courses", icon: BookOpen, color: "text-teal-600 dark:text-teal-400", bg: "bg-teal-50 dark:bg-teal-500/10" },
-              { value: stats.instructors, suffix: "+", label: "Expert Instructors", icon: Award, color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-500/10" },
-            ].map((stat, i) => (
-              <AnimatedSection key={i} delay={i * 0.08}>
-                <div className="flex flex-col items-center text-center gap-3">
-                  <div className={`h-12 w-12 rounded-xl ${stat.bg} flex items-center justify-center`}>
-                    <stat.icon className={`h-5 w-5 ${stat.color}`} />
+      {showStatsSection ? (
+        <section className="py-20 bg-transparent border-y border-slate-100 dark:border-white/[0.04]">
+          <div className="max-w-[1200px] mx-auto px-6 lg:px-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 lg:gap-12">
+              {[
+                { value: stats.activeStudents, suffix: "+", label: "Active Students", icon: Users, color: "text-sky-600 dark:text-sky-400", bg: "bg-sky-50 dark:bg-sky-500/10" },
+                { value: stats.videoCourses, suffix: "+", label: "Video Courses", icon: BookOpen, color: "text-teal-600 dark:text-teal-400", bg: "bg-teal-50 dark:bg-teal-500/10" },
+                { value: stats.instructors, suffix: "+", label: "Expert Instructors", icon: Award, color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-500/10" },
+              ].map((stat, i) => (
+                <AnimatedSection key={i} delay={i * 0.08}>
+                  <div className="flex flex-col items-center text-center gap-3">
+                    <div className={`h-12 w-12 rounded-xl ${stat.bg} flex items-center justify-center`}>
+                      <stat.icon className={`h-5 w-5 ${stat.color}`} />
+                    </div>
+                    <span className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+                      <AnimatedCounter target={stat.value} suffix={stat.suffix} />
+                    </span>
+                    <span className="text-sm text-slate-300">{stat.label}</span>
                   </div>
-                  <span className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-                    <AnimatedCounter target={stat.value} suffix={stat.suffix} />
-                  </span>
-                  <span className="text-sm text-slate-300">{stat.label}</span>
-                </div>
-              </AnimatedSection>
-            ))}
+                </AnimatedSection>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
-      {/* ═══ 3. FEATURE HIGHLIGHTS ═══ */}
-      <section id="features" className="py-24 lg:py-32 bg-transparent">
-        <div className="max-w-[1200px] mx-auto px-6 lg:px-8">
-          <AnimatedSection>
-            <SectionHeader
-              badge="Platform Features"
-              title="Everything You Need to"
-              highlight="Succeed"
-              description="A complete learning ecosystem designed specifically for university students and tech enthusiasts."
-            />
-          </AnimatedSection>
+      {showFeatureHighlightsSection ? (
+        <section id="features" className="py-24 lg:py-32 bg-transparent">
+          <div className="max-w-[1200px] mx-auto px-6 lg:px-8">
+            <AnimatedSection>
+              <SectionHeader
+                badge="Platform Features"
+                title="Everything You Need to"
+                highlight="Succeed"
+                description="A complete learning ecosystem designed specifically for university students and tech enthusiasts."
+              />
+            </AnimatedSection>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {features.map((f, i) => (
-              <AnimatedSection key={i} delay={i * 0.06}>
-                <PremiumCard className="p-6 h-full">
-                  <div className={`mb-5 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${f.color} text-white shadow-sm`}>
-                    <f.icon className="h-5 w-5" />
-                  </div>
-                  <h3 className="mb-2 text-[15px] font-semibold text-white">{f.title}</h3>
-                  <p className="text-sm text-slate-300 leading-relaxed">{f.desc}</p>
-                </PremiumCard>
-              </AnimatedSection>
-            ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {features.map((f, i) => (
+                <AnimatedSection key={i} delay={i * 0.06}>
+                  <PremiumCard className="p-6 h-full">
+                    <div className={`mb-5 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${f.color} text-white shadow-sm`}>
+                      <f.icon className="h-5 w-5" />
+                    </div>
+                    <h3 className="mb-2 text-[15px] font-semibold text-white">{f.title}</h3>
+                    <p className="text-sm text-slate-300 leading-relaxed">{f.desc}</p>
+                  </PremiumCard>
+                </AnimatedSection>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
       {/* ═══ 4. COURSE DISCOVERY ═══ */}
       <section className="py-24 lg:py-32 bg-transparent">
@@ -656,59 +661,60 @@ export function Home() {
         </div>
       </section>
 
-      {/* ═══ 5. LEARNING PATHS ═══ */}
-      <section className="py-24 lg:py-32 bg-transparent">
-        <div className="max-w-[1200px] mx-auto px-6 lg:px-8">
-          <AnimatedSection>
-            <SectionHeader
-              badge="Learning Paths"
-              badgeColor="purple"
-              title="Choose Your"
-              highlight="Path"
-              description="Follow structured roadmaps to become a professional developer."
-            />
-          </AnimatedSection>
+      {showLearningPathsSection ? (
+        <section className="py-24 lg:py-32 bg-transparent">
+          <div className="max-w-[1200px] mx-auto px-6 lg:px-8">
+            <AnimatedSection>
+              <SectionHeader
+                badge="Learning Paths"
+                badgeColor="purple"
+                title="Choose Your"
+                highlight="Path"
+                description="Follow structured roadmaps to become a professional developer."
+              />
+            </AnimatedSection>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            {[
-              { title: "Frontend Developer", steps: ["HTML", "CSS", "JavaScript", "React", "Bootstrap"], color: "from-blue-500 to-indigo-600", icon: Monitor, price: 0, currency: "ETB" },
-              { title: "Backend Developer", steps: ["Node.js", "Express.js", "MySQL", "REST API"], color: "from-emerald-500 to-teal-600", icon: Terminal, price: 200, currency: "ETB" },
-            ].map((path, i) => (
-              <AnimatedSection key={i} delay={i * 0.12}>
-                <PremiumCard className="overflow-hidden">
-                  <div className={`bg-gradient-to-r ${path.color} p-6`}>
-                    <path.icon className="h-7 w-7 mb-3 text-white/90" />
-                    <h3 className="text-xl font-bold text-white">Become a {path.title}</h3>
-                  </div>
-                  <div className="p-6">
-                    <div className="mb-4">
-                      <Badge className={`text-[11px] font-bold border-0 shadow-sm ${path.price > 0 ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
-                        {path.price > 0 ? `PAID ${path.price.toFixed(2)} ${path.currency}` : "FREE"}
-                      </Badge>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+              {[
+                { title: "Frontend Developer", steps: ["HTML", "CSS", "JavaScript", "React", "Bootstrap"], color: "from-blue-500 to-indigo-600", icon: Monitor, price: 0, currency: "ETB" },
+                { title: "Backend Developer", steps: ["Node.js", "Express.js", "MySQL", "REST API"], color: "from-emerald-500 to-teal-600", icon: Terminal, price: 200, currency: "ETB" },
+              ].map((path, i) => (
+                <AnimatedSection key={i} delay={i * 0.12}>
+                  <PremiumCard className="overflow-hidden">
+                    <div className={`bg-gradient-to-r ${path.color} p-6`}>
+                      <path.icon className="h-7 w-7 mb-3 text-white/90" />
+                      <h3 className="text-xl font-bold text-white">Become a {path.title}</h3>
                     </div>
-                    <div className="space-y-3">
-                      {path.steps.map((step, j) => (
-                        <div key={j} className="flex items-center gap-3">
-                          <div className="h-7 w-7 rounded-lg bg-slate-50 dark:bg-white/5 flex items-center justify-center shrink-0 border border-slate-100 dark:border-white/[0.06]">
-                            <span className="text-[11px] font-semibold text-slate-300">{j + 1}</span>
+                    <div className="p-6">
+                      <div className="mb-4">
+                        <Badge className={`text-[11px] font-bold border-0 shadow-sm ${path.price > 0 ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
+                          {path.price > 0 ? `PAID ${path.price.toFixed(2)} ${path.currency}` : "FREE"}
+                        </Badge>
+                      </div>
+                      <div className="space-y-3">
+                        {path.steps.map((step, j) => (
+                          <div key={j} className="flex items-center gap-3">
+                            <div className="h-7 w-7 rounded-lg bg-slate-50 dark:bg-white/5 flex items-center justify-center shrink-0 border border-slate-100 dark:border-white/[0.06]">
+                              <span className="text-[11px] font-semibold text-slate-300">{j + 1}</span>
+                            </div>
+                            <span className="text-sm text-slate-300">{step}</span>
                           </div>
-                          <span className="text-sm text-slate-300">{step}</span>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
+                      <Button
+                        className={`w-full mt-6 h-11 rounded-xl text-[13px] font-bold ${path.price > 0 ? "bg-gradient-to-r from-rose-600 to-orange-500 hover:from-rose-700 hover:to-orange-600 text-white" : "bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white"}`}
+                        asChild
+                      >
+                        <Link to="/courses">{path.price > 0 ? `Pay ${path.price.toFixed(2)} ${path.currency}` : "Enroll Free"} <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                      </Button>
                     </div>
-                    <Button
-                      className={`w-full mt-6 h-11 rounded-xl text-[13px] font-bold ${path.price > 0 ? "bg-gradient-to-r from-rose-600 to-orange-500 hover:from-rose-700 hover:to-orange-600 text-white" : "bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white"}`}
-                      asChild
-                    >
-                      <Link to="/courses">{path.price > 0 ? `Pay ${path.price.toFixed(2)} ${path.currency}` : "Enroll Free"} <ArrowRight className="ml-2 h-4 w-4" /></Link>
-                    </Button>
-                  </div>
-                </PremiumCard>
-              </AnimatedSection>
-            ))}
+                  </PremiumCard>
+                </AnimatedSection>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
       {/* ═══ 6. HOW IT WORKS ═══ */}
       <section className="py-24 lg:py-32 bg-transparent">
