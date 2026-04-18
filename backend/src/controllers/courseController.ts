@@ -272,6 +272,151 @@ export const updateCourse = asyncHandler(async (req: AuthRequest, res: Response)
   sendSuccess(res, updatedCourse, { message: 'Course updated successfully' });
 });
 
+// @desc    Update course access mode (open/paid/locked)
+// @route   PUT /api/courses/:id/access-mode
+// @access  Private/Instructor/Admin
+export const updateCourseAccessMode = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const mode = String(req.body?.mode || '').trim();
+  if (mode !== 'open' && mode !== 'paid' && mode !== 'locked') {
+    res.status(400);
+    throw new Error('Access mode must be open, paid, or locked');
+  }
+
+  const course = await Course.findById(req.params.id).select(
+    '_id instructor price currency accessMode lockedStudentIds unlockedStudentIds'
+  );
+
+  if (!course) {
+    res.status(404);
+    throw new Error('Course not found');
+  }
+
+  try {
+    ensureCourseManagePermission(course, req.user);
+  } catch (permissionError: any) {
+    res.status(403);
+    throw new Error(permissionError?.message || 'You are not authorized to manage this course');
+  }
+
+  course.accessMode = mode;
+
+  if (mode === 'paid') {
+    const paidPriceCandidate = Number(req.body?.paidPrice);
+    const currentPrice = Number(course.price || 0);
+
+    if (Number.isFinite(paidPriceCandidate) && paidPriceCandidate > 0) {
+      course.price = Number(paidPriceCandidate.toFixed(2));
+    } else if (!Number.isFinite(currentPrice) || currentPrice <= 0) {
+      course.price = DEFAULT_PAID_PHASE_PRICE;
+    }
+
+    course.currency = 'ETB';
+  }
+
+  const updatedCourse = await course.save();
+
+  sendSuccess(res, updatedCourse, { message: 'Course access mode updated successfully.' });
+});
+
+// @desc    Update per-student course access override (lock/unlock/reset)
+// @route   PUT /api/courses/:id/student-access
+// @access  Private/Instructor/Admin
+export const updateCourseStudentAccess = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const studentId = String(req.body?.studentId || '').trim();
+  const action = String(req.body?.action || '').trim();
+
+  if (!studentId) {
+    res.status(400);
+    throw new Error('Student ID is required');
+  }
+
+  if (action !== 'lock' && action !== 'unlock' && action !== 'reset') {
+    res.status(400);
+    throw new Error('Action must be lock, unlock, or reset');
+  }
+
+  const course = await Course.findById(req.params.id).select(
+    '_id instructor students lockedStudentIds unlockedStudentIds accessMode price'
+  );
+
+  if (!course) {
+    res.status(404);
+    throw new Error('Course not found');
+  }
+
+  try {
+    ensureCourseManagePermission(course, req.user);
+  } catch (permissionError: any) {
+    res.status(403);
+    throw new Error(permissionError?.message || 'You are not authorized to manage this course');
+  }
+
+  const student = await User.findById(studentId).select('_id name email role');
+  if (!student || student.role !== 'student') {
+    res.status(404);
+    throw new Error('Student account not found');
+  }
+
+  const lockedSet = new Set(
+    (Array.isArray(course.lockedStudentIds) ? course.lockedStudentIds : [])
+      .map((id: any) => String(id))
+      .filter(Boolean)
+  );
+
+  const unlockedSet = new Set(
+    (Array.isArray(course.unlockedStudentIds) ? course.unlockedStudentIds : [])
+      .map((id: any) => String(id))
+      .filter(Boolean)
+  );
+
+  if (action === 'lock') {
+    lockedSet.add(studentId);
+    unlockedSet.delete(studentId);
+  }
+
+  if (action === 'unlock') {
+    unlockedSet.add(studentId);
+    lockedSet.delete(studentId);
+
+    await Course.findByIdAndUpdate(course._id, {
+      $addToSet: { students: student._id },
+    });
+
+    await User.findByIdAndUpdate(student._id, {
+      $addToSet: { enrolledCourses: course._id },
+    });
+  }
+
+  if (action === 'reset') {
+    lockedSet.delete(studentId);
+    unlockedSet.delete(studentId);
+  }
+
+  course.set('lockedStudentIds', Array.from(lockedSet));
+  course.set('unlockedStudentIds', Array.from(unlockedSet));
+
+  await course.save();
+
+  const studentAccess = lockedSet.has(studentId)
+    ? 'locked'
+    : unlockedSet.has(studentId)
+      ? 'unlocked'
+      : 'none';
+
+  sendSuccess(res, {
+    courseId: String(course._id),
+    action,
+    student: {
+      _id: String(student._id),
+      name: student.name,
+      email: student.email,
+    },
+    studentAccess,
+    lockedStudentIds: Array.from(lockedSet),
+    unlockedStudentIds: Array.from(unlockedSet),
+  }, { message: 'Student access override updated successfully.' });
+});
+
 // @desc    Delete a course
 // @route   DELETE /api/courses/:id
 // @access  Private/Instructor/Admin
