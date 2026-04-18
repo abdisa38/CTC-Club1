@@ -103,7 +103,7 @@ export const getCourses = asyncHandler(async (req: AuthRequest, res: Response) =
     .skip(pageSize * (page - 1));
 
   if (!req.user) {
-    courseQuery.select('-students');
+    courseQuery.select('-students -lockedStudentIds -unlockedStudentIds');
   }
 
   const courses = await courseQuery;
