@@ -161,7 +161,15 @@ export function StudentDashboard({ metrics }: { metrics?: any }) {
 
         phases.forEach((course, index) => {
           const phaseNumber = getPhaseNumber(course, index);
-          const isEnrolled = enrolledCourseIds.has(course._id);
+          const isPaid = Number(course.price || 0) > 0;
+          const requiresPayment = Boolean(course.requiresPayment ?? isPaid);
+          const blockedByInstructor = Boolean(course.isLockedForStudent);
+
+          const isEnrolled = blockedByInstructor
+            ? false
+            : requiresPayment
+              ? Boolean(course.hasPaidAccess)
+              : Boolean(course.studentAccessOverride === "unlocked" || enrolledCourseIds.has(course._id));
 
           phaseNumbersPresent.add(phaseNumber);
           phaseAccessByNumber.set(phaseNumber, Boolean(phaseAccessByNumber.get(phaseNumber)) || isEnrolled);
