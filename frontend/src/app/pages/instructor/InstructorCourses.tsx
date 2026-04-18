@@ -279,6 +279,7 @@ export function InstructorCourses() {
             const students = Array.isArray(course.students) ? course.students.length : 0;
             const revenue = Number(course.price || 0) * students;
             const status = course.status || "draft";
+            const accessMode = readCourseAccessMode(course);
             const hasRatings = Number(course.numReviews || 0) > 0;
             const ratingText = hasRatings ? Number(course.rating || 0).toFixed(1) : "N/A";
 
@@ -302,6 +303,15 @@ export function InstructorCourses() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              className="cursor-pointer"
+                              onClick={() => {
+                                void openAccessDialog(course);
+                              }}
+                            >
+                              <Shield className="mr-2 h-4 w-4 text-slate-500" />
+                              Access Controls
+                            </DropdownMenuItem>
                             <DropdownMenuItem asChild>
                               <Link to={`/app/instructor/courses/${course._id}/edit`} className="cursor-pointer">
                                 <Edit className="mr-2 h-4 w-4 text-slate-500" />
@@ -328,6 +338,9 @@ export function InstructorCourses() {
 
                       <div className="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-400 mb-4">
                         <Badge variant={status === "published" ? "success" : status === "archived" ? "destructive" : "secondary"}>{status}</Badge>
+                        <Badge className={`border-0 ${accessMode === "locked" ? "bg-slate-600 text-white" : accessMode === "paid" ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
+                          {accessMode === "locked" ? "Locked" : accessMode === "paid" ? "Paid Lock" : "Open Access"}
+                        </Badge>
                         <span>{course.category}</span>
                       </div>
                       <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2">{course.description}</p>
