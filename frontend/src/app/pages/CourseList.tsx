@@ -5,7 +5,7 @@ import { Button } from "../components/ui/Button";
 import { Card, CardContent } from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
 import { Badge } from "../components/ui/Badge";
-import { Search, Filter, Star, Clock, Users, PlayCircle, PlusCircle, X, Heart, ArrowLeft, ChevronRight } from "lucide-react";
+import { Search, Filter, Star, Clock, Users, PlayCircle, PlusCircle, X, Heart, ArrowLeft, ChevronRight, CheckCircle2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import apiService, { Course as ApiCourse } from "../services/api";
 import { FIELD_PRIORITY, resolveLearningFieldFromCourse } from "../utils/learningFields";
@@ -141,6 +141,9 @@ export function CourseList() {
   });
 
   const activeFilters = [selectedField, selectedCategory, selectedLevel, selectedDuration].filter(Boolean).length;
+  const authNextPath = `${location.pathname}${location.search}`;
+  const loginPath = `/login?next=${encodeURIComponent(authNextPath)}`;
+  const registerPath = `/register?next=${encodeURIComponent(authNextPath)}`;
 
   const groupedCoursesByField = useMemo(() => {
     const grouped = new Map<string, CourseType[]>();
@@ -467,6 +470,9 @@ export function CourseList() {
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             {overviewFields.map((entry, index) => {
               const hasCourses = entry.courses.length > 0;
+              const paidPhases = entry.courses.filter((course) => Number(course.price || 0) > 0).length;
+              const previewCourses = entry.courses.slice(0, 4);
+              const spotlightTitle = previewCourses[0]?.title || "No phases are published yet.";
 
               return (
                 <motion.div
@@ -475,47 +481,68 @@ export function CourseList() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.06 }}
                 >
-                  <Card className="overflow-hidden border-slate-200/70 dark:border-slate-800/70 bg-white/70 dark:bg-slate-900/60 shadow-sm">
-                    <div className="relative h-48 w-full overflow-hidden">
-                      <img
-                        src={entry.coverImage}
-                        alt={entry.field}
-                        className={`h-full w-full object-cover transition-transform duration-300 ${hasCourses ? "hover:scale-105" : "opacity-70"}`}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent" />
-                      <div className="absolute left-4 right-4 bottom-4 flex items-end justify-between gap-2">
+                  <Card className={`h-full overflow-hidden rounded-3xl border ${hasCourses ? "border-cyan-500/35 bg-gradient-to-b from-sky-500/8 via-indigo-500/6 to-transparent" : "border-slate-700/70 bg-slate-900/40"}`}>
+                    <CardContent className="flex h-full flex-col p-6 sm:p-7">
+                      <div className="mb-6 flex items-start justify-between gap-4">
                         <div>
-                          <p className="text-xl font-bold text-white">{entry.field}</p>
-                          <p className="text-xs text-slate-200">{entry.courses.length} {entry.courses.length === 1 ? "phase" : "phases"}</p>
+                          <h3 className="text-2xl font-bold text-white">{entry.field}</h3>
+                          <p className="mt-2 text-sm text-slate-300 leading-relaxed">
+                            {fieldDescriptions[entry.field] || fieldDescriptions["General Technology"]}
+                          </p>
                         </div>
-                        <Badge className={`${hasCourses ? "bg-emerald-600 text-white" : "bg-slate-600 text-white"} border-0`}>
+                        <Badge className={`border-0 font-semibold ${hasCourses ? "bg-cyan-500 text-white" : "bg-slate-700 text-slate-200"}`}>
                           {hasCourses ? "Active" : "Coming Soon"}
                         </Badge>
                       </div>
-                    </div>
 
-                    <CardContent className="p-5 space-y-4">
-                      <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                        {fieldDescriptions[entry.field] || fieldDescriptions["General Technology"]}
-                      </p>
-
-                      <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                        <span>{entry.totalStudents.toLocaleString()} learners</span>
-                        <span>{entry.courses.filter((course) => Number(course.price || 0) > 0).length} paid phases</span>
+                      <div className="mb-5 grid grid-cols-2 gap-3">
+                        <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2.5">
+                          <p className="text-[11px] uppercase tracking-wide text-slate-400">Phases</p>
+                          <p className="mt-0.5 text-lg font-bold text-white">{entry.courses.length}</p>
+                        </div>
+                        <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2.5">
+                          <p className="text-[11px] uppercase tracking-wide text-slate-400">Paid</p>
+                          <p className="mt-0.5 text-lg font-bold text-white">{paidPhases}</p>
+                        </div>
                       </div>
 
-                      {hasCourses ? (
-                        <Button className="w-full bg-gradient-to-r from-indigo-600 to-cyan-500 text-white hover:from-indigo-700 hover:to-cyan-600" asChild>
-                          <Link to={`/courses?field=${encodeURIComponent(entry.field)}`}>
-                            Open {entry.field}
-                            <ChevronRight className="ml-1.5 h-4 w-4" />
-                          </Link>
-                        </Button>
-                      ) : (
-                        <Button className="w-full" variant="outline" disabled>
-                          Coming Soon
-                        </Button>
-                      )}
+                      <div className="space-y-2.5">
+                        {previewCourses.length > 0 ? (
+                          previewCourses.map((course) => (
+                            <div key={course._id} className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
+                              <div className="min-w-0 flex items-center gap-2.5">
+                                <CheckCircle2 className="h-4 w-4 shrink-0 text-cyan-400" />
+                                <p className="truncate text-sm text-slate-100">{course.title}</p>
+                              </div>
+                              <Badge className={`shrink-0 border-0 text-[10px] font-bold ${Number(course.price || 0) > 0 ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
+                                {Number(course.price || 0) > 0 ? `${Number(course.price || 0).toFixed(2)} ETB` : "FREE"}
+                              </Badge>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="rounded-xl border border-dashed border-slate-700/70 px-3 py-3 text-sm text-slate-400">
+                            No phase is available in this field yet.
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="mt-auto pt-5">
+                        {hasCourses ? (
+                          <Button className="w-full h-11 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 text-white hover:from-indigo-700 hover:to-cyan-600" asChild>
+                            <Link to={`/courses?field=${encodeURIComponent(entry.field)}`}>
+                              Open {entry.field}
+                              <ChevronRight className="ml-1.5 h-4 w-4" />
+                            </Link>
+                          </Button>
+                        ) : (
+                          <Button className="w-full h-11 rounded-xl" variant="outline" disabled>
+                            Coming Soon
+                          </Button>
+                        )}
+                        {hasCourses ? (
+                          <p className="mt-3 text-xs text-slate-400">Start with: {spotlightTitle}</p>
+                        ) : null}
+                      </div>
                     </CardContent>
                   </Card>
                 </motion.div>
@@ -550,6 +577,22 @@ export function CourseList() {
               </Button>
             </CardContent>
           </Card>
+
+          {!user ? (
+            <Card className="border-amber-400/25 bg-amber-500/10">
+              <CardContent className="p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <p className="text-sm text-amber-100">Please log in or register to open and continue any phase.</p>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" className="border-amber-300/40 text-amber-100 hover:bg-amber-500/15" asChild>
+                    <Link to={loginPath}>Log in</Link>
+                  </Button>
+                  <Button className="bg-indigo-600 hover:bg-indigo-700 text-white" asChild>
+                    <Link to={registerPath}>Register</Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : null}
 
           {sortedSelectedFieldCourses.length === 0 ? (
             <div className="text-center py-14 px-4 border border-dashed border-slate-300 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-900/40">
@@ -590,12 +633,23 @@ export function CourseList() {
                           <Badge className={`border-0 ${isPaidCourse ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
                             {isPaidCourse ? `${Number(course.price || 0).toFixed(2)} ETB` : "Free"}
                           </Badge>
-                          <Button asChild className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                            <Link to={courseHref}>
-                              Open
-                              <ChevronRight className="ml-1 h-4 w-4" />
-                            </Link>
-                          </Button>
+                          {user ? (
+                            <Button asChild className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                              <Link to={courseHref}>
+                                Open
+                                <ChevronRight className="ml-1 h-4 w-4" />
+                              </Link>
+                            </Button>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <Button variant="outline" className="border-slate-500/40 text-slate-200 hover:bg-slate-700/20" asChild>
+                                <Link to={loginPath}>Log in</Link>
+                              </Button>
+                              <Button className="bg-indigo-600 hover:bg-indigo-700 text-white" asChild>
+                                <Link to={registerPath}>Register</Link>
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </CardContent>

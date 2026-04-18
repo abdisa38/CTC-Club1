@@ -55,6 +55,10 @@ export function PublicLayout() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [location.pathname, location.search]);
+
   useEffect(() => { setMobileOpen(false); }, [location.pathname]);
 
   const TELEGRAM_CHANNEL_URL = "https://t.me/officialCTCclub";

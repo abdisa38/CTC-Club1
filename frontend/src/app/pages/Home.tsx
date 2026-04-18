@@ -188,7 +188,9 @@ export function Home() {
   const TELEGRAM_CHANNEL_URL = "https://t.me/officialCTCclub";
   const showStatsSection = false;
   const showFeatureHighlightsSection = false;
+  const showCourseDiscoverySection = false;
   const showLearningPathsSection = false;
+  const showStudentProjectsSection = false;
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
 
@@ -586,80 +588,81 @@ export function Home() {
         </section>
       ) : null}
 
-      {/* ═══ 4. COURSE DISCOVERY ═══ */}
-      <section className="py-24 lg:py-32 bg-transparent">
-        <div className="max-w-[1200px] mx-auto px-6 lg:px-8">
-          <AnimatedSection>
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-14 gap-6">
-              <div>
-                <Badge className="mb-5 py-1 px-3.5 text-xs font-semibold bg-sky-50 text-sky-700 border-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:border-sky-500/20">
-                  Learning Fields
-                </Badge>
-                <h2 className="home-display text-3xl sm:text-4xl font-extrabold tracking-tight text-white">Browse By Field</h2>
-                <p className="home-copy mt-3 text-base text-slate-300">The four phases are now grouped under Web Development, ready for new fields like Graphics Design, App Development, and Maintenance.</p>
+      {showCourseDiscoverySection ? (
+        <section className="py-24 lg:py-32 bg-transparent">
+          <div className="max-w-[1200px] mx-auto px-6 lg:px-8">
+            <AnimatedSection>
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-14 gap-6">
+                <div>
+                  <Badge className="mb-5 py-1 px-3.5 text-xs font-semibold bg-sky-50 text-sky-700 border-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:border-sky-500/20">
+                    Learning Fields
+                  </Badge>
+                  <h2 className="home-display text-3xl sm:text-4xl font-extrabold tracking-tight text-white">Browse By Field</h2>
+                  <p className="home-copy mt-3 text-base text-slate-300">The four phases are now grouped under Web Development, ready for new fields like Graphics Design, App Development, and Maintenance.</p>
+                </div>
+                <Button className="rounded-xl font-semibold dark:border-white/10 hover:bg-white/10 bg-white/5 border-white/10 text-white" asChild>
+                  <Link to="/courses">View All <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                </Button>
               </div>
-              <Button className="rounded-xl font-semibold dark:border-white/10 hover:bg-white/10 bg-white/5 border-white/10 text-white" asChild>
-                <Link to="/courses">View All <ArrowRight className="ml-2 h-4 w-4" /></Link>
-              </Button>
-            </div>
-          </AnimatedSection>
+            </AnimatedSection>
 
-          {featuredFieldGroups.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-300 dark:border-slate-700">
-              No published course available yet.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-              {featuredFieldGroups.map((group, i) => (
-                <AnimatedSection key={group.field} delay={i * 0.08}>
-                  <PremiumCard className="p-6 h-full">
-                    <div className="flex items-start justify-between gap-3 mb-5">
-                      <div>
-                        <h3 className="text-lg font-bold text-white">{group.field}</h3>
-                        <p className="mt-1 text-sm text-slate-300 leading-relaxed">
-                          {fieldDescriptions[group.field] || "Structured learning field with practical, project-driven lessons."}
-                        </p>
+            {featuredFieldGroups.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-300 dark:border-slate-700">
+                No published course available yet.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                {featuredFieldGroups.map((group, i) => (
+                  <AnimatedSection key={group.field} delay={i * 0.08}>
+                    <PremiumCard className="p-6 h-full">
+                      <div className="flex items-start justify-between gap-3 mb-5">
+                        <div>
+                          <h3 className="text-lg font-bold text-white">{group.field}</h3>
+                          <p className="mt-1 text-sm text-slate-300 leading-relaxed">
+                            {fieldDescriptions[group.field] || "Structured learning field with practical, project-driven lessons."}
+                          </p>
+                        </div>
+                        <Badge className="bg-indigo-600 text-white border-0 font-semibold whitespace-nowrap">
+                          {group.courses.length} {group.courses.length === 1 ? "phase" : "phases"}
+                        </Badge>
                       </div>
-                      <Badge className="bg-indigo-600 text-white border-0 font-semibold whitespace-nowrap">
-                        {group.courses.length} {group.courses.length === 1 ? "phase" : "phases"}
-                      </Badge>
-                    </div>
 
-                    <div className="space-y-2.5">
-                      {group.courses.slice(0, 6).map((course, index) => {
-                        const isPaidCourse = Number(course.price || 0) > 0;
+                      <div className="space-y-2.5">
+                        {group.courses.slice(0, 6).map((course, index) => {
+                          const isPaidCourse = Number(course.price || 0) > 0;
 
-                        return (
-                          <Link
-                            key={course.id}
-                            to={`/courses/${course.id}`}
-                            className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 hover:bg-white/10 transition-colors"
-                          >
-                            <div className="min-w-0">
-                              <p className="text-sm font-semibold text-white truncate">{index + 1}. {course.title}</p>
-                              <p className="text-xs text-slate-400 truncate">{course.instructor}</p>
-                            </div>
-                            <Badge className={`border-0 shrink-0 text-[11px] font-bold ${isPaidCourse ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
-                              {isPaidCourse ? `${Number(course.price || 0).toFixed(2)} ${course.currency || "ETB"}` : "FREE"}
-                            </Badge>
-                          </Link>
-                        );
-                      })}
-                    </div>
+                          return (
+                            <Link
+                              key={course.id}
+                              to={`/courses/${course.id}`}
+                              className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 hover:bg-white/10 transition-colors"
+                            >
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-white truncate">{index + 1}. {course.title}</p>
+                                <p className="text-xs text-slate-400 truncate">{course.instructor}</p>
+                              </div>
+                              <Badge className={`border-0 shrink-0 text-[11px] font-bold ${isPaidCourse ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
+                                {isPaidCourse ? `${Number(course.price || 0).toFixed(2)} ${course.currency || "ETB"}` : "FREE"}
+                              </Badge>
+                            </Link>
+                          );
+                        })}
+                      </div>
 
-                    <Button className="w-full mt-5 rounded-xl font-semibold bg-gradient-to-r from-sky-600 to-cyan-500 hover:from-sky-700 hover:to-cyan-600 text-white" asChild>
-                      <Link to={`/courses?field=${encodeURIComponent(group.field)}`}>
-                        Open {group.field}
-                        <ChevronRight className="ml-1.5 h-4 w-4" />
-                      </Link>
-                    </Button>
-                  </PremiumCard>
-                </AnimatedSection>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
+                      <Button className="w-full mt-5 rounded-xl font-semibold bg-gradient-to-r from-sky-600 to-cyan-500 hover:from-sky-700 hover:to-cyan-600 text-white" asChild>
+                        <Link to={`/courses?field=${encodeURIComponent(group.field)}`}>
+                          Open {group.field}
+                          <ChevronRight className="ml-1.5 h-4 w-4" />
+                        </Link>
+                      </Button>
+                    </PremiumCard>
+                  </AnimatedSection>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      ) : null}
 
       {showLearningPathsSection ? (
         <section className="py-24 lg:py-32 bg-transparent">
@@ -789,60 +792,61 @@ export function Home() {
         </div>
       </section>
 
-      {/* ═══ 8. STUDENT PROJECTS ═══ */}
-      <section className="py-24 lg:py-32 bg-transparent">
-        <div className="max-w-[1200px] mx-auto px-6 lg:px-8">
-          <AnimatedSection>
-            <SectionHeader
-              badge="Real Projects"
-              badgeColor="emerald"
-              title="Build Real Projects,"
-              highlight="Not Just Theory"
-              description="Our students build production-ready projects that impress employers."
-            />
-          </AnimatedSection>
+      {showStudentProjectsSection ? (
+        <section className="py-24 lg:py-32 bg-transparent">
+          <div className="max-w-[1200px] mx-auto px-6 lg:px-8">
+            <AnimatedSection>
+              <SectionHeader
+                badge="Real Projects"
+                badgeColor="emerald"
+                title="Build Real Projects,"
+                highlight="Not Just Theory"
+                description="Our students build production-ready projects that impress employers."
+              />
+            </AnimatedSection>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-5xl mx-auto">
-            {projectShowcase.map((p, i) => (
-              <AnimatedSection key={p.id} delay={i * 0.08}>
-                <PremiumCard className="overflow-hidden group">
-                  <div className="aspect-video overflow-hidden">
-                    <ImageWithFallback src={p.image} alt={p.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                  </div>
-                  <div className="p-5">
-                    <h3 className="text-[15px] font-semibold text-white mb-1">{p.title}</h3>
-                    <p className="text-[13px] text-slate-300 mb-4">{p.tech}</p>
-                    <div className="flex items-center justify-between mb-4">
-                      <Badge className={`text-[11px] font-bold border-0 shadow-sm ${p.price > 0 ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
-                        {p.price > 0 ? `PAID ${p.price.toFixed(2)} ${p.currency}` : "FREE"}
-                      </Badge>
-                      <div className="flex items-center gap-1 text-[12px] text-slate-300">
-                        <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                        <span className="font-semibold text-slate-700 dark:text-slate-300">
-                          {p.numReviews > 0 ? p.rating.toFixed(1) : "N/A"}
-                        </span>
-                        <span>({p.numReviews})</span>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-5xl mx-auto">
+              {projectShowcase.map((p, i) => (
+                <AnimatedSection key={p.id} delay={i * 0.08}>
+                  <PremiumCard className="overflow-hidden group">
+                    <div className="aspect-video overflow-hidden">
+                      <ImageWithFallback src={p.image} alt={p.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                    </div>
+                    <div className="p-5">
+                      <h3 className="text-[15px] font-semibold text-white mb-1">{p.title}</h3>
+                      <p className="text-[13px] text-slate-300 mb-4">{p.tech}</p>
+                      <div className="flex items-center justify-between mb-4">
+                        <Badge className={`text-[11px] font-bold border-0 shadow-sm ${p.price > 0 ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
+                          {p.price > 0 ? `PAID ${p.price.toFixed(2)} ${p.currency}` : "FREE"}
+                        </Badge>
+                        <div className="flex items-center gap-1 text-[12px] text-slate-300">
+                          <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                          <span className="font-semibold text-slate-700 dark:text-slate-300">
+                            {p.numReviews > 0 ? p.rating.toFixed(1) : "N/A"}
+                          </span>
+                          <span>({p.numReviews})</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2.5">
+                        <Button size="sm" className="text-[11px] flex-1 h-8 rounded-lg border-white/10 bg-white/5 text-white hover:bg-white/10" asChild>
+                          <Link to={p.href}>View Course</Link>
+                        </Button>
+                        <Button
+                          size="sm"
+                          className={`text-[11px] flex-1 h-8 rounded-lg font-bold ${p.price > 0 ? "bg-gradient-to-r from-rose-600 to-orange-500 hover:from-rose-700 hover:to-orange-600 text-white" : "bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white"}`}
+                          asChild
+                        >
+                          <Link to={p.href}>{p.price > 0 ? `Pay ${p.price.toFixed(2)} ${p.currency}` : "Enroll Free"}</Link>
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex gap-2.5">
-                      <Button size="sm" className="text-[11px] flex-1 h-8 rounded-lg border-white/10 bg-white/5 text-white hover:bg-white/10" asChild>
-                        <Link to={p.href}>View Course</Link>
-                      </Button>
-                      <Button
-                        size="sm"
-                        className={`text-[11px] flex-1 h-8 rounded-lg font-bold ${p.price > 0 ? "bg-gradient-to-r from-rose-600 to-orange-500 hover:from-rose-700 hover:to-orange-600 text-white" : "bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white"}`}
-                        asChild
-                      >
-                        <Link to={p.href}>{p.price > 0 ? `Pay ${p.price.toFixed(2)} ${p.currency}` : "Enroll Free"}</Link>
-                      </Button>
-                    </div>
-                  </div>
-                </PremiumCard>
-              </AnimatedSection>
-            ))}
+                  </PremiumCard>
+                </AnimatedSection>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
       {/* ═══ 9. COMMUNITY ═══ */}
       <section className="py-24 lg:py-32 relative overflow-hidden bg-gradient-to-br from-slate-900 via-sky-950 to-emerald-950">
