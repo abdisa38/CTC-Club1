@@ -35,8 +35,10 @@ export function CourseList() {
   const { role, user } = useAuth();
   const isAdmin = role === 'admin';
   const isInstructor = role === 'instructor' || isAdmin;
+  const isAppCatalogRoute = location.pathname.startsWith("/app/");
+  const catalogBasePath = isAppCatalogRoute ? "/app/courses" : "/courses";
   const queryField = new URLSearchParams(location.search).get("field")?.trim() || "";
-  const courseDetailBasePath = user ? "/app/courses" : "/courses";
+  const courseDetailBasePath = catalogBasePath;
 
   const fieldDescriptions: Record<string, string> = {
     "Web Development": "All web phases grouped together in one learning field.",
@@ -143,7 +145,6 @@ export function CourseList() {
   const activeFilters = [selectedField, selectedCategory, selectedLevel, selectedDuration].filter(Boolean).length;
   const authNextPath = `${location.pathname}${location.search}`;
   const loginPath = `/login?next=${encodeURIComponent(authNextPath)}`;
-  const registerPath = `/register?next=${encodeURIComponent(authNextPath)}`;
 
   const groupedCoursesByField = useMemo(() => {
     const grouped = new Map<string, CourseType[]>();
@@ -224,7 +225,7 @@ export function CourseList() {
 
     navigate(
       {
-        pathname: "/courses",
+        pathname: catalogBasePath,
         search: nextSearch ? `?${nextSearch}` : "",
       },
       { replace: false }
@@ -347,7 +348,7 @@ export function CourseList() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className={`mx-auto w-full space-y-6 ${isAppCatalogRoute ? "max-w-[1160px]" : "max-w-[1080px] px-4 pb-10 pt-7 sm:px-6 lg:px-8"}`}>
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
@@ -464,15 +465,14 @@ export function CourseList() {
       ) : null}
 
       {isFieldOverviewMode ? (
-        <div className="space-y-5">
+        <div className={`space-y-5 ${isAppCatalogRoute ? "" : "mx-auto max-w-4xl"}`}>
           <p className="text-sm text-slate-500">Choose a field to open all its phases at once.</p>
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div className={`grid grid-cols-1 gap-5 ${isAppCatalogRoute ? "xl:grid-cols-2" : ""}`}>
             {overviewFields.map((entry, index) => {
               const hasCourses = entry.courses.length > 0;
               const paidPhases = entry.courses.filter((course) => Number(course.price || 0) > 0).length;
               const previewCourses = entry.courses.slice(0, 4);
-              const spotlightTitle = previewCourses[0]?.title || "No phases are published yet.";
 
               return (
                 <motion.div
@@ -481,55 +481,75 @@ export function CourseList() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.06 }}
                 >
-                  <Card className={`h-full overflow-hidden rounded-3xl border ${hasCourses ? "border-cyan-500/35 bg-gradient-to-b from-sky-500/8 via-indigo-500/6 to-transparent" : "border-slate-700/70 bg-slate-900/40"}`}>
-                    <CardContent className="flex h-full flex-col p-6 sm:p-7">
-                      <div className="mb-6 flex items-start justify-between gap-4">
+                  <Card className={isAppCatalogRoute
+                    ? `h-full overflow-hidden rounded-2xl border shadow-sm ${hasCourses ? "border-indigo-200 bg-white" : "border-slate-200 bg-slate-50"}`
+                    : `h-full overflow-hidden rounded-3xl border ${hasCourses ? "border-cyan-500/35 bg-gradient-to-b from-sky-500/8 via-indigo-500/6 to-transparent" : "border-slate-700/70 bg-slate-900/40"}`
+                  }>
+                    <CardContent className={`flex h-full flex-col ${isAppCatalogRoute ? "p-5 sm:p-6" : "p-5 sm:p-6"}`}>
+                      <div className="mb-5 flex items-start justify-between gap-4">
                         <div>
-                          <h3 className="text-2xl font-bold text-white">{entry.field}</h3>
-                          <p className="mt-2 text-sm text-slate-300 leading-relaxed">
+                          <h3 className={isAppCatalogRoute ? "text-[32px] font-extrabold text-slate-900 tracking-tight" : "text-2xl font-bold text-white"}>{entry.field}</h3>
+                          <p className={isAppCatalogRoute ? "mt-2 text-sm text-slate-600 leading-relaxed" : "mt-2 text-sm text-slate-300 leading-relaxed"}>
                             {fieldDescriptions[entry.field] || fieldDescriptions["General Technology"]}
                           </p>
                         </div>
-                        <Badge className={`border-0 font-semibold ${hasCourses ? "bg-cyan-500 text-white" : "bg-slate-700 text-slate-200"}`}>
+                        <Badge className={isAppCatalogRoute
+                          ? `${hasCourses ? "bg-emerald-600 text-white" : "bg-slate-500 text-white"} border-0 font-semibold`
+                          : `${hasCourses ? "bg-cyan-500 text-white" : "bg-slate-700 text-slate-200"} border-0 font-semibold`
+                        }>
                           {hasCourses ? "Active" : "Coming Soon"}
                         </Badge>
                       </div>
 
-                      <div className="mb-5 grid grid-cols-2 gap-3">
-                        <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2.5">
-                          <p className="text-[11px] uppercase tracking-wide text-slate-400">Phases</p>
-                          <p className="mt-0.5 text-lg font-bold text-white">{entry.courses.length}</p>
-                        </div>
-                        <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2.5">
-                          <p className="text-[11px] uppercase tracking-wide text-slate-400">Paid</p>
-                          <p className="mt-0.5 text-lg font-bold text-white">{paidPhases}</p>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2.5">
-                        {previewCourses.length > 0 ? (
-                          previewCourses.map((course) => (
-                            <div key={course._id} className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
-                              <div className="min-w-0 flex items-center gap-2.5">
-                                <CheckCircle2 className="h-4 w-4 shrink-0 text-cyan-400" />
-                                <p className="truncate text-sm text-slate-100">{course.title}</p>
-                              </div>
-                              <Badge className={`shrink-0 border-0 text-[10px] font-bold ${Number(course.price || 0) > 0 ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
-                                {Number(course.price || 0) > 0 ? `${Number(course.price || 0).toFixed(2)} ETB` : "FREE"}
-                              </Badge>
+                      {hasCourses ? (
+                        <>
+                          <div className={`mb-5 grid grid-cols-2 gap-3 ${isAppCatalogRoute ? "" : ""}`}>
+                            <div className={isAppCatalogRoute ? "rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5" : "rounded-xl border border-white/10 bg-white/5 px-3 py-2.5"}>
+                              <p className={isAppCatalogRoute ? "text-[11px] uppercase tracking-wide text-slate-500" : "text-[11px] uppercase tracking-wide text-slate-400"}>Phases</p>
+                              <p className={isAppCatalogRoute ? "mt-0.5 text-lg font-bold text-slate-900" : "mt-0.5 text-lg font-bold text-white"}>{entry.courses.length}</p>
                             </div>
-                          ))
-                        ) : (
-                          <div className="rounded-xl border border-dashed border-slate-700/70 px-3 py-3 text-sm text-slate-400">
-                            No phase is available in this field yet.
+                            <div className={isAppCatalogRoute ? "rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5" : "rounded-xl border border-white/10 bg-white/5 px-3 py-2.5"}>
+                              <p className={isAppCatalogRoute ? "text-[11px] uppercase tracking-wide text-slate-500" : "text-[11px] uppercase tracking-wide text-slate-400"}>Paid</p>
+                              <p className={isAppCatalogRoute ? "mt-0.5 text-lg font-bold text-slate-900" : "mt-0.5 text-lg font-bold text-white"}>{paidPhases}</p>
+                            </div>
                           </div>
-                        )}
-                      </div>
+
+                          <div className="space-y-2.5">
+                            {previewCourses.map((course) => (
+                              <div key={course._id} className={isAppCatalogRoute
+                                ? "flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5"
+                                : "flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5"
+                              }>
+                                <div className="min-w-0 flex items-center gap-2.5">
+                                  <CheckCircle2 className={isAppCatalogRoute ? "h-4 w-4 shrink-0 text-indigo-500" : "h-4 w-4 shrink-0 text-cyan-400"} />
+                                  <p className={isAppCatalogRoute ? "truncate text-sm text-slate-800" : "truncate text-sm text-slate-100"}>{course.title}</p>
+                                </div>
+                                <Badge className={`shrink-0 border-0 text-[10px] font-bold ${Number(course.price || 0) > 0 ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
+                                  {Number(course.price || 0) > 0 ? `${Number(course.price || 0).toFixed(2)} ETB` : "FREE"}
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      ) : (
+                        <div className={isAppCatalogRoute
+                          ? "rounded-2xl border border-dashed border-indigo-200 bg-gradient-to-r from-indigo-50 to-cyan-50 p-5"
+                          : "rounded-2xl border border-dashed border-indigo-400/40 bg-gradient-to-r from-indigo-500/15 to-cyan-500/10 p-5"
+                        }>
+                          <p className={isAppCatalogRoute ? "text-sm font-semibold text-indigo-700" : "text-sm font-semibold text-indigo-200"}>New track is coming soon</p>
+                          <p className={isAppCatalogRoute ? "mt-1 text-sm text-slate-600" : "mt-1 text-sm text-slate-300"}>
+                            We are preparing complete lessons, projects, and mentor support for this field.
+                          </p>
+                        </div>
+                      )}
 
                       <div className="mt-auto pt-5">
                         {hasCourses ? (
-                          <Button className="w-full h-11 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 text-white hover:from-indigo-700 hover:to-cyan-600" asChild>
-                            <Link to={`/courses?field=${encodeURIComponent(entry.field)}`}>
+                          <Button className={isAppCatalogRoute
+                            ? "w-full h-11 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700"
+                            : "w-full h-11 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 text-white hover:from-indigo-700 hover:to-cyan-600"
+                          } asChild>
+                            <Link to={`${catalogBasePath}?field=${encodeURIComponent(entry.field)}`}>
                               Open {entry.field}
                               <ChevronRight className="ml-1.5 h-4 w-4" />
                             </Link>
@@ -539,9 +559,6 @@ export function CourseList() {
                             Coming Soon
                           </Button>
                         )}
-                        {hasCourses ? (
-                          <p className="mt-3 text-xs text-slate-400">Start with: {spotlightTitle}</p>
-                        ) : null}
                       </div>
                     </CardContent>
                   </Card>
@@ -551,8 +568,8 @@ export function CourseList() {
           </div>
         </div>
       ) : isFieldPhaseMode ? (
-        <div className="space-y-4">
-          <Card className="border-slate-200/70 dark:border-slate-800/70 bg-white/70 dark:bg-slate-900/60">
+        <div className={`mx-auto w-full max-w-5xl space-y-4 ${isAppCatalogRoute ? "" : "px-0"}`}>
+          <Card className={isAppCatalogRoute ? "border-slate-200 bg-white rounded-2xl shadow-sm" : "border-slate-200/70 dark:border-slate-800/70 bg-white/70 dark:bg-slate-900/60 rounded-2xl"}>
             <CardContent className="p-5 md:p-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
                 <p className="text-xs uppercase tracking-wide text-slate-500">Learning Field</p>
@@ -579,17 +596,9 @@ export function CourseList() {
           </Card>
 
           {!user ? (
-            <Card className="border-amber-400/25 bg-amber-500/10">
-              <CardContent className="p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <p className="text-sm text-amber-100">Please log in or register to open and continue any phase.</p>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" className="border-amber-300/40 text-amber-100 hover:bg-amber-500/15" asChild>
-                    <Link to={loginPath}>Log in</Link>
-                  </Button>
-                  <Button className="bg-indigo-600 hover:bg-indigo-700 text-white" asChild>
-                    <Link to={registerPath}>Register</Link>
-                  </Button>
-                </div>
+            <Card className="border-amber-400/25 bg-amber-500/10 rounded-2xl">
+              <CardContent className="p-4">
+                <p className="text-sm text-amber-100">Please log in to open and continue any phase.</p>
               </CardContent>
             </Card>
           ) : null}
@@ -607,8 +616,8 @@ export function CourseList() {
                 const isPaidCourse = Number(course.price || 0) > 0;
 
                 return (
-                  <Card key={course._id} className="border-slate-200/70 dark:border-slate-800/70 bg-white/70 dark:bg-slate-900/60">
-                    <CardContent className="p-4 md:p-5">
+                  <Card key={course._id} className={isAppCatalogRoute ? "border-slate-200 bg-white rounded-2xl shadow-sm" : "border-slate-200/70 dark:border-slate-800/70 bg-white/70 dark:bg-slate-900/60 rounded-2xl"}>
+                    <CardContent className="p-4 md:p-4.5">
                       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                         <div className="flex min-w-0 items-start gap-3">
                           <img
@@ -633,23 +642,12 @@ export function CourseList() {
                           <Badge className={`border-0 ${isPaidCourse ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
                             {isPaidCourse ? `${Number(course.price || 0).toFixed(2)} ETB` : "Free"}
                           </Badge>
-                          {user ? (
-                            <Button asChild className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                              <Link to={courseHref}>
-                                Open
-                                <ChevronRight className="ml-1 h-4 w-4" />
-                              </Link>
-                            </Button>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <Button variant="outline" className="border-slate-500/40 text-slate-200 hover:bg-slate-700/20" asChild>
-                                <Link to={loginPath}>Log in</Link>
-                              </Button>
-                              <Button className="bg-indigo-600 hover:bg-indigo-700 text-white" asChild>
-                                <Link to={registerPath}>Register</Link>
-                              </Button>
-                            </div>
-                          )}
+                          <Button asChild className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                            <Link to={user ? courseHref : loginPath}>
+                              Open
+                              <ChevronRight className="ml-1 h-4 w-4" />
+                            </Link>
+                          </Button>
                         </div>
                       </div>
                     </CardContent>
