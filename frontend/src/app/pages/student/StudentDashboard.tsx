@@ -260,7 +260,7 @@ export function StudentDashboard({ metrics }: { metrics?: any }) {
           {fieldProgressCards.length === 0 ? (
             <EmptyState text="No published fields yet." />
           ) : (
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-2">
               {fieldProgressCards.map((fieldCard) => (
                 <Link
                   key={fieldCard.field}

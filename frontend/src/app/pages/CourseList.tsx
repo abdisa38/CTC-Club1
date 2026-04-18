@@ -576,7 +576,7 @@ export function CourseList() {
       ) : null}
 
       {isFieldOverviewMode ? (
-        <div className={`space-y-5 ${isAppCatalogRoute ? "" : "mx-auto max-w-4xl"}`}>
+        <div className="mx-auto max-w-4xl space-y-5">
           <p className="text-sm text-slate-500">Choose a field to open all its phases at once.</p>
 
           <div className="grid grid-cols-1 gap-5">
@@ -817,9 +817,15 @@ export function CourseList() {
                             {actionLabel}
                             {!phase.orderLocked ? <ChevronRight className="ml-1.5 h-4 w-4" /> : null}
                           </Button>
-                          <Button variant="outline" className="w-full" asChild>
-                            <Link to={phase.courseHref}>Preview Details</Link>
-                          </Button>
+                          {role === "student" && (phase.orderLocked || phase.paymentLocked) ? (
+                            <Button variant="outline" className="w-full" disabled>
+                              Preview Locked
+                            </Button>
+                          ) : (
+                            <Button variant="outline" className="w-full" asChild>
+                              <Link to={phase.courseHref}>Preview Details</Link>
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </CardContent>
@@ -846,6 +852,7 @@ export function CourseList() {
               const hasRatings = Number(course.numReviews || 0) > 0;
               const ratingLabel = hasRatings ? Number(course.rating || 0).toFixed(1) : "N/A";
               const isPaidCourse = Number(course.price || 0) > 0;
+              const hasCatalogAccess = role === "student" ? hasStudentCourseAccess(course) : true;
               const learningField = resolveLearningFieldFromCourse({
                 title: course.title,
                 category: course.category,
@@ -868,9 +875,20 @@ export function CourseList() {
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <Button size="icon" className="rounded-full h-12 w-12 bg-indigo-600 hover:bg-indigo-700" asChild>
-                          <Link to={courseHref}><PlayCircle className="h-6 w-6 text-white" /></Link>
-                        </Button>
+                        {hasCatalogAccess ? (
+                          <Button size="icon" className="rounded-full h-12 w-12 bg-indigo-600 hover:bg-indigo-700" asChild>
+                            <Link to={courseHref}><PlayCircle className="h-6 w-6 text-white" /></Link>
+                          </Button>
+                        ) : (
+                          <Button
+                            size="icon"
+                            className="rounded-full h-12 w-12 bg-rose-600 hover:bg-rose-700"
+                            onClick={() => { void handleEnroll(course); }}
+                            disabled={enrollingId === course._id}
+                          >
+                            <Lock className="h-5 w-5 text-white" />
+                          </Button>
+                        )}
                       </div>
                       <div className="absolute top-3 left-3 flex flex-col gap-2">
                         <Badge className="bg-white/90 text-slate-900 hover:bg-white">{learningField}</Badge>
@@ -886,7 +904,7 @@ export function CourseList() {
                       >
                         <Heart className={`h-4 w-4 ${favorites.has(course._id) ? "text-red-500 fill-red-500" : "text-slate-600"}`} />
                       </button>
-                      {isUserEnrolled(course) && (
+                      {hasCatalogAccess && (
                         <Badge className="absolute bottom-3 left-3 bg-emerald-600 text-white hover:bg-emerald-600">Enrolled</Badge>
                       )}
                     </div>
@@ -899,11 +917,17 @@ export function CourseList() {
                         <span className="text-slate-500">({Array.isArray(course.students) ? course.students.length : 0})</span>
                       </div>
 
-                      <Link to={courseHref} className="block mb-2">
-                        <h3 className="font-bold text-lg leading-tight text-slate-900 dark:text-white hover:text-indigo-600 transition-colors line-clamp-2">
+                      {hasCatalogAccess ? (
+                        <Link to={courseHref} className="block mb-2">
+                          <h3 className="font-bold text-lg leading-tight text-slate-900 dark:text-white hover:text-indigo-600 transition-colors line-clamp-2">
+                            {course.title}
+                          </h3>
+                        </Link>
+                      ) : (
+                        <h3 className="mb-2 font-bold text-lg leading-tight text-slate-900 dark:text-white line-clamp-2">
                           {course.title}
                         </h3>
-                      </Link>
+                      )}
 
                       <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{course.instructor?.name || 'Unknown Instructor'}</p>
 
@@ -928,13 +952,13 @@ export function CourseList() {
                           <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> 10h</span>
                           <span className="flex items-center gap-1"><Users className="h-4 w-4" /> All Levels</span>
                         </div>
-                        {!isUserEnrolled(course) ? (
+                        {!hasCatalogAccess ? (
                           <Button
                             size="sm"
                             className={`h-9 px-4 text-[12px] font-extrabold rounded-xl border-0 shadow-md ${isPaidCourse
                               ? "bg-gradient-to-r from-rose-600 to-orange-500 hover:from-rose-700 hover:to-orange-600 text-white shadow-rose-500/30"
                               : "bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white shadow-emerald-500/30"}`}
-                            onClick={() => handleEnroll(course)}
+                            onClick={() => { void handleEnroll(course); }}
                             disabled={enrollingId === course._id}
                           >
                             {enrollingId === course._id
