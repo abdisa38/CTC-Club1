@@ -5,9 +5,45 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Ca
 import { Progress } from "../../components/ui/Progress";
 import { Badge } from "../../components/ui/Badge";
 import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/Avatar";
-import { Loader2, PlayCircle, Clock, Bell, Trophy, Sparkles, GraduationCap, BookOpen, ChevronRight } from "lucide-react";
+import { Loader2, PlayCircle, Clock, Bell, Trophy, Sparkles, GraduationCap, BookOpen, ChevronRight, Lock } from "lucide-react";
 import apiService, { Course, LeaderboardEntry } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
+import { FIELD_PRIORITY, resolveLearningFieldFromCourse } from "../../utils/learningFields";
+
+const PHASE_NUMBER_REGEX = /phase\s*(\d+)/i;
+
+const getPhaseNumber = (course: Course, fallbackIndex: number) => {
+  const match = String(course.title || "").match(PHASE_NUMBER_REGEX);
+  if (match?.[1]) {
+    const parsed = Number(match[1]);
+    if (Number.isFinite(parsed) && parsed > 0) {
+      return parsed;
+    }
+  }
+
+  return fallbackIndex + 1;
+};
+
+const stripPhasePrefix = (title: string) =>
+  String(title || "")
+    .replace(/^phase\s*\d+\s*[:\-]?\s*/i, "")
+    .trim();
+
+const sortCoursesByPhaseOrder = (items: Course[]) => {
+  return [...items].sort((left, right) => {
+    const leftMatch = String(left.title || "").match(PHASE_NUMBER_REGEX);
+    const rightMatch = String(right.title || "").match(PHASE_NUMBER_REGEX);
+
+    const leftPhase = leftMatch?.[1] ? Number(leftMatch[1]) : Number.POSITIVE_INFINITY;
+    const rightPhase = rightMatch?.[1] ? Number(rightMatch[1]) : Number.POSITIVE_INFINITY;
+
+    if (leftPhase !== rightPhase) {
+      return leftPhase - rightPhase;
+    }
+
+    return String(left.title || "").localeCompare(String(right.title || ""));
+  });
+};
 
 export function StudentDashboard({ metrics }: { metrics?: any }) {
   const { user } = useAuth();
