@@ -343,8 +343,8 @@ export function CourseList() {
     );
   };
 
-  const handleEnroll = async (course: CourseType) => {
-    if (!user) return; // need to be logged in
+  const handleEnroll = async (course: CourseType): Promise<"enrolled" | "redirected" | "noop" | "error"> => {
+    if (!user) return "noop"; // need to be logged in
     setActionError("");
 
     const id = course._id;
@@ -357,7 +357,7 @@ export function CourseList() {
 
         if (init.isEnrolled || init.alreadyEnrolled || init.requiresPayment === false) {
           markCourseEnrolledLocally(id);
-          return;
+          return "enrolled";
         }
 
         if (!init.checkoutUrl) {
@@ -365,17 +365,78 @@ export function CourseList() {
         }
 
         window.location.href = init.checkoutUrl;
-        return;
+        return "redirected";
       }
 
       await apiService.enrollCourse(id);
       markCourseEnrolledLocally(id);
+      return "enrolled";
     } catch (error) {
       setActionError(extractErrorMessage(error, "Failed to start enrollment/checkout."));
       console.error("Failed to enroll:", error);
+      return "error";
     } finally {
       setEnrollingId(null);
     }
+  };
+
+  const phaseCards = useMemo((): PhaseCard[] => {
+    if (!isFieldPhaseMode) {
+      return [];
+    }
+
+    return sortedSelectedFieldCourses.map((course, index, orderedCourses) => {
+      const phaseNumber = getPhaseNumber(course, index);
+      const cleanTitle = stripPhasePrefix(String(course.title || ""));
+      const heading = cleanTitle ? `Phase ${phaseNumber}: ${cleanTitle}` : `Phase ${phaseNumber}`;
+      const summary = String(course.description || "").trim() || "Open this phase to access lessons, projects, quizzes, and resources.";
+
+      const isPaidCourse = Number(course.price || 0) > 0;
+      const isEnrolled = isUserEnrolled(course);
+      const previousCourse = index > 0 ? orderedCourses[index - 1] : null;
+      const previousEnrolled = previousCourse ? isUserEnrolled(previousCourse) : true;
+
+      const orderLocked = role === "student" && index > 0 && !previousEnrolled;
+      const paymentLocked = role === "student" && isPaidCourse && !isEnrolled;
+
+      return {
+        course,
+        courseHref: `${courseDetailBasePath}/${course._id}`,
+        phaseNumber,
+        heading,
+        summary,
+        isPaidCourse,
+        isEnrolled,
+        orderLocked,
+        paymentLocked,
+      };
+    });
+  }, [isFieldPhaseMode, sortedSelectedFieldCourses, role, user?._id, courseDetailBasePath]);
+
+  const handlePhaseAction = async (phase: PhaseCard) => {
+    if (!user) {
+      navigate(loginPath);
+      return;
+    }
+
+    if (phase.orderLocked) {
+      return;
+    }
+
+    if (phase.paymentLocked) {
+      await handleEnroll(phase.course);
+      return;
+    }
+
+    if (role === "student" && !phase.isEnrolled) {
+      const result = await handleEnroll(phase.course);
+      if (result === "enrolled") {
+        navigate(phase.courseHref);
+      }
+      return;
+    }
+
+    navigate(phase.courseHref);
   };
 
   if (isLoading) {
