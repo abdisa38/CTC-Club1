@@ -5,6 +5,7 @@ import Course from '../models/courseModel';
 import CourseReview from '../models/courseReviewModel';
 import PaymentTransaction from '../models/paymentTransactionModel';
 import User from '../models/userModel';
+import { evaluateStudentCourseAccess } from '../utils/courseAccess';
 import { sendSuccess } from '../utils/apiResponse';
 
 const hasSuccessfulCoursePayment = async (userId: string, courseId: string) => {
@@ -18,6 +19,28 @@ const hasSuccessfulCoursePayment = async (userId: string, courseId: string) => {
     .lean();
 
   return Boolean(transaction);
+};
+
+const DEFAULT_PAID_PHASE_PRICE = (() => {
+  const value = Number(process.env.PREMIUM_PRICE_ETB || 200);
+  if (!Number.isFinite(value) || value <= 0) {
+    return 200;
+  }
+
+  return Number(value.toFixed(2));
+})();
+
+const ensureCourseManagePermission = (course: any, user: AuthRequest['user']) => {
+  if (!user) {
+    throw new Error('Not authorized');
+  }
+
+  const isOwner = String(course.instructor) === String(user._id);
+  const isAdmin = user.role === 'admin';
+
+  if (!isOwner && !isAdmin) {
+    throw new Error('You are not authorized to manage this course');
+  }
 };
 
 // @desc    Create a course
