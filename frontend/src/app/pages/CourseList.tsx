@@ -617,7 +617,7 @@ export function CourseList() {
 
                 return (
                   <Card key={course._id} className={isAppCatalogRoute ? "border-slate-200 bg-white rounded-2xl shadow-sm" : "border-slate-200/70 dark:border-slate-800/70 bg-white/70 dark:bg-slate-900/60 rounded-2xl"}>
-                    <CardContent className="p-4 md:p-4.5">
+                    <CardContent className="p-4 md:p-5">
                       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                         <div className="flex min-w-0 items-start gap-3">
                           <img
