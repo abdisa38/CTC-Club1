@@ -578,13 +578,13 @@ export function CourseList() {
                   transition={{ delay: index * 0.06 }}
                 >
                   <Card className={isAppCatalogRoute
-                    ? `h-full overflow-hidden rounded-2xl border shadow-sm ${hasCourses ? "border-indigo-200 bg-white" : "border-slate-200 bg-slate-50"}`
+                    ? `h-full overflow-hidden rounded-xl border shadow-sm ${hasCourses ? "border-indigo-200 bg-white" : "border-slate-200 bg-slate-50"}`
                     : `h-full overflow-hidden rounded-3xl border ${hasCourses ? "border-cyan-500/35 bg-gradient-to-b from-sky-500/8 via-indigo-500/6 to-transparent" : "border-slate-700/70 bg-slate-900/40"}`
                   }>
-                    <CardContent className={`flex h-full flex-col ${isAppCatalogRoute ? "p-5 sm:p-6" : "p-5 sm:p-6"}`}>
-                      <div className="mb-5 flex items-start justify-between gap-4">
+                    <CardContent className={`flex h-full flex-col ${isAppCatalogRoute ? "p-4 sm:p-5" : "p-5 sm:p-6"}`}>
+                      <div className="mb-4 flex items-start justify-between gap-4">
                         <div>
-                          <h3 className={isAppCatalogRoute ? "text-[32px] font-extrabold text-slate-900 tracking-tight" : "text-2xl font-bold text-white"}>{entry.field}</h3>
+                          <h3 className={isAppCatalogRoute ? "text-2xl font-extrabold text-slate-900 tracking-tight" : "text-2xl font-bold text-white"}>{entry.field}</h3>
                           <p className={isAppCatalogRoute ? "mt-2 text-sm text-slate-600 leading-relaxed" : "mt-2 text-sm text-slate-300 leading-relaxed"}>
                             {fieldDescriptions[entry.field] || fieldDescriptions["General Technology"]}
                           </p>
@@ -599,7 +599,7 @@ export function CourseList() {
 
                       {hasCourses ? (
                         <>
-                          <div className={`mb-5 grid grid-cols-2 gap-3 ${isAppCatalogRoute ? "" : ""}`}>
+                          <div className={`mb-4 grid grid-cols-2 gap-3 ${isAppCatalogRoute ? "" : ""}`}>
                             <div className={isAppCatalogRoute ? "rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5" : "rounded-xl border border-white/10 bg-white/5 px-3 py-2.5"}>
                               <p className={isAppCatalogRoute ? "text-[11px] uppercase tracking-wide text-slate-500" : "text-[11px] uppercase tracking-wide text-slate-400"}>Phases</p>
                               <p className={isAppCatalogRoute ? "mt-0.5 text-lg font-bold text-slate-900" : "mt-0.5 text-lg font-bold text-white"}>{entry.courses.length}</p>
@@ -610,21 +610,27 @@ export function CourseList() {
                             </div>
                           </div>
 
-                          <div className="space-y-2.5">
-                            {previewCourses.map((course) => (
+                          <div className="space-y-2">
+                            {previewCourses.map((course, previewIndex) => {
+                              const phaseNumber = getPhaseNumber(course, previewIndex);
+                              const cleanTitle = stripPhasePrefix(String(course.title || ""));
+                              const phaseHeading = cleanTitle ? `Phase ${phaseNumber}: ${cleanTitle}` : `Phase ${phaseNumber}`;
+
+                              return (
                               <div key={course._id} className={isAppCatalogRoute
                                 ? "flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5"
                                 : "flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5"
                               }>
                                 <div className="min-w-0 flex items-center gap-2.5">
                                   <CheckCircle2 className={isAppCatalogRoute ? "h-4 w-4 shrink-0 text-indigo-500" : "h-4 w-4 shrink-0 text-cyan-400"} />
-                                  <p className={isAppCatalogRoute ? "truncate text-sm text-slate-800" : "truncate text-sm text-slate-100"}>{course.title}</p>
+                                  <p className={isAppCatalogRoute ? "truncate text-sm text-slate-800" : "truncate text-sm text-slate-100"}>{phaseHeading}</p>
                                 </div>
                                 <Badge className={`shrink-0 border-0 text-[10px] font-bold ${Number(course.price || 0) > 0 ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
                                   {Number(course.price || 0) > 0 ? `${Number(course.price || 0).toFixed(2)} ETB` : "FREE"}
                                 </Badge>
                               </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </>
                       ) : (
@@ -639,10 +645,10 @@ export function CourseList() {
                         </div>
                       )}
 
-                      <div className="mt-auto pt-5">
+                      <div className="mt-auto pt-4">
                         {hasCourses ? (
                           <Button className={isAppCatalogRoute
-                            ? "w-full h-11 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700"
+                            ? "w-full h-10 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
                             : "w-full h-11 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 text-white hover:from-indigo-700 hover:to-cyan-600"
                           } asChild>
                             <Link to={`${catalogBasePath}?field=${encodeURIComponent(entry.field)}`}>
