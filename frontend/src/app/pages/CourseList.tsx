@@ -12,6 +12,18 @@ import { FIELD_PRIORITY, resolveLearningFieldFromCourse } from "../utils/learnin
 
 type CourseType = ApiCourse;
 
+type PhaseCard = {
+  course: CourseType;
+  courseHref: string;
+  phaseNumber: number;
+  heading: string;
+  summary: string;
+  isPaidCourse: boolean;
+  isEnrolled: boolean;
+  orderLocked: boolean;
+  paymentLocked: boolean;
+};
+
 const extractErrorMessage = (error: any, fallback: string) => {
   const candidate = error?.response?.data?.message ?? error?.message;
   if (typeof candidate === "string" && candidate.trim()) {
