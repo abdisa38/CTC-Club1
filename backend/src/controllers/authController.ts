@@ -36,6 +36,8 @@ const getOAuthCallbackUrl = (req: Request, provider: OAuthProvider) =>
   `${getRequestBaseUrl(req)}/api/auth/oauth/${provider}/callback`;
 
 const normalizeEmail = (value: unknown) => String(value || '').trim().toLowerCase();
+const isGoogleEmailAddress = (value: string) => /@(gmail\.com|googlemail\.com)$/i.test(normalizeEmail(value));
+const STUDENT_ONLY_AUTH_MESSAGE = 'Only student accounts can sign in from the public login. Admin and instructor accounts are managed by the administrator.';
 const buildClientAuthRedirectUrl = (params: {
   status: 'success' | 'error';
   message?: string;
@@ -156,6 +158,11 @@ const upsertOAuthUser = async (input: {
   avatar?: string;
 }) => {
   const email = normalizeEmail(input.email);
+
+  if (!isGoogleEmailAddress(email)) {
+    throw new Error('Registration requires a valid Google email address (gmail.com).');
+  }
+
   const displayName = (input.name || email.split('@')[0] || 'Student').trim();
 
   let user = await User.findOne({ email });
@@ -175,6 +182,10 @@ const upsertOAuthUser = async (input: {
     user = await User.create(createInput);
 
     return user;
+  }
+
+  if (user.role !== 'student') {
+    throw new Error(STUDENT_ONLY_AUTH_MESSAGE);
   }
 
   if (!user.oauthProvider) {
@@ -300,6 +311,11 @@ export const registerUser = asyncHandler(async (req: Request, res: Response) => 
   const { name, email, password } = req.body;
   const normalizedEmail = normalizeEmail(email);
 
+  if (!isGoogleEmailAddress(normalizedEmail)) {
+    res.status(400);
+    throw new Error('Registration requires a valid Google email address (gmail.com).');
+  }
+
   const userExists = await User.findOne({ email: normalizedEmail });
   if (userExists) {
     res.status(400);
@@ -341,25 +357,30 @@ export const loginUser = asyncHandler(async (req: Request, res: Response) => {
 
   const user = await User.findOne({ email: normalizedEmail });
 
-  if (user && (await user.matchPassword(password))) {
-    generateToken(res, user._id.toString(), user.role);
-
-    user.lastLogin = new Date();
-    await user.save();
-
-    sendSuccess(res, {
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      avatar: user.avatar,
-      isPremium: user.isPremium,
-      premiumActivatedAt: user.premiumActivatedAt,
-    }, { message: 'Login successful' });
-  } else {
+  if (!user || !(await user.matchPassword(password))) {
     res.status(401);
     throw new Error('Invalid email or password');
   }
+
+  if (user.role !== 'student') {
+    res.status(403);
+    throw new Error(STUDENT_ONLY_AUTH_MESSAGE);
+  }
+
+  generateToken(res, user._id.toString(), user.role);
+
+  user.lastLogin = new Date();
+  await user.save();
+
+  sendSuccess(res, {
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    avatar: user.avatar,
+    isPremium: user.isPremium,
+    premiumActivatedAt: user.premiumActivatedAt,
+  }, { message: 'Login successful' });
 });
 
 // @desc    Start Google OAuth login

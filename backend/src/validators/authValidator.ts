@@ -1,9 +1,14 @@
 import { z } from 'zod';
 
+const isGoogleEmail = (value: string) => /@(gmail\.com|googlemail\.com)$/i.test(value.trim().toLowerCase());
+
 export const registerSchema = z.object({
   body: z.object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
-    email: z.string().email('Invalid email address'),
+    email: z
+      .string()
+      .email('Invalid email address')
+      .refine((value) => isGoogleEmail(value), 'Registration requires a Google email address (gmail.com).'),
     password: z.string().min(6, 'Password must be at least 6 characters'),
     // Notice: we do not accept 'role' in public registration here for security reasons.
     // If we need an admin creating users, we'd create a separate admin-only endpoint.

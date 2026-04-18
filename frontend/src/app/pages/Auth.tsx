@@ -12,8 +12,11 @@ import apiService from "../services/api";
 type OAuthProvider = "google" | "github";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const GOOGLE_EMAIL_REGEX = /^[^\s@]+@(gmail\.com|googlemail\.com)$/i;
+const STUDENT_ONLY_AUTH_MESSAGE = "Only student accounts can sign in on this page. Admin and instructor accounts are managed by the administrator.";
 const normalizeEmail = (value: string) => value.trim().toLowerCase();
 const isValidEmail = (value: string) => EMAIL_REGEX.test(normalizeEmail(value));
+const isValidGoogleEmail = (value: string) => GOOGLE_EMAIL_REGEX.test(normalizeEmail(value));
 
 export function Auth() {
   const { pathname, search } = useLocation();
@@ -62,8 +65,16 @@ export function Auth() {
       void (async () => {
         try {
           const currentUser = await apiService.getCurrentUser();
+
+          if (currentUser.role !== "student") {
+            await apiService.logoutUser().catch(() => undefined);
+            setErrorMsg(STUDENT_ONLY_AUTH_MESSAGE);
+            navigate(pathname, { replace: true });
+            return;
+          }
+
           login(currentUser);
-          redirectByRole(currentUser.role);
+          redirectToStudentDashboard();
         } catch {
           setErrorMsg("Social login completed, but we could not load your account. Please try again.");
           navigate(pathname, { replace: true });
@@ -107,22 +118,41 @@ export function Auth() {
       return;
     }
 
+    if (!isLogin && !isValidGoogleEmail(normalizedEmail)) {
+      setErrorMsg("Registration requires a valid Google email address (gmail.com)." );
+      return;
+    }
+
     setIsLoading(true);
     setErrorMsg("");
 
     try {
       if (isLogin) {
         const user = await apiService.loginUser(normalizedEmail, formData.password);
+
+        if (user.role !== "student") {
+          await apiService.logoutUser().catch(() => undefined);
+          setErrorMsg(STUDENT_ONLY_AUTH_MESSAGE);
+          return;
+        }
+
         login(user);
-        redirectByRole(user.role);
+        redirectToStudentDashboard();
       } else {
         const user = await apiService.registerUser({
           name: formData.name.trim(),
           email: normalizedEmail,
           password: formData.password,
         });
+
+        if (user.role !== "student") {
+          await apiService.logoutUser().catch(() => undefined);
+          setErrorMsg(STUDENT_ONLY_AUTH_MESSAGE);
+          return;
+        }
+
         login(user);
-        redirectByRole(user.role);
+        redirectToStudentDashboard();
       }
     } catch (error: any) {
       setErrorMsg(error.response?.data?.message || "Something went wrong. Please try again.");
@@ -212,8 +242,14 @@ export function Auth() {
         newPassword: forgotFormData.newPassword,
       });
 
+      if (user.role !== "student") {
+        await apiService.logoutUser().catch(() => undefined);
+        setErrorMsg(STUDENT_ONLY_AUTH_MESSAGE);
+        return;
+      }
+
       login(user);
-      redirectByRole(user.role);
+      redirectToStudentDashboard();
     } catch (error: any) {
       setErrorMsg(error.response?.data?.message || "Failed to reset password. Please try again.");
     } finally {
@@ -221,19 +257,8 @@ export function Auth() {
     }
   };
 
-  const redirectByRole = (role: string) => {
-    switch (role) {
-      case "admin":
-        navigate("/app/admin");
-        break;
-      case "instructor":
-        navigate("/app/instructor/courses");
-        break;
-      case "student":
-      default:
-        navigate("/app/dashboard"); // The Dashboard acts as traffic controller or default student view
-        break;
-    }
+  const redirectToStudentDashboard = () => {
+    navigate("/app/dashboard");
   };
 
   return (
@@ -334,9 +359,10 @@ export function Auth() {
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  placeholder="student@university.edu" 
+                  placeholder={isLogin ? "you@example.com" : "you@gmail.com"}
                   autoComplete="email"
-                  pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$"
+                  pattern={isLogin ? "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$" : "^[^\\s@]+@(gmail\\.com|googlemail\\.com)$"}
+                  title={isLogin ? "Enter a valid email address." : "Use your Google email address (gmail.com)."}
                   required 
                   className="h-10 rounded-xl" 
                 />
