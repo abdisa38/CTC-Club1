@@ -768,6 +768,22 @@ export function CourseList() {
                         ? (isBusy ? "Enrolling..." : "Start Phase")
                         : "Open Phase";
 
+                const paidStatusLabel = phase.isEnrolled
+                  ? "Unlocked"
+                  : phase.orderLocked
+                    ? "Order Locked"
+                    : phase.paymentLocked
+                      ? "Payment Locked"
+                      : "Open";
+
+                const paidStatusClass = phase.isEnrolled
+                  ? "bg-emerald-600 text-white"
+                  : phase.orderLocked
+                    ? "bg-amber-500 text-white"
+                    : phase.paymentLocked
+                      ? "bg-rose-600 text-white"
+                      : "bg-indigo-600 text-white";
+
                 const actionDisabled = phase.orderLocked || (Boolean(user) && isBusy);
 
                 return (
@@ -786,9 +802,11 @@ export function CourseList() {
 
                         <div className="min-w-0 flex-1">
                           <div className="mb-2 flex flex-wrap items-center gap-2">
-                            <Badge className={`border-0 px-3 py-1 text-[13px] font-black tracking-wide shadow-sm ${phase.isPaidCourse ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
-                              {phase.isPaidCourse ? `${Number(course.price || 0).toFixed(2)} ETB` : "Free"}
-                            </Badge>
+                            {!phase.isPaidCourse ? (
+                              <Badge className="border-0 px-3 py-1 text-[13px] font-black tracking-wide shadow-sm bg-emerald-600 text-white">
+                                Free
+                              </Badge>
+                            ) : null}
                             {phase.orderLocked ? (
                               <Badge className="border-0 bg-amber-500 text-white">
                                 <Lock className="mr-1 h-3 w-3" />
@@ -801,7 +819,7 @@ export function CourseList() {
                                 Payment Locked
                               </Badge>
                             ) : null}
-                            {phase.isEnrolled ? (
+                            {!phase.isPaidCourse && phase.isEnrolled ? (
                               <Badge className="border-0 bg-emerald-600 text-white">Unlocked</Badge>
                             ) : null}
                           </div>
@@ -822,7 +840,17 @@ export function CourseList() {
                           </div>
                         </div>
 
-                        <div className="flex shrink-0 flex-col gap-2 lg:w-44">
+                        <div className="flex shrink-0 flex-col gap-2 lg:w-44 lg:items-end">
+                          {phase.isPaidCourse ? (
+                            <div className="flex flex-wrap items-center gap-1.5 lg:justify-end">
+                              <Badge className="border-0 bg-rose-600 px-2.5 py-0.5 text-[12px] font-black tracking-wide text-white">
+                                {Number(course.price || 0).toFixed(2)} ETB
+                              </Badge>
+                              <Badge className={`border-0 px-2.5 py-0.5 text-[12px] font-extrabold tracking-wide ${paidStatusClass}`}>
+                                {paidStatusLabel}
+                              </Badge>
+                            </div>
+                          ) : null}
                           <Button
                             className={phase.paymentLocked
                               ? "w-full bg-rose-600 text-white hover:bg-rose-700"
