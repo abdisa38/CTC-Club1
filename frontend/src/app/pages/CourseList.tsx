@@ -321,6 +321,20 @@ export function CourseList() {
     });
   };
 
+  const hasStudentCourseAccess = (course: CourseType) => {
+    const isPaidCourse = Number(course.price || 0) > 0;
+
+    if (role !== "student") {
+      return isUserEnrolled(course);
+    }
+
+    if (isPaidCourse) {
+      return Boolean(course.hasPaidAccess);
+    }
+
+    return isUserEnrolled(course);
+  };
+
   const markCourseEnrolledLocally = (id: string) => {
     if (!user) return;
 
@@ -338,6 +352,7 @@ export function CourseList() {
         return {
           ...course,
           students: [...students, user._id],
+          hasPaidAccess: true,
         };
       })
     );
@@ -392,9 +407,9 @@ export function CourseList() {
       const summary = String(course.description || "").trim() || "Open this phase to access lessons, projects, quizzes, and resources.";
 
       const isPaidCourse = Number(course.price || 0) > 0;
-      const isEnrolled = isUserEnrolled(course);
+      const isEnrolled = hasStudentCourseAccess(course);
       const previousCourse = index > 0 ? orderedCourses[index - 1] : null;
-      const previousEnrolled = previousCourse ? isUserEnrolled(previousCourse) : true;
+      const previousEnrolled = previousCourse ? hasStudentCourseAccess(previousCourse) : true;
 
       const orderLocked = role === "student" && index > 0 && !previousEnrolled;
       const paymentLocked = role === "student" && isPaidCourse && !isEnrolled;
