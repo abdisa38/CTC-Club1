@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/authMiddleware';
 import Lesson from '../models/lessonModel';
 import Course from '../models/courseModel';
+import PaymentTransaction from '../models/paymentTransactionModel';
 import { sendSuccess } from '../utils/apiResponse';
 
 const hasOwn = (value: unknown, key: string) => {
@@ -471,11 +472,21 @@ export const getLessonsByCourse = async (req: AuthRequest, res: Response) => {
 
     const isPrivilegedUser = req.user.role === 'admin' || String(course.instructor) === String(req.user._id);
     const isPaidCourse = Number(course.price || 0) > 0;
-    const isEnrolled = Array.isArray(course.students)
-      && course.students.some((studentId: any) => String(studentId) === String(req.user._id));
+    const hasPaidAccess = isPaidCourse && !isPrivilegedUser
+      ? Boolean(
+          await PaymentTransaction.findOne({
+            user: req.user._id,
+            course: course._id,
+            transactionType: 'course',
+            status: 'success',
+          })
+            .select('_id')
+            .lean()
+        )
+      : false;
 
-    if (isPaidCourse && !isPrivilegedUser && !isEnrolled) {
-      return res.status(403).json({ message: 'Enroll in this paid course to access lessons' });
+    if (isPaidCourse && !isPrivilegedUser && !hasPaidAccess) {
+      return res.status(403).json({ message: 'Complete payment to access lessons in this paid phase' });
     }
 
     const grouped = String(req.query.grouped || '').trim().toLowerCase() === 'true';

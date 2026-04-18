@@ -3,8 +3,22 @@ import asyncHandler from 'express-async-handler';
 import { AuthRequest } from '../middleware/authMiddleware';
 import Course from '../models/courseModel';
 import CourseReview from '../models/courseReviewModel';
+import PaymentTransaction from '../models/paymentTransactionModel';
 import User from '../models/userModel';
 import { sendSuccess } from '../utils/apiResponse';
+
+const hasSuccessfulCoursePayment = async (userId: string, courseId: string) => {
+  const transaction = await PaymentTransaction.findOne({
+    user: userId,
+    course: courseId,
+    transactionType: 'course',
+    status: 'success',
+  })
+    .select('_id')
+    .lean();
+
+  return Boolean(transaction);
+};
 
 // @desc    Create a course
 // @route   POST /api/courses
@@ -71,10 +85,45 @@ export const getCourses = asyncHandler(async (req: AuthRequest, res: Response) =
 
   const courses = await courseQuery;
 
+  let responseCourses: any[] = courses as any[];
+
+  if (req.user?.role === 'student') {
+    const paidCourseIds = courses
+      .filter((course: any) => Number(course.price || 0) > 0)
+      .map((course: any) => String(course._id));
+
+    const paidAccessTransactions = paidCourseIds.length > 0
+      ? await PaymentTransaction.find({
+          user: req.user._id,
+          transactionType: 'course',
+          status: 'success',
+          course: { $in: paidCourseIds },
+        })
+          .select('course')
+          .lean()
+      : [];
+
+    const paidAccessSet = new Set(
+      paidAccessTransactions
+        .map((transaction: any) => String(transaction.course || ''))
+        .filter(Boolean)
+    );
+
+    responseCourses = courses.map((course: any) => {
+      const plain = typeof course.toObject === 'function' ? course.toObject() : course;
+      const isPaidCourse = Number(plain.price || 0) > 0;
+
+      return {
+        ...plain,
+        hasPaidAccess: !isPaidCourse || paidAccessSet.has(String(plain._id)),
+      };
+    });
+  }
+
   res.json({
     success: true,
-    data: courses,
-    courses,
+    data: responseCourses,
+    courses: responseCourses,
     page,
     pages: Math.ceil(count / pageSize),
     total: count,
@@ -89,6 +138,20 @@ export const getCourseById = asyncHandler(async (req: AuthRequest, res: Response
     .populate('instructor', 'name email avatar');
 
   if (course) {
+    if (req.user?.role === 'student') {
+      const isPaidCourse = Number(course.price || 0) > 0;
+      const hasPaidAccess = !isPaidCourse
+        || await hasSuccessfulCoursePayment(String(req.user._id), String(course._id));
+
+      const payload = {
+        ...course.toObject(),
+        hasPaidAccess,
+      };
+
+      sendSuccess(res, payload);
+      return;
+    }
+
     sendSuccess(res, course);
   } else {
     res.status(404);
@@ -241,10 +304,19 @@ export const rateCourse = asyncHandler(async (req: AuthRequest, res: Response) =
     throw new Error('Rating must be a number between 1 and 5');
   }
 
-  const course = await Course.findById(courseId).select('_id students status');
+  const course = await Course.findById(courseId).select('_id students status price');
   if (!course) {
     res.status(404);
     throw new Error('Course not found');
+  }
+
+  const isPaidCourse = Number(course.price || 0) > 0;
+  if (isPaidCourse) {
+    const hasPaidAccess = await hasSuccessfulCoursePayment(String(req.user._id), String(course._id));
+    if (!hasPaidAccess) {
+      res.status(403);
+      throw new Error('Complete payment before rating this phase');
+    }
   }
 
   const isEnrolled = Array.isArray(course.students)

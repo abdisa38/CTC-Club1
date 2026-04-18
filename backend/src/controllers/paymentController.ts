@@ -542,21 +542,35 @@ export const initializeCoursePayment = asyncHandler(async (req: AuthRequest, res
   const isAlreadyEnrolled = Array.isArray(course.students)
     && course.students.some((studentId: any) => String(studentId) === String(user._id));
 
-  if (isAlreadyEnrolled || isInstructorOwner || isAdmin) {
+  const coursePrice = Number(course.price || 0);
+  if (!Number.isFinite(coursePrice) || coursePrice < 0) {
+    res.status(400);
+    throw new Error('Invalid course price.');
+  }
+
+  const hasSuccessfulCoursePayment = coursePrice > 0
+    ? Boolean(
+        await PaymentTransaction.findOne({
+          user: user._id,
+          transactionType: 'course',
+          course: course._id,
+          status: 'success',
+        })
+          .select('_id')
+          .lean()
+      )
+    : false;
+
+  if (isInstructorOwner || isAdmin || hasSuccessfulCoursePayment) {
     sendSuccess(res, {
       courseId: String(course._id),
       alreadyEnrolled: true,
       isEnrolled: true,
       amount: Number(course.price || 0),
       currency: 'ETB',
+      requiresPayment: false,
     }, { message: 'Course access is already active for this user.' });
     return;
-  }
-
-  const coursePrice = Number(course.price || 0);
-  if (!Number.isFinite(coursePrice) || coursePrice < 0) {
-    res.status(400);
-    throw new Error('Invalid course price.');
   }
 
   const courseCurrency = normalizeUpperText(course.currency || 'ETB') || 'ETB';
@@ -565,7 +579,9 @@ export const initializeCoursePayment = asyncHandler(async (req: AuthRequest, res
   }
 
   if (coursePrice === 0) {
-    await ensureCourseEnrollment(String(user._id), String(course._id));
+    if (!isAlreadyEnrolled) {
+      await ensureCourseEnrollment(String(user._id), String(course._id));
+    }
 
     sendSuccess(res, {
       courseId: String(course._id),
