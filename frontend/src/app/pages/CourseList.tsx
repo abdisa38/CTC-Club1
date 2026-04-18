@@ -5,7 +5,7 @@ import { Button } from "../components/ui/Button";
 import { Card, CardContent } from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
 import { Badge } from "../components/ui/Badge";
-import { Search, Filter, Star, Clock, Users, PlayCircle, PlusCircle, X, Heart, ArrowLeft, ChevronRight, CheckCircle2, Lock, CreditCard, Sparkles, ShieldCheck } from "lucide-react";
+import { Search, Filter, Star, Clock, Users, PlayCircle, PlusCircle, X, Heart, ArrowLeft, ChevronRight, Lock, CreditCard, Sparkles, ShieldCheck } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import apiService, { Course as ApiCourse } from "../services/api";
 import { FIELD_PRIORITY, resolveLearningFieldFromCourse } from "../utils/learningFields";
@@ -493,101 +493,133 @@ export function CourseList() {
       ) : null}
 
       {isFieldOverviewMode ? (
-        <div className={`space-y-5 ${isAppCatalogRoute ? "" : "mx-auto max-w-4xl"}`}>
-          <p className="text-sm text-slate-500">Choose a field to open all its phases at once.</p>
+        <div className={`space-y-5 ${isAppCatalogRoute ? "" : "mx-auto max-w-6xl"}`}>
+          <div className="flex flex-col gap-1">
+            <p className="text-sm text-slate-500">Choose a field to open all its phases at once.</p>
+            <p className="text-xs text-slate-400">Each card previews the ordered phases inside that learning field.</p>
+          </div>
 
-          <div className="grid grid-cols-1 gap-5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {overviewFields.map((entry, index) => {
               const hasCourses = entry.courses.length > 0;
               const paidPhases = entry.courses.filter((course) => Number(course.price || 0) > 0).length;
-              const previewCourses = entry.courses.slice(0, 4);
+              const orderedFieldCourses = [...entry.courses].sort((left, right) => {
+                const leftOrder = extractPhaseNumber(String(left.title || "")) ?? Number.MAX_SAFE_INTEGER;
+                const rightOrder = extractPhaseNumber(String(right.title || "")) ?? Number.MAX_SAFE_INTEGER;
+
+                if (leftOrder !== rightOrder) {
+                  return leftOrder - rightOrder;
+                }
+
+                return String(left.title || "").localeCompare(String(right.title || ""));
+              });
+              const previewCourses = orderedFieldCourses.slice(0, 3);
 
               return (
                 <motion.div
                   key={entry.field}
-                  initial={{ opacity: 0, y: 16 }}
+                  initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.06 }}
+                  transition={{ delay: index * 0.05 }}
                 >
                   <Card className={isAppCatalogRoute
-                    ? `h-full overflow-hidden rounded-2xl border shadow-sm ${hasCourses ? "border-indigo-200 bg-white" : "border-slate-200 bg-slate-50"}`
-                    : `h-full overflow-hidden rounded-3xl border ${hasCourses ? "border-cyan-500/35 bg-gradient-to-b from-sky-500/8 via-indigo-500/6 to-transparent" : "border-slate-700/70 bg-slate-900/40"}`
+                    ? `overflow-hidden rounded-2xl border shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg ${hasCourses ? "border-slate-200 bg-white" : "border-slate-200 bg-slate-50"}`
+                    : `overflow-hidden rounded-2xl border transition-all hover:-translate-y-0.5 ${hasCourses ? "border-cyan-500/35 bg-slate-900/55" : "border-slate-700/70 bg-slate-900/40"}`
                   }>
-                    <CardContent className={`flex h-full flex-col ${isAppCatalogRoute ? "p-5 sm:p-6" : "p-5 sm:p-6"}`}>
-                      <div className="mb-5 flex items-start justify-between gap-4">
-                        <div>
-                          <h3 className={isAppCatalogRoute ? "text-[32px] font-extrabold text-slate-900 tracking-tight" : "text-2xl font-bold text-white"}>{entry.field}</h3>
-                          <p className={isAppCatalogRoute ? "mt-2 text-sm text-slate-600 leading-relaxed" : "mt-2 text-sm text-slate-300 leading-relaxed"}>
-                            {fieldDescriptions[entry.field] || fieldDescriptions["General Technology"]}
-                          </p>
-                        </div>
-                        <Badge className={isAppCatalogRoute
-                          ? `${hasCourses ? "bg-emerald-600 text-white" : "bg-slate-500 text-white"} border-0 font-semibold`
-                          : `${hasCourses ? "bg-cyan-500 text-white" : "bg-slate-700 text-slate-200"} border-0 font-semibold`
-                        }>
-                          {hasCourses ? "Active" : "Coming Soon"}
+                    <div className="relative h-28 w-full overflow-hidden">
+                      <img
+                        src={entry.coverImage}
+                        alt={entry.field}
+                        className={`h-full w-full object-cover ${hasCourses ? "" : "grayscale"}`}
+                      />
+                      <div className={isAppCatalogRoute
+                        ? "absolute inset-0 bg-gradient-to-tr from-slate-900/65 via-slate-900/25 to-transparent"
+                        : "absolute inset-0 bg-gradient-to-tr from-black/70 via-slate-900/40 to-transparent"
+                      } />
+
+                      <div className="absolute inset-x-3 top-3 flex items-start justify-between gap-2">
+                        <Badge className="border-0 bg-white/90 text-slate-900 text-[11px] font-bold">{entry.field}</Badge>
+                        <Badge className={`border-0 text-[11px] font-bold ${hasCourses ? "bg-emerald-600 text-white" : "bg-slate-500 text-white"}`}>
+                          {hasCourses ? "Active" : "Soon"}
                         </Badge>
+                      </div>
+                    </div>
+
+                    <CardContent className="space-y-3 p-4">
+                      <div>
+                        <p className={isAppCatalogRoute ? "text-[13px] text-slate-600 line-clamp-2" : "text-[13px] text-slate-300 line-clamp-2"}>
+                          {fieldDescriptions[entry.field] || fieldDescriptions["General Technology"]}
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className={isAppCatalogRoute ? "rounded-lg border border-slate-200 bg-slate-50 p-2" : "rounded-lg border border-white/10 bg-white/5 p-2"}>
+                          <p className={isAppCatalogRoute ? "text-[10px] uppercase tracking-wide text-slate-500" : "text-[10px] uppercase tracking-wide text-slate-400"}>Phases</p>
+                          <p className={isAppCatalogRoute ? "mt-1 text-base font-bold text-slate-900" : "mt-1 text-base font-bold text-white"}>{entry.courses.length}</p>
+                        </div>
+                        <div className={isAppCatalogRoute ? "rounded-lg border border-slate-200 bg-slate-50 p-2" : "rounded-lg border border-white/10 bg-white/5 p-2"}>
+                          <p className={isAppCatalogRoute ? "text-[10px] uppercase tracking-wide text-slate-500" : "text-[10px] uppercase tracking-wide text-slate-400"}>Paid</p>
+                          <p className={isAppCatalogRoute ? "mt-1 text-base font-bold text-slate-900" : "mt-1 text-base font-bold text-white"}>{paidPhases}</p>
+                        </div>
+                        <div className={isAppCatalogRoute ? "rounded-lg border border-slate-200 bg-slate-50 p-2" : "rounded-lg border border-white/10 bg-white/5 p-2"}>
+                          <p className={isAppCatalogRoute ? "text-[10px] uppercase tracking-wide text-slate-500" : "text-[10px] uppercase tracking-wide text-slate-400"}>Students</p>
+                          <p className={isAppCatalogRoute ? "mt-1 text-base font-bold text-slate-900" : "mt-1 text-base font-bold text-white"}>{entry.totalStudents}</p>
+                        </div>
                       </div>
 
                       {hasCourses ? (
-                        <>
-                          <div className={`mb-5 grid grid-cols-2 gap-3 ${isAppCatalogRoute ? "" : ""}`}>
-                            <div className={isAppCatalogRoute ? "rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5" : "rounded-xl border border-white/10 bg-white/5 px-3 py-2.5"}>
-                              <p className={isAppCatalogRoute ? "text-[11px] uppercase tracking-wide text-slate-500" : "text-[11px] uppercase tracking-wide text-slate-400"}>Phases</p>
-                              <p className={isAppCatalogRoute ? "mt-0.5 text-lg font-bold text-slate-900" : "mt-0.5 text-lg font-bold text-white"}>{entry.courses.length}</p>
-                            </div>
-                            <div className={isAppCatalogRoute ? "rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5" : "rounded-xl border border-white/10 bg-white/5 px-3 py-2.5"}>
-                              <p className={isAppCatalogRoute ? "text-[11px] uppercase tracking-wide text-slate-500" : "text-[11px] uppercase tracking-wide text-slate-400"}>Paid</p>
-                              <p className={isAppCatalogRoute ? "mt-0.5 text-lg font-bold text-slate-900" : "mt-0.5 text-lg font-bold text-white"}>{paidPhases}</p>
-                            </div>
-                          </div>
+                        <div className="space-y-2">
+                          {previewCourses.map((course, previewIndex) => {
+                            const isPaidCourse = Number(course.price || 0) > 0;
+                            const order = resolvePhaseOrderValue(String(course.title || ""), previewIndex);
 
-                          <div className="space-y-2.5">
-                            {previewCourses.map((course) => (
+                            return (
                               <div key={course._id} className={isAppCatalogRoute
-                                ? "flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5"
-                                : "flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5"
+                                ? "flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2"
+                                : "flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-2"
                               }>
-                                <div className="min-w-0 flex items-center gap-2.5">
-                                  <CheckCircle2 className={isAppCatalogRoute ? "h-4 w-4 shrink-0 text-indigo-500" : "h-4 w-4 shrink-0 text-cyan-400"} />
-                                  <p className={isAppCatalogRoute ? "truncate text-sm text-slate-800" : "truncate text-sm text-slate-100"}>{course.title}</p>
-                                </div>
-                                <Badge className={`shrink-0 border-0 text-[10px] font-bold ${Number(course.price || 0) > 0 ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
-                                  {Number(course.price || 0) > 0 ? `${Number(course.price || 0).toFixed(2)} ETB` : "FREE"}
+                                <span className={isAppCatalogRoute
+                                  ? "flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-[11px] font-extrabold text-indigo-700"
+                                  : "flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-cyan-500/20 text-[11px] font-extrabold text-cyan-200"
+                                }>{order}</span>
+                                <p className={isAppCatalogRoute ? "min-w-0 flex-1 truncate text-[13px] text-slate-800" : "min-w-0 flex-1 truncate text-[13px] text-slate-100"}>{course.title}</p>
+                                <Badge className={`shrink-0 border-0 text-[10px] font-bold ${isPaidCourse ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
+                                  {isPaidCourse ? formatCoursePrice(course) : "FREE"}
                                 </Badge>
                               </div>
-                            ))}
-                          </div>
-                        </>
+                            );
+                          })}
+
+                          {entry.courses.length > previewCourses.length ? (
+                            <p className={isAppCatalogRoute ? "text-[12px] text-slate-500" : "text-[12px] text-slate-400"}>
+                              +{entry.courses.length - previewCourses.length} more phases
+                            </p>
+                          ) : null}
+                        </div>
                       ) : (
                         <div className={isAppCatalogRoute
-                          ? "rounded-2xl border border-dashed border-indigo-200 bg-gradient-to-r from-indigo-50 to-cyan-50 p-5"
-                          : "rounded-2xl border border-dashed border-indigo-400/40 bg-gradient-to-r from-indigo-500/15 to-cyan-500/10 p-5"
+                          ? "rounded-lg border border-dashed border-slate-300 bg-slate-100 px-3 py-3"
+                          : "rounded-lg border border-dashed border-slate-600 bg-slate-800/60 px-3 py-3"
                         }>
-                          <p className={isAppCatalogRoute ? "text-sm font-semibold text-indigo-700" : "text-sm font-semibold text-indigo-200"}>New track is coming soon</p>
-                          <p className={isAppCatalogRoute ? "mt-1 text-sm text-slate-600" : "mt-1 text-sm text-slate-300"}>
-                            We are preparing complete lessons, projects, and mentor support for this field.
+                          <p className={isAppCatalogRoute ? "text-xs text-slate-600" : "text-xs text-slate-300"}>
+                            This field will appear here once phases are published.
                           </p>
                         </div>
                       )}
 
-                      <div className="mt-auto pt-5">
+                      <Button className={isAppCatalogRoute
+                        ? "h-10 w-full rounded-xl bg-indigo-600 text-white hover:bg-indigo-700"
+                        : "h-10 w-full rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 text-white hover:from-indigo-700 hover:to-cyan-600"
+                      } asChild disabled={!hasCourses}>
                         {hasCourses ? (
-                          <Button className={isAppCatalogRoute
-                            ? "w-full h-11 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700"
-                            : "w-full h-11 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 text-white hover:from-indigo-700 hover:to-cyan-600"
-                          } asChild>
-                            <Link to={`${catalogBasePath}?field=${encodeURIComponent(entry.field)}`}>
-                              Open {entry.field}
-                              <ChevronRight className="ml-1.5 h-4 w-4" />
-                            </Link>
-                          </Button>
+                          <Link to={`${catalogBasePath}?field=${encodeURIComponent(entry.field)}`}>
+                            Explore Field
+                            <ChevronRight className="ml-1.5 h-4 w-4" />
+                          </Link>
                         ) : (
-                          <Button className="w-full h-11 rounded-xl" variant="outline" disabled>
-                            Coming Soon
-                          </Button>
+                          <span>Coming Soon</span>
                         )}
-                      </div>
+                      </Button>
                     </CardContent>
                   </Card>
                 </motion.div>
@@ -597,114 +629,168 @@ export function CourseList() {
         </div>
       ) : isFieldPhaseMode ? (
         <div className={`mx-auto w-full max-w-5xl space-y-4 ${isAppCatalogRoute ? "" : "px-0"}`}>
-          <Card className={isAppCatalogRoute ? "border-slate-200 bg-white rounded-2xl shadow-sm" : "border-slate-200/70 dark:border-slate-800/70 bg-white/70 dark:bg-slate-900/60 rounded-2xl"}>
-            <CardContent className="p-5 md:p-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-wide text-slate-500">Learning Field</p>
-                <h2 className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{selectedField}</h2>
-                <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                  {fieldDescriptions[selectedField] || fieldDescriptions["General Technology"]}
-                </p>
+          <Card className={isAppCatalogRoute
+            ? "rounded-2xl border border-slate-200 bg-white shadow-sm"
+            : "rounded-2xl border border-slate-200/70 bg-white/70 dark:border-slate-800/70 dark:bg-slate-900/60"
+          }>
+            <CardContent className="space-y-4 p-5 md:p-6">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div className="flex min-w-0 items-start gap-3">
+                  <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
+                    <Sparkles className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Learning Field</p>
+                    <h2 className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{selectedField}</h2>
+                    <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                      Follow the ordered phase list from start to finish.
+                    </p>
+                  </div>
+                </div>
+
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    updateSelectedField("");
+                    setSearchQuery("");
+                    setSelectedCategory("");
+                    setSelectedLevel("");
+                    setSelectedDuration("");
+                  }}
+                >
+                  <ArrowLeft className="mr-1.5 h-4 w-4" />
+                  All Fields
+                </Button>
               </div>
 
-              <Button
-                variant="outline"
-                onClick={() => {
-                  updateSelectedField("");
-                  setSearchQuery("");
-                  setSelectedCategory("");
-                  setSelectedLevel("");
-                  setSelectedDuration("");
-                }}
-              >
-                <ArrowLeft className="mr-1.5 h-4 w-4" />
-                All Fields
-              </Button>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                  <p className="text-[10px] uppercase tracking-wide text-slate-500">Phases</p>
+                  <p className="mt-1 text-lg font-bold text-slate-900">{sortedSelectedFieldCourses.length}</p>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                  <p className="text-[10px] uppercase tracking-wide text-slate-500">Paid</p>
+                  <p className="mt-1 text-lg font-bold text-slate-900">
+                    {sortedSelectedFieldCourses.filter((course) => Number(course.price || 0) > 0).length}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 col-span-2 sm:col-span-1">
+                  <p className="text-[10px] uppercase tracking-wide text-slate-500">Progress</p>
+                  <p className="mt-1 text-lg font-bold text-slate-900">Ordered Path</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
           {!user ? (
-            <Card className="border-amber-400/25 bg-amber-500/10 rounded-2xl">
+            <Card className="rounded-2xl border border-amber-200 bg-amber-50">
               <CardContent className="p-4">
-                <p className="text-sm text-amber-100">Please log in to open and continue any phase.</p>
+                <p className="text-sm text-amber-800">Please log in to open and continue any phase.</p>
               </CardContent>
             </Card>
           ) : null}
 
           {sortedSelectedFieldCourses.length === 0 ? (
-            <div className="text-center py-14 px-4 border border-dashed border-slate-300 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-900/40">
+            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-14 text-center dark:border-slate-800 dark:bg-slate-900/40">
               <h3 className="text-lg font-medium text-slate-900 dark:text-white">No phases available yet</h3>
-              <p className="text-sm text-slate-500 mt-1">This field will appear here once phases are published.</p>
+              <p className="mt-1 text-sm text-slate-500">This field will appear here once phases are published.</p>
             </div>
           ) : (
             <div className="space-y-3">
               {sortedSelectedFieldCourses.map((course, index) => {
-                const phaseMatch = String(course.title || "").match(/phase\s*(\d+)/i);
+                const phaseOrder = resolvePhaseOrderValue(String(course.title || ""), index);
                 const courseHref = `${courseDetailBasePath}/${course._id}`;
                 const isPaidCourse = Number(course.price || 0) > 0;
                 const isPaidLocked = isPaidCourse && role === "student" && !isUserEnrolled(course);
+                const showLockedIndicator = isPaidCourse && !isUserEnrolled(course);
 
                 return (
-                  <Card key={course._id} className={isAppCatalogRoute ? "border-slate-200 bg-white rounded-2xl shadow-sm" : "border-slate-200/70 dark:border-slate-800/70 bg-white/70 dark:bg-slate-900/60 rounded-2xl"}>
-                    <CardContent className="p-4 md:p-5">
-                      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                        <div className="flex min-w-0 items-start gap-3">
+                  <div key={course._id} className="relative">
+                    {index < sortedSelectedFieldCourses.length - 1 ? (
+                      <span className="pointer-events-none absolute left-5 top-14 hidden h-[calc(100%-0.5rem)] w-px bg-gradient-to-b from-indigo-300 to-slate-200 sm:block" />
+                    ) : null}
+
+                    <Card className={isAppCatalogRoute
+                      ? "rounded-2xl border border-slate-200 bg-white shadow-sm"
+                      : "rounded-2xl border border-slate-200/70 bg-white/70 dark:border-slate-800/70 dark:bg-slate-900/60"
+                    }>
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-3 sm:gap-4">
+                          <div className={isAppCatalogRoute
+                            ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-sm font-extrabold text-indigo-700"
+                            : "flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-500/20 text-sm font-extrabold text-indigo-200"
+                          }>
+                            {phaseOrder}
+                          </div>
+
                           <img
                             src={course.coverImage || fieldFallbackCovers[selectedField] || fieldFallbackCovers["General Technology"]}
                             alt={course.title}
-                            className="h-16 w-16 rounded-xl object-cover border border-slate-200 dark:border-slate-700 shrink-0"
+                            className="hidden h-14 w-14 shrink-0 rounded-xl border border-slate-200 object-cover sm:block"
                           />
-                          <div className="min-w-0">
-                            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                              {phaseMatch ? `Phase ${phaseMatch[1]}` : `Module ${index + 1}`}
-                            </p>
-                            <h3 className="mt-1 text-lg font-semibold leading-tight text-slate-900 dark:text-white">
+
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Phase {phaseOrder}</p>
+
+                              <Badge className={`border-0 text-[10px] font-bold ${isPaidCourse ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
+                                {isPaidCourse ? formatCoursePrice(course) : "FREE"}
+                              </Badge>
+
+                              {isPaidCourse ? (
+                                showLockedIndicator ? (
+                                  <Badge className="border-0 bg-amber-500 text-white text-[10px] font-bold">
+                                    <Lock className="mr-1 h-3 w-3" />
+                                    Locked
+                                  </Badge>
+                                ) : (
+                                  <Badge className="border-0 bg-emerald-600 text-white text-[10px] font-bold">
+                                    <ShieldCheck className="mr-1 h-3 w-3" />
+                                    Unlocked
+                                  </Badge>
+                                )
+                              ) : null}
+                            </div>
+
+                            <h3 className="mt-1 text-base font-semibold leading-tight text-slate-900 dark:text-white sm:text-lg">
                               {course.title}
                             </h3>
-                            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300 line-clamp-2">
+
+                            <p className="mt-1 line-clamp-2 text-sm text-slate-600 dark:text-slate-300">
                               {course.description || "Open this phase to see lessons, videos, resources, quizzes, and projects."}
                             </p>
+
+                            <div className="mt-3 flex flex-wrap items-center gap-2">
+                              {!user ? (
+                                <Button asChild className="h-9 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700">
+                                  <Link to={loginPath}>
+                                    {isPaidCourse ? "Login to Pay" : "Login to Open"}
+                                    <ChevronRight className="ml-1 h-4 w-4" />
+                                  </Link>
+                                </Button>
+                              ) : isPaidLocked ? (
+                                <Button
+                                  className="h-9 rounded-xl bg-rose-600 text-white hover:bg-rose-700"
+                                  onClick={() => void handleEnroll(course)}
+                                  disabled={enrollingId === course._id}
+                                >
+                                  <CreditCard className="mr-1.5 h-4 w-4" />
+                                  {enrollingId === course._id ? "Opening checkout..." : `Pay ${formatCoursePrice(course)} to Unlock`}
+                                </Button>
+                              ) : (
+                                <Button asChild className="h-9 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700">
+                                  <Link to={courseHref}>
+                                    Open Phase
+                                    <ChevronRight className="ml-1 h-4 w-4" />
+                                  </Link>
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         </div>
-
-                        <div className="flex items-center gap-2 md:pl-4">
-                          <Badge className={`border-0 ${isPaidCourse ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
-                            {isPaidCourse ? `${Number(course.price || 0).toFixed(2)} ETB` : "Free"}
-                          </Badge>
-                          {isPaidLocked ? (
-                            <Badge className="border-0 bg-amber-500 text-white">
-                              <Lock className="mr-1 h-3 w-3" />
-                              Locked
-                            </Badge>
-                          ) : null}
-
-                          {!user ? (
-                            <Button asChild className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                              <Link to={loginPath}>
-                                Open
-                                <ChevronRight className="ml-1 h-4 w-4" />
-                              </Link>
-                            </Button>
-                          ) : isPaidLocked ? (
-                            <Button
-                              className="bg-rose-600 hover:bg-rose-700 text-white"
-                              onClick={() => void handleEnroll(course)}
-                              disabled={enrollingId === course._id}
-                            >
-                              {enrollingId === course._id ? "Opening checkout..." : "Pay to Unlock"}
-                            </Button>
-                          ) : (
-                            <Button asChild className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                              <Link to={courseHref}>
-                                Open
-                                <ChevronRight className="ml-1 h-4 w-4" />
-                              </Link>
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                      </CardContent>
+                    </Card>
+                  </div>
                 );
               })}
             </div>
