@@ -296,16 +296,43 @@ export const deleteCourse = asyncHandler(async (req: AuthRequest, res: Response)
 // @route   POST /api/courses/:id/enroll
 // @access  Private (student role etc)
 export const enrollCourse = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const existingCourse = await Course.findById(req.params.id).select('price');
+  const existingCourse = await Course.findById(req.params.id).select(
+    'price instructor students accessMode lockedStudentIds unlockedStudentIds'
+  );
   if (!existingCourse) {
     res.status(404);
     throw new Error('Course not found');
   }
 
-  const isPaidCourse = Number(existingCourse.price || 0) > 0;
-  if (isPaidCourse && req.user.role === 'student') {
-    res.status(402);
-    throw new Error('This is a paid course. Start checkout first to access it.');
+  if (req.user.role === 'student') {
+    const studentId = String(req.user._id);
+    const accessWithoutPayment = evaluateStudentCourseAccess({
+      course: existingCourse,
+      studentId,
+      isPrivilegedUser: false,
+      hasSuccessfulPayment: false,
+    });
+
+    const hasSuccessfulPayment = accessWithoutPayment.requiresPayment
+      ? await hasSuccessfulCoursePayment(studentId, String(existingCourse._id))
+      : false;
+
+    const accessState = evaluateStudentCourseAccess({
+      course: existingCourse,
+      studentId,
+      isPrivilegedUser: false,
+      hasSuccessfulPayment,
+    });
+
+    if (accessState.blockedByInstructor) {
+      res.status(403);
+      throw new Error('This phase is currently locked by your instructor for your account.');
+    }
+
+    if (accessState.requiresPayment && !accessState.hasAccess) {
+      res.status(402);
+      throw new Error('This is a paid course. Start checkout first to access it.');
+    }
   }
 
   // Use $addToSet to avoid race conditions. This guarantees a user is only added once natively by MongoDB
@@ -377,19 +404,41 @@ export const rateCourse = asyncHandler(async (req: AuthRequest, res: Response) =
     throw new Error('Rating must be a number between 1 and 5');
   }
 
-  const course = await Course.findById(courseId).select('_id students status price');
+  const course = await Course.findById(courseId).select(
+    '_id students status price accessMode lockedStudentIds unlockedStudentIds'
+  );
   if (!course) {
     res.status(404);
     throw new Error('Course not found');
   }
 
-  const isPaidCourse = Number(course.price || 0) > 0;
-  if (isPaidCourse) {
-    const hasPaidAccess = await hasSuccessfulCoursePayment(String(req.user._id), String(course._id));
-    if (!hasPaidAccess) {
-      res.status(403);
-      throw new Error('Complete payment before rating this phase');
-    }
+  const studentId = String(req.user._id);
+  const accessWithoutPayment = evaluateStudentCourseAccess({
+    course,
+    studentId,
+    isPrivilegedUser: false,
+    hasSuccessfulPayment: false,
+  });
+
+  const hasSuccessfulPayment = accessWithoutPayment.requiresPayment
+    ? await hasSuccessfulCoursePayment(studentId, String(course._id))
+    : false;
+
+  const accessState = evaluateStudentCourseAccess({
+    course,
+    studentId,
+    isPrivilegedUser: false,
+    hasSuccessfulPayment,
+  });
+
+  if (accessState.blockedByInstructor) {
+    res.status(403);
+    throw new Error('This phase is currently locked by your instructor for your account.');
+  }
+
+  if (accessState.requiresPayment && !accessState.hasAccess) {
+    res.status(403);
+    throw new Error('Complete payment before rating this phase');
   }
 
   const isEnrolled = Array.isArray(course.students)
