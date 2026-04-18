@@ -1,13 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
-import { PlusCircle, Search, Edit, Trash2, MoreVertical, Eye, Users, Loader2 } from "lucide-react";
+import { PlusCircle, Search, Edit, Trash2, MoreVertical, Eye, Users, Loader2, Shield, Lock, Unlock, RotateCcw } from "lucide-react";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
 import { Badge } from "../../components/ui/Badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../../components/ui/DropdownMenu";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../components/ui/Dialog";
 import { useAuth } from "../../context/AuthContext";
-import apiService, { Course } from "../../services/api";
+import apiService, {
+  Course,
+  CourseAccessMode,
+  CourseStudentAccessAction,
+  CourseStudentAccessOverride,
+  InstructorStudentRow,
+} from "../../services/api";
 
 export function InstructorCourses() {
   const { user, role } = useAuth();
@@ -20,6 +27,13 @@ export function InstructorCourses() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [courses, setCourses] = useState<Course[]>([]);
+  const [accessDialogCourse, setAccessDialogCourse] = useState<Course | null>(null);
+  const [accessDialogStudents, setAccessDialogStudents] = useState<InstructorStudentRow[]>([]);
+  const [accessModeDraft, setAccessModeDraft] = useState<CourseAccessMode>("open");
+  const [paidPriceDraft, setPaidPriceDraft] = useState("200");
+  const [accessStudentSearch, setAccessStudentSearch] = useState("");
+  const [isAccessDialogLoading, setIsAccessDialogLoading] = useState(false);
+  const [isAccessSaving, setIsAccessSaving] = useState(false);
 
   useEffect(() => {
     const loadCourses = async () => {
