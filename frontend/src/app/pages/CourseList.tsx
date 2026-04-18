@@ -5,7 +5,7 @@ import { Button } from "../components/ui/Button";
 import { Card, CardContent } from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
 import { Badge } from "../components/ui/Badge";
-import { Search, Filter, Star, Clock, Users, PlayCircle, PlusCircle, X, Heart, ArrowLeft, ChevronRight, CheckCircle2 } from "lucide-react";
+import { Search, Filter, Star, Clock, Users, PlayCircle, PlusCircle, X, Heart, ArrowLeft, ChevronRight, CheckCircle2, Lock } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import apiService, { Course as ApiCourse } from "../services/api";
 import { FIELD_PRIORITY, resolveLearningFieldFromCourse } from "../utils/learningFields";
@@ -468,7 +468,7 @@ export function CourseList() {
         <div className={`space-y-5 ${isAppCatalogRoute ? "" : "mx-auto max-w-4xl"}`}>
           <p className="text-sm text-slate-500">Choose a field to open all its phases at once.</p>
 
-          <div className={`grid grid-cols-1 gap-5 ${isAppCatalogRoute ? "xl:grid-cols-2" : ""}`}>
+          <div className="grid grid-cols-1 gap-5">
             {overviewFields.map((entry, index) => {
               const hasCourses = entry.courses.length > 0;
               const paidPhases = entry.courses.filter((course) => Number(course.price || 0) > 0).length;
@@ -614,6 +614,7 @@ export function CourseList() {
                 const phaseMatch = String(course.title || "").match(/phase\s*(\d+)/i);
                 const courseHref = `${courseDetailBasePath}/${course._id}`;
                 const isPaidCourse = Number(course.price || 0) > 0;
+                const isPaidLocked = isPaidCourse && role === "student" && !isUserEnrolled(course);
 
                 return (
                   <Card key={course._id} className={isAppCatalogRoute ? "border-slate-200 bg-white rounded-2xl shadow-sm" : "border-slate-200/70 dark:border-slate-800/70 bg-white/70 dark:bg-slate-900/60 rounded-2xl"}>
@@ -642,12 +643,36 @@ export function CourseList() {
                           <Badge className={`border-0 ${isPaidCourse ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
                             {isPaidCourse ? `${Number(course.price || 0).toFixed(2)} ETB` : "Free"}
                           </Badge>
-                          <Button asChild className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                            <Link to={user ? courseHref : loginPath}>
-                              Open
-                              <ChevronRight className="ml-1 h-4 w-4" />
-                            </Link>
-                          </Button>
+                          {isPaidLocked ? (
+                            <Badge className="border-0 bg-amber-500 text-white">
+                              <Lock className="mr-1 h-3 w-3" />
+                              Locked
+                            </Badge>
+                          ) : null}
+
+                          {!user ? (
+                            <Button asChild className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                              <Link to={loginPath}>
+                                Open
+                                <ChevronRight className="ml-1 h-4 w-4" />
+                              </Link>
+                            </Button>
+                          ) : isPaidLocked ? (
+                            <Button
+                              className="bg-rose-600 hover:bg-rose-700 text-white"
+                              onClick={() => void handleEnroll(course)}
+                              disabled={enrollingId === course._id}
+                            >
+                              {enrollingId === course._id ? "Opening checkout..." : "Pay to Unlock"}
+                            </Button>
+                          ) : (
+                            <Button asChild className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                              <Link to={courseHref}>
+                                Open
+                                <ChevronRight className="ml-1 h-4 w-4" />
+                              </Link>
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </CardContent>
