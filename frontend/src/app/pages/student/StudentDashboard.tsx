@@ -156,6 +156,17 @@ export function StudentDashboard({ metrics }: { metrics?: any }) {
           return null;
         }
 
+        const phaseNumbersPresent = new Set<number>();
+        const phaseAccessByNumber = new Map<number, boolean>();
+
+        phases.forEach((course, index) => {
+          const phaseNumber = getPhaseNumber(course, index);
+          const isEnrolled = enrolledCourseIds.has(course._id);
+
+          phaseNumbersPresent.add(phaseNumber);
+          phaseAccessByNumber.set(phaseNumber, Boolean(phaseAccessByNumber.get(phaseNumber)) || isEnrolled);
+        });
+
         const phaseRows = phases.map((course, index) => {
           const phaseNumber = getPhaseNumber(course, index);
           const cleanTitle = stripPhasePrefix(String(course.title || ""));
@@ -164,10 +175,11 @@ export function StudentDashboard({ metrics }: { metrics?: any }) {
           const isPaid = Number(course.price || 0) > 0;
           const isEnrolled = enrolledCourseIds.has(course._id);
 
-          const previousCourse = index > 0 ? phases[index - 1] : null;
-          const previousEnrolled = previousCourse ? enrolledCourseIds.has(previousCourse._id) : true;
+          const previousPhaseNumber = phaseNumber - 1;
+          const previousPhaseExists = previousPhaseNumber > 0 && phaseNumbersPresent.has(previousPhaseNumber);
+          const previousPhaseUnlocked = !previousPhaseExists || Boolean(phaseAccessByNumber.get(previousPhaseNumber));
 
-          const orderLocked = index > 0 && !previousEnrolled;
+          const orderLocked = phaseNumber > 1 && !previousPhaseUnlocked;
           const paymentLocked = !orderLocked && isPaid && !isEnrolled;
 
           return {

@@ -404,7 +404,18 @@ export function CourseList() {
       return [];
     }
 
-    return sortedSelectedFieldCourses.map((course, index, orderedCourses) => {
+    const phaseNumbersPresent = new Set<number>();
+    const phaseAccessByNumber = new Map<number, boolean>();
+
+    sortedSelectedFieldCourses.forEach((course, index) => {
+      const phaseNumber = getPhaseNumber(course, index);
+      const hasAccess = hasStudentCourseAccess(course);
+
+      phaseNumbersPresent.add(phaseNumber);
+      phaseAccessByNumber.set(phaseNumber, Boolean(phaseAccessByNumber.get(phaseNumber)) || hasAccess);
+    });
+
+    return sortedSelectedFieldCourses.map((course, index) => {
       const phaseNumber = getPhaseNumber(course, index);
       const cleanTitle = stripPhasePrefix(String(course.title || ""));
       const heading = cleanTitle ? `Phase ${phaseNumber}: ${cleanTitle}` : `Phase ${phaseNumber}`;
@@ -412,10 +423,11 @@ export function CourseList() {
 
       const isPaidCourse = Number(course.price || 0) > 0;
       const isEnrolled = hasStudentCourseAccess(course);
-      const previousCourse = index > 0 ? orderedCourses[index - 1] : null;
-      const previousEnrolled = previousCourse ? hasStudentCourseAccess(previousCourse) : true;
+      const previousPhaseNumber = phaseNumber - 1;
+      const previousPhaseExists = previousPhaseNumber > 0 && phaseNumbersPresent.has(previousPhaseNumber);
+      const previousPhaseUnlocked = !previousPhaseExists || Boolean(phaseAccessByNumber.get(previousPhaseNumber));
 
-      const orderLocked = role === "student" && index > 0 && !previousEnrolled;
+      const orderLocked = role === "student" && phaseNumber > 1 && !previousPhaseUnlocked;
       const paymentLocked = role === "student" && isPaidCourse && !isEnrolled;
 
       return {

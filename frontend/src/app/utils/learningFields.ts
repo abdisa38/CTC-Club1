@@ -28,7 +28,6 @@ const FIELD_DEFINITIONS: FieldDefinition[] = [
       "html",
       "css",
       "bootstrap",
-      "phase",
       "mysql",
       "api",
       "rest",
