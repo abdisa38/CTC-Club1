@@ -4,7 +4,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsToolti
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/ui/Card";
-import { Loader2, TrendingUp, Users, BookOpen, DollarSign, FileText, MessageSquare, Star } from "lucide-react";
+import { Loader2, TrendingUp, Users, BookOpen, DollarSign, FileText, MessageSquare, Star, Shield } from "lucide-react";
 
 export function InstructorDashboard({ metrics }: { metrics?: any }) {
   const coursePerformance = Array.isArray(metrics?.coursePerformance) ? metrics.coursePerformance : [];
@@ -36,6 +36,12 @@ export function InstructorDashboard({ metrics }: { metrics?: any }) {
           <p className="text-slate-500 dark:text-slate-400">Your real-time teaching and engagement overview.</p>
         </div>
         <div className="flex gap-3">
+          <Button variant="outline" asChild>
+            <Link to="/app/instructor/courses">
+              <Shield className="h-4 w-4 mr-2" />
+              Phase Access Controls
+            </Link>
+          </Button>
           <Button variant="outline" asChild>
             <Link to="/app/instructor/analytics">View Full Report</Link>
           </Button>

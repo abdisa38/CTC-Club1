@@ -375,6 +375,153 @@ export function InstructorCourses() {
           })
         )}
       </div>
+
+      <Dialog
+        open={Boolean(accessDialogCourse)}
+        onOpenChange={(open) => {
+          if (!open) {
+            closeAccessDialog();
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[780px] max-h-[85vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle>Phase Access Controls</DialogTitle>
+            <DialogDescription>
+              Configure global access mode and personalize lock/unlock for specific student accounts.
+            </DialogDescription>
+          </DialogHeader>
+
+          {accessDialogCourse ? (
+            <div className="space-y-4 overflow-y-auto pr-1">
+              <div className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">{accessDialogCourse.title}</p>
+                <p className="mt-1 text-xs text-slate-500">Global phase mode applies to all students unless overridden below.</p>
+
+                <div className="mt-3 grid gap-3 sm:grid-cols-[180px_1fr_auto] sm:items-end">
+                  <div>
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-300">Mode</label>
+                    <select
+                      className="mt-1 h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-800 dark:bg-slate-950"
+                      value={accessModeDraft}
+                      onChange={(event) => setAccessModeDraft(event.target.value as CourseAccessMode)}
+                      disabled={isAccessSaving}
+                    >
+                      <option value="open">Open</option>
+                      <option value="paid">Paid Lock</option>
+                      <option value="locked">Completely Locked</option>
+                    </select>
+                  </div>
+
+                  {accessModeDraft === "paid" ? (
+                    <div>
+                      <label className="text-xs font-medium text-slate-600 dark:text-slate-300">Price (ETB)</label>
+                      <Input
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={paidPriceDraft}
+                        onChange={(event) => setPaidPriceDraft(event.target.value)}
+                        disabled={isAccessSaving}
+                      />
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-500 sm:self-center">
+                      {accessModeDraft === "locked"
+                        ? "Students cannot open this phase until unlocked by instructor."
+                        : "Students can proceed by normal enrollment/payment flow."}
+                    </p>
+                  )}
+
+                  <Button onClick={() => void handleSaveAccessMode()} disabled={isAccessSaving}>
+                    {isAccessSaving ? "Saving..." : "Save Mode"}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white">Personal Student Access</p>
+                    <p className="text-xs text-slate-500">Lock, unlock, or reset access for specific students in this phase.</p>
+                  </div>
+                  <Input
+                    placeholder="Search student by name or email"
+                    value={accessStudentSearch}
+                    onChange={(event) => setAccessStudentSearch(event.target.value)}
+                    className="sm:w-64"
+                  />
+                </div>
+
+                {isAccessDialogLoading ? (
+                  <div className="mt-4 flex items-center justify-center py-8 text-slate-500">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Loading students...
+                  </div>
+                ) : visibleAccessStudents.length === 0 ? (
+                  <div className="mt-4 rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500 dark:border-slate-700">
+                    No enrolled students found for this phase.
+                  </div>
+                ) : (
+                  <div className="mt-4 space-y-2">
+                    {visibleAccessStudents.map((student) => {
+                      const override = getStudentOverrideForCourse(accessDialogCourse, student.id);
+
+                      return (
+                        <div
+                          key={student.id}
+                          className="flex flex-col gap-3 rounded-lg border border-slate-200 p-3 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">{student.name}</p>
+                            <p className="truncate text-xs text-slate-500">{student.email}</p>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge className={`border-0 ${override === "locked" ? "bg-slate-600 text-white" : override === "unlocked" ? "bg-emerald-600 text-white" : "bg-slate-200 text-slate-700"}`}>
+                              {override === "locked" ? "Locked" : override === "unlocked" ? "Unlocked" : "Default"}
+                            </Badge>
+
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => void handleStudentAccessAction(student.id, "lock")}
+                              disabled={isAccessSaving}
+                            >
+                              <Lock className="mr-1 h-3.5 w-3.5" /> Lock
+                            </Button>
+
+                            <Button
+                              size="sm"
+                              onClick={() => void handleStudentAccessAction(student.id, "unlock")}
+                              disabled={isAccessSaving}
+                            >
+                              <Unlock className="mr-1 h-3.5 w-3.5" /> Unlock
+                            </Button>
+
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => void handleStudentAccessAction(student.id, "reset")}
+                              disabled={isAccessSaving}
+                            >
+                              <RotateCcw className="mr-1 h-3.5 w-3.5" /> Reset
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : null}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={closeAccessDialog}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
