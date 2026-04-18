@@ -62,7 +62,6 @@ export function PublicLayout() {
   const navLinks = [
     { label: "Home", to: "/" },
     { label: "Courses", to: "/courses" },
-    { label: "Learning", to: "/courses" },
     { label: "Community", href: TELEGRAM_CHANNEL_URL, external: true },
     { label: "About", to: "/about" },
   ];
