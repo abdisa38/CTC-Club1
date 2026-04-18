@@ -51,6 +51,7 @@ export function StudentDashboard({ metrics }: { metrics?: any }) {
   const [extraError, setExtraError] = useState("");
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [recommendedCourses, setRecommendedCourses] = useState<Course[]>([]);
+  const [publishedCourses, setPublishedCourses] = useState<Course[]>([]);
 
   const activeCourses = Array.isArray(metrics?.activeCourses) ? metrics.activeCourses : [];
   const notifications = Array.isArray(metrics?.notifications) ? metrics.notifications : [];
@@ -61,6 +62,18 @@ export function StudentDashboard({ metrics }: { metrics?: any }) {
   const level = Number(metrics?.level || Math.floor(xp / 1000) + 1);
   const xpToNextLevel = Math.max(level * 1000, 1000);
   const progressToNext = Math.min(100, Math.round((xp / xpToNextLevel) * 100));
+
+  const enrolledCourseIds = useMemo(() => {
+    return new Set(
+      activeCourses
+        .map((progress: any) => {
+          if (typeof progress.course === "string") return progress.course;
+          if (progress.course && typeof progress.course === "object") return progress.course._id;
+          return "";
+        })
+        .filter(Boolean)
+    );
+  }, [activeCourses]);
 
   const recentActivity = useMemo(() => {
     const quizActivity = quizResults.map((q: any) => ({
@@ -89,22 +102,14 @@ export function StudentDashboard({ metrics }: { metrics?: any }) {
       try {
         const [leaderboardData, coursesData] = await Promise.all([
           apiService.getLeaderboard(),
-          apiService.getCourses({ limit: 8, status: "published" }),
+          apiService.getCourses({ limit: 120, status: "published" }),
         ]);
 
         setLeaderboard(leaderboardData.filter((entry) => entry.role === "student"));
 
-        const enrolledIds = new Set(
-          activeCourses
-            .map((progress: any) => {
-              if (typeof progress.course === "string") return progress.course;
-              if (progress.course && typeof progress.course === "object") return progress.course._id;
-              return "";
-            })
-            .filter(Boolean)
-        );
+        setPublishedCourses(coursesData.items || []);
 
-        const suggestions = coursesData.items.filter((course) => !enrolledIds.has(course._id)).slice(0, 3);
+        const suggestions = coursesData.items.filter((course) => !enrolledCourseIds.has(course._id)).slice(0, 3);
         setRecommendedCourses(suggestions);
       } catch (err: any) {
         setExtraError(err?.response?.data?.message || "Could not load recommendations");
@@ -114,10 +119,80 @@ export function StudentDashboard({ metrics }: { metrics?: any }) {
     };
 
     void loadExtras();
-  }, [activeCourses]);
+  }, [enrolledCourseIds]);
 
   const topStudents = leaderboard.slice(0, 5);
   const firstName = user?.name?.trim().split(" ")[0] || "there";
+
+  const fieldProgressCards = useMemo(() => {
+    const grouped = new Map<string, Course[]>();
+
+    publishedCourses.forEach((course) => {
+      const field = resolveLearningFieldFromCourse({
+        title: course.title,
+        category: course.category,
+        description: course.description,
+      });
+
+      const existing = grouped.get(field);
+      if (existing) {
+        existing.push(course);
+      } else {
+        grouped.set(field, [course]);
+      }
+    });
+
+    const preferred = FIELD_PRIORITY.filter((field) => field !== "General Technology");
+    const discovered = Array.from(grouped.keys())
+      .filter((field) => !preferred.includes(field))
+      .sort((left, right) => left.localeCompare(right));
+
+    const orderedFields = [...preferred, ...discovered];
+
+    return orderedFields
+      .map((field) => {
+        const phases = sortCoursesByPhaseOrder(grouped.get(field) || []);
+        if (phases.length === 0) {
+          return null;
+        }
+
+        const phaseRows = phases.map((course, index) => {
+          const phaseNumber = getPhaseNumber(course, index);
+          const cleanTitle = stripPhasePrefix(String(course.title || ""));
+          const title = cleanTitle ? `Phase ${phaseNumber}: ${cleanTitle}` : `Phase ${phaseNumber}`;
+
+          const isPaid = Number(course.price || 0) > 0;
+          const isEnrolled = enrolledCourseIds.has(course._id);
+
+          const previousCourse = index > 0 ? phases[index - 1] : null;
+          const previousEnrolled = previousCourse ? enrolledCourseIds.has(previousCourse._id) : true;
+
+          const orderLocked = index > 0 && !previousEnrolled;
+          const paymentLocked = !orderLocked && isPaid && !isEnrolled;
+
+          return {
+            courseId: course._id,
+            phaseNumber,
+            title,
+            isPaid,
+            price: Number(course.price || 0),
+            isEnrolled,
+            orderLocked,
+            paymentLocked,
+          };
+        });
+
+        const paidCount = phaseRows.filter((phase) => phase.isPaid).length;
+
+        return {
+          field,
+          phaseCount: phaseRows.length,
+          paidCount,
+          phases: phaseRows,
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => Boolean(item));
+  }, [publishedCourses, enrolledCourseIds]);
 
   if (loadingExtras) {
     return (
