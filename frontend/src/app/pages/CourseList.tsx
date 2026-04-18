@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "motion/react";
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
 import { Button } from "../components/ui/Button";
 import { Card, CardContent } from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
@@ -8,6 +8,7 @@ import { Badge } from "../components/ui/Badge";
 import { Search, Filter, Star, Clock, Users, PlayCircle, PlusCircle, X, Heart } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import apiService, { Course as ApiCourse } from "../services/api";
+import { FIELD_PRIORITY, resolveLearningFieldFromCourse } from "../utils/learningFields";
 
 type CourseType = ApiCourse;
 
@@ -29,13 +30,17 @@ const extractErrorMessage = (error: any, fallback: string) => {
 };
 
 export function CourseList() {
+  const location = useLocation();
   const { role, user } = useAuth();
   const isAdmin = role === 'admin';
   const isInstructor = role === 'instructor' || isAdmin;
+  const queryField = new URLSearchParams(location.search).get("field")?.trim() || "";
+  const courseDetailBasePath = user ? "/app/courses" : "/courses";
 
   const [courses, setCourses] = useState<CourseType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedField, setSelectedField] = useState(queryField);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedLevel, setSelectedLevel] = useState("");
   const [selectedDuration, setSelectedDuration] = useState("");
@@ -60,6 +65,34 @@ export function CourseList() {
   }, []);
 
   useEffect(() => {
+    setSelectedField(queryField);
+  }, [queryField]);
+
+  const fieldOptions = useMemo(() => {
+    const unique = new Set(
+      courses.map((course) => resolveLearningFieldFromCourse({
+        title: course.title,
+        category: course.category,
+        description: course.description,
+      }))
+    );
+
+    return Array.from(unique).sort((left, right) => {
+      const leftIndex = FIELD_PRIORITY.findIndex((item) => item.toLowerCase() === left.toLowerCase());
+      const rightIndex = FIELD_PRIORITY.findIndex((item) => item.toLowerCase() === right.toLowerCase());
+
+      const normalizedLeft = leftIndex >= 0 ? leftIndex : FIELD_PRIORITY.length + 1;
+      const normalizedRight = rightIndex >= 0 ? rightIndex : FIELD_PRIORITY.length + 1;
+
+      if (normalizedLeft !== normalizedRight) {
+        return normalizedLeft - normalizedRight;
+      }
+
+      return left.localeCompare(right);
+    });
+  }, [courses]);
+
+  useEffect(() => {
     const fetchFavorites = async () => {
       if (!user || role !== 'student') {
         setFavorites(new Set());
@@ -78,12 +111,19 @@ export function CourseList() {
   }, [role, user?._id]);
 
   const filteredCourses = courses.filter(c => {
+    const learningField = resolveLearningFieldFromCourse({
+      title: c.title,
+      category: c.category,
+      description: c.description,
+    });
+
     if (searchQuery && !c.title.toLowerCase().includes(searchQuery.toLowerCase()) && !c.instructor?.name?.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    if (selectedField && learningField !== selectedField) return false;
     if (selectedCategory && c.category !== selectedCategory) return false;
     return true;
   });
 
-  const activeFilters = [selectedCategory, selectedLevel, selectedDuration].filter(Boolean).length;
+  const activeFilters = [selectedField, selectedCategory, selectedLevel, selectedDuration].filter(Boolean).length;
 
   const toggleFavorite = async (id: string) => {
     if (!user || role !== 'student') {
@@ -254,6 +294,16 @@ export function CourseList() {
             >
               <select
                 className="h-10 flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-800 dark:bg-slate-950 text-slate-900 dark:text-slate-100"
+                value={selectedField}
+                onChange={(e) => setSelectedField(e.target.value)}
+              >
+                <option value="">All Fields</option>
+                {fieldOptions.map((field) => (
+                  <option key={field} value={field}>{field}</option>
+                ))}
+              </select>
+              <select
+                className="h-10 flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-800 dark:bg-slate-950 text-slate-900 dark:text-slate-100"
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
               >
@@ -286,7 +336,7 @@ export function CourseList() {
                 <option value="long">Long (25h+)</option>
               </select>
               {activeFilters > 0 && (
-                <Button variant="ghost" size="sm" onClick={() => { setSelectedCategory(""); setSelectedLevel(""); setSelectedDuration(""); }}>
+                <Button variant="ghost" size="sm" onClick={() => { setSelectedField(""); setSelectedCategory(""); setSelectedLevel(""); setSelectedDuration(""); }}>
                   <X className="h-4 w-4 mr-1" /> Clear
                 </Button>
               )}
@@ -306,7 +356,7 @@ export function CourseList() {
           <Search className="mx-auto h-12 w-12 text-slate-400 mb-4" />
           <h3 className="text-lg font-medium text-slate-900 dark:text-white">No courses found</h3>
           <p className="text-sm text-slate-500 mt-1">Try adjusting your search or filters.</p>
-          <Button variant="outline" className="mt-4" onClick={() => { setSearchQuery(""); setSelectedCategory(""); setSelectedLevel(""); setSelectedDuration(""); }}>Clear all filters</Button>
+          <Button variant="outline" className="mt-4" onClick={() => { setSearchQuery(""); setSelectedField(""); setSelectedCategory(""); setSelectedLevel(""); setSelectedDuration(""); }}>Clear all filters</Button>
         </div>
       ) : (
         <>
@@ -316,6 +366,12 @@ export function CourseList() {
               const hasRatings = Number(course.numReviews || 0) > 0;
               const ratingLabel = hasRatings ? Number(course.rating || 0).toFixed(1) : "N/A";
               const isPaidCourse = Number(course.price || 0) > 0;
+              const learningField = resolveLearningFieldFromCourse({
+                title: course.title,
+                category: course.category,
+                description: course.description,
+              });
+              const courseHref = `${courseDetailBasePath}/${course._id}`;
 
               return (
                 <motion.div
@@ -333,11 +389,11 @@ export function CourseList() {
                     />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       <Button size="icon" className="rounded-full h-12 w-12 bg-indigo-600 hover:bg-indigo-700" asChild>
-                        <Link to={`/app/courses/${course._id}`}><PlayCircle className="h-6 w-6 text-white" /></Link>
+                        <Link to={courseHref}><PlayCircle className="h-6 w-6 text-white" /></Link>
                       </Button>
                     </div>
                     <div className="absolute top-3 left-3 flex flex-col gap-2">
-                      <Badge className="bg-white/90 text-slate-900 hover:bg-white">{course.category}</Badge>
+                      <Badge className="bg-white/90 text-slate-900 hover:bg-white">{learningField}</Badge>
                       <Badge className={`font-extrabold tracking-wide ${Number(course.price || 0) > 0 ? "bg-indigo-600 text-white hover:bg-indigo-600" : "bg-emerald-600 text-white hover:bg-emerald-600"}`}>
                         {Number(course.price || 0) > 0 ? "PAID COURSE" : "FREE COURSE"}
                       </Badge>
@@ -363,7 +419,7 @@ export function CourseList() {
                       <span className="text-slate-500">({Array.isArray(course.students) ? course.students.length : 0})</span>
                     </div>
 
-                    <Link to={`/app/courses/${course._id}`} className="block mb-2">
+                    <Link to={courseHref} className="block mb-2">
                       <h3 className="font-bold text-lg leading-tight text-slate-900 dark:text-white hover:text-indigo-600 transition-colors line-clamp-2">
                         {course.title}
                       </h3>
@@ -373,8 +429,13 @@ export function CourseList() {
 
                     <div className="flex flex-wrap gap-2 mb-4 mt-auto">
                       <Badge variant="secondary" className="text-xs px-2 py-0.5">
-                        {course.category}
+                        {learningField}
                       </Badge>
+                      {course.category ? (
+                        <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                          {course.category}
+                        </Badge>
+                      ) : null}
                       <Badge className={`text-xs px-2 py-0.5 font-bold ${Number(course.price || 0) > 0 ? "bg-indigo-100 text-indigo-700" : "bg-emerald-100 text-emerald-700"}`}>
                         {Number(course.price || 0) > 0
                           ? `${Number(course.price || 0).toFixed(2)} ETB`

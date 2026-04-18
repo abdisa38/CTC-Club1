@@ -57,12 +57,14 @@ export function PublicLayout() {
 
   useEffect(() => { setMobileOpen(false); }, [location.pathname]);
 
+  const TELEGRAM_CHANNEL_URL = "https://t.me/officialCTCclub";
+
   const navLinks = [
     { label: "Home", to: "/" },
-    { label: "Courses", to: "/app/courses" },
-    { label: "Learning", to: "/app/courses" },
-    { label: "Community", to: "/app/community" },
-    { label: "About", to: "/features" },
+    { label: "Courses", to: "/courses" },
+    { label: "Learning", to: "/courses" },
+    { label: "Community", href: TELEGRAM_CHANNEL_URL, external: true },
+    { label: "About", to: "/about" },
   ];
 
   return (
@@ -86,19 +88,36 @@ export function PublicLayout() {
             </Link>
 
             <nav className="hidden md:flex gap-0.5 justify-end">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  className={`relative px-3.5 py-2 rounded-lg text-[13px] font-semibold tracking-wide transition-all duration-200 ${
-                    location.pathname === link.to
-                      ? "text-indigo-600 bg-indigo-50/80 dark:bg-indigo-500/10 dark:text-indigo-400"
-                      : "text-slate-300 hover:text-white hover:bg-white/5"
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              ))}
+              {navLinks.map((link) => {
+                const isActive = Boolean(link.to)
+                  && (link.to === "/" ? location.pathname === "/" : location.pathname.startsWith(link.to));
+
+                const navClassName = `relative px-3.5 py-2 rounded-lg text-[13px] font-semibold tracking-wide transition-all duration-200 ${
+                  isActive
+                    ? "text-indigo-600 bg-indigo-50/80 dark:bg-indigo-500/10 dark:text-indigo-400"
+                    : "text-slate-300 hover:text-white hover:bg-white/5"
+                }`;
+
+                if (link.external) {
+                  return (
+                    <a
+                      key={link.label}
+                      href={link.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={navClassName}
+                    >
+                      {link.label}
+                    </a>
+                  );
+                }
+
+                return (
+                  <Link key={link.label} to={link.to || "/"} className={navClassName}>
+                    {link.label}
+                  </Link>
+                );
+              })}
             </nav>
 
             <div className="flex items-center gap-2.5">
@@ -136,19 +155,36 @@ export function PublicLayout() {
                 className="md:hidden bg-white/95 backdrop-blur-xl dark:bg-[#0c0f1a]/95 border-t border-slate-100 dark:border-slate-800/50 overflow-hidden"
               >
                 <div className="px-6 py-5 space-y-1">
-                  {navLinks.map((link) => (
-                    <Link
-                      key={link.to}
-                      to={link.to}
-                      className={`block px-4 py-3 rounded-xl text-sm font-semibold transition-colors ${
-                        location.pathname === link.to
-                          ? "text-indigo-600 bg-indigo-50 dark:bg-indigo-500/10 dark:text-indigo-400"
-                          : "text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/5"
-                      }`}
-                    >
-                      {link.label}
-                    </Link>
-                  ))}
+                  {navLinks.map((link) => {
+                    const isActive = Boolean(link.to)
+                      && (link.to === "/" ? location.pathname === "/" : location.pathname.startsWith(link.to));
+
+                    const navClassName = `block px-4 py-3 rounded-xl text-sm font-semibold transition-colors ${
+                      isActive
+                        ? "text-indigo-600 bg-indigo-50 dark:bg-indigo-500/10 dark:text-indigo-400"
+                        : "text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/5"
+                    }`;
+
+                    if (link.external) {
+                      return (
+                        <a
+                          key={link.label}
+                          href={link.href}
+                          target="_blank"
+                          rel="noreferrer"
+                          className={navClassName}
+                        >
+                          {link.label}
+                        </a>
+                      );
+                    }
+
+                    return (
+                      <Link key={link.label} to={link.to || "/"} className={navClassName}>
+                        {link.label}
+                      </Link>
+                    );
+                  })}
                   <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-2.5">
                     <Button variant="outline" className="w-full h-11 rounded-xl font-semibold" asChild>
                       <Link to="/login">Log in</Link>
@@ -207,15 +243,32 @@ export function PublicLayout() {
               <div>
                 <h4 className="text-white text-sm font-semibold mb-5 tracking-wide">Platform</h4>
                 <ul className="space-y-3">
-                  {["Courses", "Resources", "Community", "Leaderboard", "Projects"].map((link) => (
-                    <li key={link}>
-                      <Link
-                        to={`/app/${link.toLowerCase()}`}
-                        className="text-sm text-slate-400 hover:text-white transition-colors duration-200 flex items-center gap-1.5 group"
-                      >
-                        {link}
-                        <ArrowUpRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </Link>
+                  {[
+                    { label: "Courses", to: "/courses" },
+                    { label: "Learning Paths", to: "/courses" },
+                    { label: "Community", href: TELEGRAM_CHANNEL_URL, external: true },
+                    { label: "About", to: "/about" },
+                  ].map((link) => (
+                    <li key={link.label}>
+                      {link.external ? (
+                        <a
+                          href={link.href}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-sm text-slate-400 hover:text-white transition-colors duration-200 flex items-center gap-1.5 group"
+                        >
+                          {link.label}
+                          <ArrowUpRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </a>
+                      ) : (
+                        <Link
+                          to={link.to || "/"}
+                          className="text-sm text-slate-400 hover:text-white transition-colors duration-200 flex items-center gap-1.5 group"
+                        >
+                          {link.label}
+                          <ArrowUpRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </Link>
+                      )}
                     </li>
                   ))}
                 </ul>

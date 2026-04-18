@@ -6,6 +6,7 @@ import { Badge } from "../components/ui/Badge";
 import { Input } from "../components/ui/Input";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import api from "../utils/api";
+import { FIELD_PRIORITY, resolveLearningFieldFromCourse } from "../utils/learningFields";
 import "../../styles/home.css";
 import ctcLogo from "../../assets/f6c46c16a776a1f63a42e49b36947669f8dcc942.png";
 import {
@@ -140,7 +141,7 @@ function CourseCard({ course }: { course: FeaturedCourse }) {
           <span className="text-[11px] text-slate-400">{Number(course.students || 0)} students</span>
         </div>
         <Button size="sm" className={`w-full h-10 text-[12px] font-bold rounded-lg shadow-sm ${isPaid ? "bg-gradient-to-r from-rose-600 to-orange-500 hover:from-rose-700 hover:to-orange-600 text-white" : "bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white"}`} asChild>
-          <Link to={`/app/courses/${course.id}`}>{isPaid ? `Pay ${Number(course.price || 0).toFixed(2)} ${course.currency || "ETB"}` : "Enroll Free"}</Link>
+          <Link to={`/courses/${course.id}`}>{isPaid ? `Pay ${Number(course.price || 0).toFixed(2)} ${course.currency || "ETB"}` : "Enroll Free"}</Link>
         </Button>
       </div>
     </PremiumCard>
@@ -184,6 +185,7 @@ const howItWorks = [
 
 export function Home() {
   const location = useLocation();
+  const TELEGRAM_CHANNEL_URL = "https://t.me/officialCTCclub";
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
 
@@ -206,7 +208,7 @@ export function Home() {
       try {
         const [statsRes, coursesRes, announcementsRes, eventsRes] = await Promise.all([
           api.get('/dashboard/public-stats'),
-          api.get('/courses?limit=4'),
+          api.get('/courses?limit=60'),
           api.get('/dashboard/announcements'),
           api.get('/events?upcoming=true')
         ]);
@@ -317,9 +319,55 @@ export function Home() {
       currency: String(course.currency || 'ETB'),
       rating: Number(course.rating || 0),
       numReviews: Number(course.numReviews || 0),
-      href: typeof course.id === 'string' ? `/app/courses/${course.id}` : '/app/courses',
+      href: typeof course.id === 'string' ? `/courses/${course.id}` : '/courses',
     }));
   }, [realCourses]);
+
+  const featuredFieldGroups = useMemo(() => {
+    const grouped = new Map<string, FeaturedCourse[]>();
+
+    realCourses.forEach((course) => {
+      const field = resolveLearningFieldFromCourse({
+        title: course.title,
+        category: course.category,
+        description: course.description,
+      });
+
+      const existing = grouped.get(field);
+      if (existing) {
+        existing.push(course);
+      } else {
+        grouped.set(field, [course]);
+      }
+    });
+
+    const priorityIndex = (fieldName: string): number => {
+      const index = FIELD_PRIORITY.findIndex((item) => item.toLowerCase() === fieldName.toLowerCase());
+      return index >= 0 ? index : FIELD_PRIORITY.length + 1;
+    };
+
+    return Array.from(grouped.entries())
+      .map(([field, courses]) => ({
+        field,
+        courses: [...courses].sort((left, right) => String(left.title).localeCompare(String(right.title))),
+      }))
+      .sort((left, right) => {
+        const priorityDiff = priorityIndex(left.field) - priorityIndex(right.field);
+        if (priorityDiff !== 0) {
+          return priorityDiff;
+        }
+
+        return left.field.localeCompare(right.field);
+      });
+  }, [realCourses]);
+
+  const fieldDescriptions: Record<string, string> = {
+    "Web Development": "Frontend and backend phases grouped as one complete web development track.",
+    "Graphics Design": "Visual design, branding, and UI/UX-focused learning path.",
+    "App Development": "Mobile and application engineering path for Android, iOS, and cross-platform apps.",
+    "Maintenance": "Operations, support, testing, and long-term maintenance workflows.",
+    "General Technology": "Technology courses that do not belong to a specialized field yet.",
+  };
 
   const eventCards = useMemo(() => {
     return events.slice(0, 3).map((item) => ({
@@ -390,7 +438,7 @@ export function Home() {
                   </Link>
                 </Button>
                 <Button size="lg" className="w-full sm:w-auto px-8 h-12 text-[15px] font-semibold border-white/20 rounded-xl bg-white/5 hover:bg-white/10 transition-all duration-300 text-white" asChild>
-                  <Link to="/app/courses">Explore Courses</Link>
+                  <Link to="/courses">Explore Courses</Link>
                 </Button>
               </motion.div>
 
@@ -413,7 +461,7 @@ export function Home() {
                 {showSearchSuggestions && searchSuggestions.length > 0 && (
                   <div className="absolute top-full mt-2 w-full bg-white/95 dark:bg-[#131827]/95 border border-slate-200/70 dark:border-white/10 rounded-xl shadow-lg shadow-black/10 z-50 overflow-hidden backdrop-blur-md">
                     {searchSuggestions.map((s, i) => (
-                      <Link key={i} to="/app/courses" className="flex items-center gap-3 px-4 py-3 hover:bg-white/10 bg-white/5 border-white/10 text-white transition-colors text-sm text-slate-300">
+                      <Link key={i} to="/courses" className="flex items-center gap-3 px-4 py-3 hover:bg-white/10 bg-white/5 border-white/10 transition-colors text-sm text-slate-300">
                         <Search className="h-3.5 w-3.5 text-slate-400" />
                         {s}
                       </Link>
@@ -540,26 +588,67 @@ export function Home() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-14 gap-6">
               <div>
                 <Badge className="mb-5 py-1 px-3.5 text-xs font-semibold bg-sky-50 text-sky-700 border-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:border-sky-500/20">
-                  Top Courses
+                  Learning Fields
                 </Badge>
-                <h2 className="home-display text-3xl sm:text-4xl font-extrabold tracking-tight text-white">Featured Courses</h2>
-                <p className="home-copy mt-3 text-base text-slate-300">Handpicked courses to accelerate your learning journey.</p>
+                <h2 className="home-display text-3xl sm:text-4xl font-extrabold tracking-tight text-white">Browse By Field</h2>
+                <p className="home-copy mt-3 text-base text-slate-300">The four phases are now grouped under Web Development, ready for new fields like Graphics Design, App Development, and Maintenance.</p>
               </div>
-              <Button className="rounded-xl font-semibold border-slate-200 dark:border-white/10 hover:bg-white/10 bg-white/5 border-white/10 text-white" asChild>
-                <Link to="/app/courses">View All <ArrowRight className="ml-2 h-4 w-4" /></Link>
+              <Button className="rounded-xl font-semibold dark:border-white/10 hover:bg-white/10 bg-white/5 border-white/10 text-white" asChild>
+                <Link to="/courses">View All <ArrowRight className="ml-2 h-4 w-4" /></Link>
               </Button>
             </div>
           </AnimatedSection>
 
-          {realCourses.length === 0 ? (
+          {featuredFieldGroups.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-300 dark:border-slate-700">
               No published course available yet.
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              {realCourses.map((course, i) => (
-                <AnimatedSection key={course.id} delay={i * 0.08}>
-                  <CourseCard course={course} />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              {featuredFieldGroups.map((group, i) => (
+                <AnimatedSection key={group.field} delay={i * 0.08}>
+                  <PremiumCard className="p-6 h-full">
+                    <div className="flex items-start justify-between gap-3 mb-5">
+                      <div>
+                        <h3 className="text-lg font-bold text-white">{group.field}</h3>
+                        <p className="mt-1 text-sm text-slate-300 leading-relaxed">
+                          {fieldDescriptions[group.field] || "Structured learning field with practical, project-driven lessons."}
+                        </p>
+                      </div>
+                      <Badge className="bg-indigo-600 text-white border-0 font-semibold whitespace-nowrap">
+                        {group.courses.length} {group.courses.length === 1 ? "phase" : "phases"}
+                      </Badge>
+                    </div>
+
+                    <div className="space-y-2.5">
+                      {group.courses.slice(0, 6).map((course, index) => {
+                        const isPaidCourse = Number(course.price || 0) > 0;
+
+                        return (
+                          <Link
+                            key={course.id}
+                            to={`/courses/${course.id}`}
+                            className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 hover:bg-white/10 transition-colors"
+                          >
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-white truncate">{index + 1}. {course.title}</p>
+                              <p className="text-xs text-slate-400 truncate">{course.instructor}</p>
+                            </div>
+                            <Badge className={`border-0 shrink-0 text-[11px] font-bold ${isPaidCourse ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
+                              {isPaidCourse ? `${Number(course.price || 0).toFixed(2)} ${course.currency || "ETB"}` : "FREE"}
+                            </Badge>
+                          </Link>
+                        );
+                      })}
+                    </div>
+
+                    <Button className="w-full mt-5 rounded-xl font-semibold bg-gradient-to-r from-sky-600 to-cyan-500 hover:from-sky-700 hover:to-cyan-600 text-white" asChild>
+                      <Link to={`/courses?field=${encodeURIComponent(group.field)}`}>
+                        Open {group.field}
+                        <ChevronRight className="ml-1.5 h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </PremiumCard>
                 </AnimatedSection>
               ))}
             </div>
@@ -611,7 +700,7 @@ export function Home() {
                       className={`w-full mt-6 h-11 rounded-xl text-[13px] font-bold ${path.price > 0 ? "bg-gradient-to-r from-rose-600 to-orange-500 hover:from-rose-700 hover:to-orange-600 text-white" : "bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white"}`}
                       asChild
                     >
-                      <Link to="/app/courses">{path.price > 0 ? `Pay ${path.price.toFixed(2)} ${path.currency}` : "Enroll Free"} <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                      <Link to="/courses">{path.price > 0 ? `Pay ${path.price.toFixed(2)} ${path.currency}` : "Enroll Free"} <ArrowRight className="ml-2 h-4 w-4" /></Link>
                     </Button>
                   </div>
                 </PremiumCard>
@@ -684,7 +773,7 @@ export function Home() {
                       <p className="text-[12px] text-slate-300">{item.date}</p>
                     </div>
                     <Button size="sm" className="h-8 text-[11px]" asChild>
-                      <Link to="/app/community">Discuss</Link>
+                        <a href={TELEGRAM_CHANNEL_URL} target="_blank" rel="noreferrer">Discuss</a>
                     </Button>
                   </div>
                 </PremiumCard>
@@ -777,7 +866,7 @@ export function Home() {
                 ))}
               </div>
               <Button size="lg" className="bg-white text-slate-900 hover:bg-cyan-50 rounded-xl h-12 px-8 font-semibold shadow-lg shadow-black/10 transition-all duration-300" asChild>
-                <a href="https://t.me/officialCTCclub" target="_blank" rel="noreferrer">
+                <a href={TELEGRAM_CHANNEL_URL} target="_blank" rel="noreferrer">
                   Join on Telegram <ArrowRight className="ml-2 h-4 w-4" />
                 </a>
               </Button>
@@ -899,7 +988,7 @@ export function Home() {
               </PremiumCard>
             </AnimatedSection>
             <AnimatedSection delay={0.12}>
-              <div className="rounded-2xl border-2 border-sky-500/30 bg-gradient-to-b from-sky-500/5 to-[#0c0f1a] shadow-sky-500/10 p-8 relative h-full shadow-lg shadow-sky-500/10">
+              <div className="rounded-2xl border-2 border-sky-500/30 bg-gradient-to-b from-sky-500/5 to-[#0c0f1a] p-8 relative h-full shadow-lg shadow-sky-500/10">
                 <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
                   <Badge className="bg-gradient-to-r from-sky-600 to-cyan-500 text-white border-0 px-4 py-1 text-[11px] font-semibold shadow-lg shadow-cyan-500/25">
                     Most Popular
@@ -948,7 +1037,7 @@ export function Home() {
                   <Link to="/register">Register Now <ArrowRight className="ml-2 h-4 w-4" /></Link>
                 </Button>
                 <Button size="lg" className="border-white/20 text-white hover:bg-white/10 px-8 h-12 rounded-xl font-semibold backdrop-blur-sm transition-all duration-300" asChild>
-                  <Link to="/app/courses">Explore Courses</Link>
+                  <Link to="/courses">Explore Courses</Link>
                 </Button>
               </div>
             </div>

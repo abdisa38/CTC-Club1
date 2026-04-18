@@ -20,6 +20,9 @@ export const router = createBrowserRouter([
     Component: PublicLayout,
     children: [
       { index: true, lazy: lazyComponent(() => import("./pages/Home"), "Home") },
+      { path: "courses", lazy: lazyComponent(() => import("./pages/CourseList"), "CourseList") },
+      { path: "courses/:id", lazy: lazyComponent(() => import("./pages/CourseDetail"), "CourseDetail") },
+      { path: "about", lazy: lazyComponent(() => import("./pages/About"), "About") },
       { path: "login", lazy: lazyComponent(() => import("./pages/Auth"), "Auth") },
       { path: "register", lazy: lazyComponent(() => import("./pages/Auth"), "Auth") },
       { path: "features", lazy: lazyComponent(() => import("./pages/Home"), "Home") },
