@@ -29,6 +29,41 @@ const extractErrorMessage = (error: any, fallback: string) => {
   return fallback;
 };
 
+const PHASE_NUMBER_REGEX = /phase\s*(\d+)/i;
+
+const getPhaseNumber = (course: CourseType, fallbackIndex: number) => {
+  const match = String(course.title || "").match(PHASE_NUMBER_REGEX);
+  if (match?.[1]) {
+    const parsed = Number(match[1]);
+    if (Number.isFinite(parsed) && parsed > 0) {
+      return parsed;
+    }
+  }
+
+  return fallbackIndex + 1;
+};
+
+const stripPhasePrefix = (title: string) =>
+  String(title || "")
+    .replace(/^phase\s*\d+\s*[:\-]?\s*/i, "")
+    .trim();
+
+const sortCoursesByPhaseOrder = (items: CourseType[]) => {
+  return [...items].sort((left, right) => {
+    const leftMatch = String(left.title || "").match(PHASE_NUMBER_REGEX);
+    const rightMatch = String(right.title || "").match(PHASE_NUMBER_REGEX);
+
+    const leftPhase = leftMatch?.[1] ? Number(leftMatch[1]) : Number.POSITIVE_INFINITY;
+    const rightPhase = rightMatch?.[1] ? Number(rightMatch[1]) : Number.POSITIVE_INFINITY;
+
+    if (leftPhase !== rightPhase) {
+      return leftPhase - rightPhase;
+    }
+
+    return String(left.title || "").localeCompare(String(right.title || ""));
+  });
+};
+
 export function CourseList() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -192,19 +227,7 @@ export function CourseList() {
     }
 
     const fieldCourses = groupedCoursesByField.get(selectedField) || [];
-    return [...fieldCourses].sort((left, right) => {
-      const leftMatch = String(left.title || "").match(/phase\s*(\d+)/i);
-      const rightMatch = String(right.title || "").match(/phase\s*(\d+)/i);
-
-      const leftPhase = leftMatch ? Number(leftMatch[1]) : -1;
-      const rightPhase = rightMatch ? Number(rightMatch[1]) : -1;
-
-      if (leftPhase !== rightPhase) {
-        return leftPhase - rightPhase;
-      }
-
-      return String(left.title || "").localeCompare(String(right.title || ""));
-    });
+    return sortCoursesByPhaseOrder(fieldCourses);
   }, [groupedCoursesByField, selectedField]);
 
   const isFieldOverviewMode = !selectedField && !searchQuery.trim() && !selectedCategory && !selectedLevel && !selectedDuration;
@@ -472,7 +495,7 @@ export function CourseList() {
             {overviewFields.map((entry, index) => {
               const hasCourses = entry.courses.length > 0;
               const paidPhases = entry.courses.filter((course) => Number(course.price || 0) > 0).length;
-              const previewCourses = entry.courses.slice(0, 4);
+              const previewCourses = sortCoursesByPhaseOrder(entry.courses).slice(0, 4);
 
               return (
                 <motion.div
