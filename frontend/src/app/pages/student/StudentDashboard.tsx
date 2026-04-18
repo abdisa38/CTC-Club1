@@ -173,22 +173,31 @@ export function StudentDashboard({ metrics }: { metrics?: any }) {
           const title = cleanTitle ? `Phase ${phaseNumber}: ${cleanTitle}` : `Phase ${phaseNumber}`;
 
           const isPaid = Number(course.price || 0) > 0;
-          const isEnrolled = enrolledCourseIds.has(course._id);
+          const requiresPayment = Boolean(course.requiresPayment ?? isPaid);
+          const blockedByInstructor = Boolean(course.isLockedForStudent);
+
+          const isEnrolled = blockedByInstructor
+            ? false
+            : requiresPayment
+              ? Boolean(course.hasPaidAccess)
+              : Boolean(course.studentAccessOverride === "unlocked" || enrolledCourseIds.has(course._id));
 
           const previousPhaseNumber = phaseNumber - 1;
           const previousPhaseExists = previousPhaseNumber > 0 && phaseNumbersPresent.has(previousPhaseNumber);
           const previousPhaseUnlocked = !previousPhaseExists || Boolean(phaseAccessByNumber.get(previousPhaseNumber));
 
           const orderLocked = phaseNumber > 1 && !previousPhaseUnlocked;
-          const paymentLocked = !orderLocked && isPaid && !isEnrolled;
+          const paymentLocked = !orderLocked && !blockedByInstructor && requiresPayment && !isEnrolled;
 
           return {
             courseId: course._id,
             phaseNumber,
             title,
             isPaid,
+            requiresPayment,
             price: Number(course.price || 0),
             isEnrolled,
+            blockedByInstructor,
             orderLocked,
             paymentLocked,
           };
@@ -289,7 +298,9 @@ export function StudentDashboard({ metrics }: { metrics?: any }) {
 
                   <div className="mt-3 space-y-1.5">
                     {fieldCard.phases.slice(0, 4).map((phase) => {
-                      const statusClass = phase.orderLocked
+                      const statusClass = phase.blockedByInstructor
+                        ? "bg-slate-600 text-white"
+                        : phase.orderLocked
                         ? "bg-amber-100 text-amber-700"
                         : phase.paymentLocked
                           ? "bg-rose-600 text-white"
@@ -297,7 +308,9 @@ export function StudentDashboard({ metrics }: { metrics?: any }) {
                             ? "bg-emerald-100 text-emerald-700"
                             : "bg-indigo-100 text-indigo-700";
 
-                      const statusLabel = phase.orderLocked
+                      const statusLabel = phase.blockedByInstructor
+                        ? "Locked"
+                        : phase.orderLocked
                         ? "Locked"
                         : phase.paymentLocked
                           ? "Pay"
@@ -311,9 +324,9 @@ export function StudentDashboard({ metrics }: { metrics?: any }) {
                             <p className="truncate text-[12px] font-medium text-slate-800 dark:text-slate-200">{phase.title}</p>
                           </div>
                           <div className="ml-2 flex items-center gap-1.5">
-                            {phase.orderLocked ? <Lock className="h-3 w-3 text-amber-600" /> : null}
+                            {phase.blockedByInstructor || phase.orderLocked ? <Lock className="h-3 w-3 text-amber-600" /> : null}
                             <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-extrabold tracking-wide ${statusClass}`}>
-                              {phase.isPaid && !phase.isEnrolled && !phase.orderLocked ? `${phase.price.toFixed(0)} ETB` : statusLabel}
+                              {phase.requiresPayment && !phase.isEnrolled && !phase.orderLocked && !phase.blockedByInstructor ? `${phase.price.toFixed(0)} ETB` : statusLabel}
                             </span>
                           </div>
                         </div>
