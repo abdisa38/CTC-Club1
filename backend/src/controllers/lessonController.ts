@@ -3,6 +3,7 @@ import { AuthRequest } from '../middleware/authMiddleware';
 import Lesson from '../models/lessonModel';
 import Course from '../models/courseModel';
 import PaymentTransaction from '../models/paymentTransactionModel';
+import { evaluateStudentCourseAccess } from '../utils/courseAccess';
 import { sendSuccess } from '../utils/apiResponse';
 
 const hasOwn = (value: unknown, key: string) => {
@@ -465,14 +466,23 @@ export const getLessonsByCourse = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'Course ID is required' });
     }
 
-    const course = await Course.findById(courseId).select('price students instructor');
+    const course = await Course.findById(courseId).select(
+      'price students instructor accessMode lockedStudentIds unlockedStudentIds'
+    );
     if (!course) {
       return res.status(404).json({ message: 'Course not found' });
     }
 
     const isPrivilegedUser = req.user.role === 'admin' || String(course.instructor) === String(req.user._id);
-    const isPaidCourse = Number(course.price || 0) > 0;
-    const hasPaidAccess = isPaidCourse && !isPrivilegedUser
+    const studentId = String(req.user._id);
+    const accessWithoutPayment = evaluateStudentCourseAccess({
+      course,
+      studentId,
+      isPrivilegedUser,
+      hasSuccessfulPayment: false,
+    });
+
+    const hasPaidAccess = accessWithoutPayment.requiresPayment && !isPrivilegedUser
       ? Boolean(
           await PaymentTransaction.findOne({
             user: req.user._id,
@@ -485,7 +495,18 @@ export const getLessonsByCourse = async (req: AuthRequest, res: Response) => {
         )
       : false;
 
-    if (isPaidCourse && !isPrivilegedUser && !hasPaidAccess) {
+    const accessState = evaluateStudentCourseAccess({
+      course,
+      studentId,
+      isPrivilegedUser,
+      hasSuccessfulPayment: hasPaidAccess,
+    });
+
+    if (accessState.blockedByInstructor) {
+      return res.status(403).json({ message: 'This phase is currently locked by your instructor for your account' });
+    }
+
+    if (accessState.requiresPayment && !accessState.hasAccess) {
       return res.status(403).json({ message: 'Complete payment to access lessons in this paid phase' });
     }
 

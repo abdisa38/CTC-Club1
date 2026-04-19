@@ -1,13 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
-import { PlusCircle, Search, Edit, Trash2, MoreVertical, Eye, Users, Loader2 } from "lucide-react";
+import { PlusCircle, Search, Edit, Trash2, MoreVertical, Eye, Users, Loader2, Shield, Lock, Unlock, RotateCcw } from "lucide-react";
 import { Button } from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
 import { Badge } from "../../components/ui/Badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../../components/ui/DropdownMenu";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../components/ui/Dialog";
 import { useAuth } from "../../context/AuthContext";
-import apiService, { Course } from "../../services/api";
+import apiService, {
+  Course,
+  CourseAccessMode,
+  CourseStudentAccessAction,
+  CourseStudentAccessOverride,
+  InstructorStudentRow,
+} from "../../services/api";
 
 export function InstructorCourses() {
   const { user, role } = useAuth();
@@ -20,6 +27,13 @@ export function InstructorCourses() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [courses, setCourses] = useState<Course[]>([]);
+  const [accessDialogCourse, setAccessDialogCourse] = useState<Course | null>(null);
+  const [accessDialogStudents, setAccessDialogStudents] = useState<InstructorStudentRow[]>([]);
+  const [accessModeDraft, setAccessModeDraft] = useState<CourseAccessMode>("open");
+  const [paidPriceDraft, setPaidPriceDraft] = useState("200");
+  const [accessStudentSearch, setAccessStudentSearch] = useState("");
+  const [isAccessDialogLoading, setIsAccessDialogLoading] = useState(false);
+  const [isAccessSaving, setIsAccessSaving] = useState(false);
 
   useEffect(() => {
     const loadCourses = async () => {
@@ -52,6 +66,148 @@ export function InstructorCourses() {
       return matchSearch && matchStatus;
     });
   }, [courses, search, statusFilter]);
+
+  const visibleAccessStudents = useMemo(() => {
+    const keyword = accessStudentSearch.trim().toLowerCase();
+    if (!keyword) {
+      return accessDialogStudents;
+    }
+
+    return accessDialogStudents.filter((student) => (
+      student.name.toLowerCase().includes(keyword)
+      || student.email.toLowerCase().includes(keyword)
+    ));
+  }, [accessDialogStudents, accessStudentSearch]);
+
+  const readCourseAccessMode = (course: Course): CourseAccessMode => {
+    if (course.accessMode === "paid" || course.accessMode === "locked") {
+      return course.accessMode;
+    }
+
+    return "open";
+  };
+
+  const getStudentOverrideForCourse = (course: Course, studentId: string): CourseStudentAccessOverride => {
+    const isLocked = Array.isArray(course.lockedStudentIds)
+      && course.lockedStudentIds.some((id) => String(id) === studentId);
+
+    if (isLocked) {
+      return "locked";
+    }
+
+    const isUnlocked = Array.isArray(course.unlockedStudentIds)
+      && course.unlockedStudentIds.some((id) => String(id) === studentId);
+
+    if (isUnlocked) {
+      return "unlocked";
+    }
+
+    return "none";
+  };
+
+  const closeAccessDialog = () => {
+    setAccessDialogCourse(null);
+    setAccessDialogStudents([]);
+    setAccessStudentSearch("");
+    setIsAccessDialogLoading(false);
+    setIsAccessSaving(false);
+  };
+
+  const openAccessDialog = async (course: Course) => {
+    setAccessDialogCourse(course);
+    setAccessModeDraft(readCourseAccessMode(course));
+    setPaidPriceDraft(String(Number(course.price || 0) > 0 ? Number(course.price || 0) : 200));
+    setAccessStudentSearch("");
+    setIsAccessDialogLoading(true);
+
+    try {
+      const payload = await apiService.getInstructorStudents({ courseId: course._id });
+      setAccessDialogStudents(Array.isArray(payload.students) ? payload.students : []);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to load course students");
+      setAccessDialogStudents([]);
+    } finally {
+      setIsAccessDialogLoading(false);
+    }
+  };
+
+  const handleSaveAccessMode = async () => {
+    if (!accessDialogCourse) {
+      return;
+    }
+
+    let paidPrice: number | undefined;
+    if (accessModeDraft === "paid") {
+      const parsed = Number(paidPriceDraft);
+      if (!Number.isFinite(parsed) || parsed <= 0) {
+        setError("Paid price must be greater than 0 ETB.");
+        return;
+      }
+
+      paidPrice = Number(parsed.toFixed(2));
+    }
+
+    setIsAccessSaving(true);
+    setError("");
+
+    try {
+      const updated = await apiService.updateCourseAccessMode(accessDialogCourse._id, {
+        mode: accessModeDraft,
+        ...(accessModeDraft === "paid" && paidPrice !== undefined ? { paidPrice } : {}),
+      });
+
+      setCourses((prev) => prev.map((course) => (course._id === updated._id ? { ...course, ...updated } : course)));
+      setAccessDialogCourse((prev) => (prev && prev._id === updated._id ? { ...prev, ...updated } : prev));
+
+      if (accessModeDraft === "paid") {
+        setPaidPriceDraft(String(Number(updated.price || paidPrice || 200)));
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to update access mode");
+    } finally {
+      setIsAccessSaving(false);
+    }
+  };
+
+  const handleStudentAccessAction = async (studentId: string, action: CourseStudentAccessAction) => {
+    if (!accessDialogCourse) {
+      return;
+    }
+
+    setIsAccessSaving(true);
+    setError("");
+
+    try {
+      const updated = await apiService.updateCourseStudentAccess(accessDialogCourse._id, {
+        studentId,
+        action,
+      });
+
+      setCourses((prev) => prev.map((course) => (
+        course._id === updated.courseId
+          ? {
+              ...course,
+              lockedStudentIds: updated.lockedStudentIds,
+              unlockedStudentIds: updated.unlockedStudentIds,
+            }
+          : course
+      )));
+
+      setAccessDialogCourse((prev) => (
+        prev && prev._id === updated.courseId
+          ? {
+              ...prev,
+              lockedStudentIds: updated.lockedStudentIds,
+              unlockedStudentIds: updated.unlockedStudentIds,
+            }
+          : prev
+      ));
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Failed to update student access");
+    } finally {
+      setIsAccessSaving(false);
+    }
+  };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this course? This action cannot be undone.")) return;
@@ -123,6 +279,7 @@ export function InstructorCourses() {
             const students = Array.isArray(course.students) ? course.students.length : 0;
             const revenue = Number(course.price || 0) * students;
             const status = course.status || "draft";
+            const accessMode = readCourseAccessMode(course);
             const hasRatings = Number(course.numReviews || 0) > 0;
             const ratingText = hasRatings ? Number(course.rating || 0).toFixed(1) : "N/A";
 
@@ -146,6 +303,15 @@ export function InstructorCourses() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              className="cursor-pointer"
+                              onClick={() => {
+                                void openAccessDialog(course);
+                              }}
+                            >
+                              <Shield className="mr-2 h-4 w-4 text-slate-500" />
+                              Access Controls
+                            </DropdownMenuItem>
                             <DropdownMenuItem asChild>
                               <Link to={`/app/instructor/courses/${course._id}/edit`} className="cursor-pointer">
                                 <Edit className="mr-2 h-4 w-4 text-slate-500" />
@@ -172,6 +338,9 @@ export function InstructorCourses() {
 
                       <div className="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-400 mb-4">
                         <Badge variant={status === "published" ? "success" : status === "archived" ? "destructive" : "secondary"}>{status}</Badge>
+                        <Badge className={`border-0 ${accessMode === "locked" ? "bg-slate-600 text-white" : accessMode === "paid" ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
+                          {accessMode === "locked" ? "Locked" : accessMode === "paid" ? "Paid Lock" : "Open Access"}
+                        </Badge>
                         <span>{course.category}</span>
                       </div>
                       <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2">{course.description}</p>
@@ -206,6 +375,153 @@ export function InstructorCourses() {
           })
         )}
       </div>
+
+      <Dialog
+        open={Boolean(accessDialogCourse)}
+        onOpenChange={(open) => {
+          if (!open) {
+            closeAccessDialog();
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-[780px] max-h-[85vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle>Phase Access Controls</DialogTitle>
+            <DialogDescription>
+              Configure global access mode and personalize lock/unlock for specific student accounts.
+            </DialogDescription>
+          </DialogHeader>
+
+          {accessDialogCourse ? (
+            <div className="space-y-4 overflow-y-auto pr-1">
+              <div className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">{accessDialogCourse.title}</p>
+                <p className="mt-1 text-xs text-slate-500">Global phase mode applies to all students unless overridden below.</p>
+
+                <div className="mt-3 grid gap-3 sm:grid-cols-[180px_1fr_auto] sm:items-end">
+                  <div>
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-300">Mode</label>
+                    <select
+                      className="mt-1 h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-800 dark:bg-slate-950"
+                      value={accessModeDraft}
+                      onChange={(event) => setAccessModeDraft(event.target.value as CourseAccessMode)}
+                      disabled={isAccessSaving}
+                    >
+                      <option value="open">Open</option>
+                      <option value="paid">Paid Lock</option>
+                      <option value="locked">Completely Locked</option>
+                    </select>
+                  </div>
+
+                  {accessModeDraft === "paid" ? (
+                    <div>
+                      <label className="text-xs font-medium text-slate-600 dark:text-slate-300">Price (ETB)</label>
+                      <Input
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={paidPriceDraft}
+                        onChange={(event) => setPaidPriceDraft(event.target.value)}
+                        disabled={isAccessSaving}
+                      />
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-500 sm:self-center">
+                      {accessModeDraft === "locked"
+                        ? "Students cannot open this phase until unlocked by instructor."
+                        : "Students can proceed by normal enrollment/payment flow."}
+                    </p>
+                  )}
+
+                  <Button onClick={() => void handleSaveAccessMode()} disabled={isAccessSaving}>
+                    {isAccessSaving ? "Saving..." : "Save Mode"}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white">Personal Student Access</p>
+                    <p className="text-xs text-slate-500">Lock, unlock, or reset access for specific students in this phase.</p>
+                  </div>
+                  <Input
+                    placeholder="Search student by name or email"
+                    value={accessStudentSearch}
+                    onChange={(event) => setAccessStudentSearch(event.target.value)}
+                    className="sm:w-64"
+                  />
+                </div>
+
+                {isAccessDialogLoading ? (
+                  <div className="mt-4 flex items-center justify-center py-8 text-slate-500">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Loading students...
+                  </div>
+                ) : visibleAccessStudents.length === 0 ? (
+                  <div className="mt-4 rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500 dark:border-slate-700">
+                    No enrolled students found for this phase.
+                  </div>
+                ) : (
+                  <div className="mt-4 space-y-2">
+                    {visibleAccessStudents.map((student) => {
+                      const override = getStudentOverrideForCourse(accessDialogCourse, student.id);
+
+                      return (
+                        <div
+                          key={student.id}
+                          className="flex flex-col gap-3 rounded-lg border border-slate-200 p-3 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">{student.name}</p>
+                            <p className="truncate text-xs text-slate-500">{student.email}</p>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge className={`border-0 ${override === "locked" ? "bg-slate-600 text-white" : override === "unlocked" ? "bg-emerald-600 text-white" : "bg-slate-200 text-slate-700"}`}>
+                              {override === "locked" ? "Locked" : override === "unlocked" ? "Unlocked" : "Default"}
+                            </Badge>
+
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => void handleStudentAccessAction(student.id, "lock")}
+                              disabled={isAccessSaving}
+                            >
+                              <Lock className="mr-1 h-3.5 w-3.5" /> Lock
+                            </Button>
+
+                            <Button
+                              size="sm"
+                              onClick={() => void handleStudentAccessAction(student.id, "unlock")}
+                              disabled={isAccessSaving}
+                            >
+                              <Unlock className="mr-1 h-3.5 w-3.5" /> Unlock
+                            </Button>
+
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => void handleStudentAccessAction(student.id, "reset")}
+                              disabled={isAccessSaving}
+                            >
+                              <RotateCcw className="mr-1 h-3.5 w-3.5" /> Reset
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : null}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={closeAccessDialog}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,6 +1,9 @@
 import api from "../utils/api";
 
 export type Role = "student" | "instructor" | "admin";
+export type CourseAccessMode = "open" | "paid" | "locked";
+export type CourseStudentAccessOverride = "none" | "locked" | "unlocked";
+export type CourseStudentAccessAction = "lock" | "unlock" | "reset";
 
 export interface AuthUser {
   _id: string;
@@ -99,8 +102,27 @@ export interface Course {
   rating?: number;
   numReviews?: number;
   hasPaidAccess?: boolean;
+  accessMode?: CourseAccessMode;
+  studentAccessOverride?: CourseStudentAccessOverride;
+  isLockedForStudent?: boolean;
+  requiresPayment?: boolean;
+  lockedStudentIds?: string[];
+  unlockedStudentIds?: string[];
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface CourseStudentAccessMutationResult {
+  courseId: string;
+  action: CourseStudentAccessAction;
+  student: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  studentAccess: CourseStudentAccessOverride;
+  lockedStudentIds: string[];
+  unlockedStudentIds: string[];
 }
 
 export interface Lesson {
@@ -709,6 +731,28 @@ export const apiService = {
   ): Promise<Course> {
     const res = await api.put(`/courses/${courseId}`, input);
     return pickData<Course>(res.data);
+  },
+
+  async updateCourseAccessMode(
+    courseId: string,
+    input: {
+      mode: CourseAccessMode;
+      paidPrice?: number;
+    }
+  ): Promise<Course> {
+    const res = await api.put(`/courses/${courseId}/access-mode`, input);
+    return pickData<Course>(res.data);
+  },
+
+  async updateCourseStudentAccess(
+    courseId: string,
+    input: {
+      studentId: string;
+      action: CourseStudentAccessAction;
+    }
+  ): Promise<CourseStudentAccessMutationResult> {
+    const res = await api.put(`/courses/${courseId}/student-access`, input);
+    return pickData<CourseStudentAccessMutationResult>(res.data);
   },
 
   async deleteCourse(courseId: string): Promise<void> {
