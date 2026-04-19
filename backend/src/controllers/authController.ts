@@ -362,10 +362,7 @@ export const loginUser = asyncHandler(async (req: Request, res: Response) => {
     throw new Error('Invalid email or password');
   }
 
-  if (user.role !== 'student') {
-    res.status(403);
-    throw new Error(STUDENT_ONLY_AUTH_MESSAGE);
-  }
+
 
   generateToken(res, user._id.toString(), user.role);
 

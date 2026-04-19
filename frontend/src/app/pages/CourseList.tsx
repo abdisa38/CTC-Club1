@@ -19,7 +19,9 @@ type PhaseCard = {
   heading: string;
   summary: string;
   isPaidCourse: boolean;
+  requiresPayment: boolean;
   isEnrolled: boolean;
+  blockedByInstructor: boolean;
   orderLocked: boolean;
   paymentLocked: boolean;
 };
@@ -323,13 +325,23 @@ export function CourseList() {
 
   const hasStudentCourseAccess = (course: CourseType) => {
     const isPaidCourse = Number(course.price || 0) > 0;
+    const requiresPayment = Boolean(course.requiresPayment ?? isPaidCourse);
+    const blockedByInstructor = Boolean(course.isLockedForStudent);
 
     if (role !== "student") {
       return isUserEnrolled(course);
     }
 
-    if (isPaidCourse) {
+    if (blockedByInstructor) {
+      return false;
+    }
+
+    if (requiresPayment) {
       return Boolean(course.hasPaidAccess);
+    }
+
+    if (course.studentAccessOverride === "unlocked") {
+      return true;
     }
 
     return isUserEnrolled(course);
@@ -379,7 +391,11 @@ export function CourseList() {
           throw new Error("Checkout URL was not returned by the server.");
         }
 
-        window.location.href = init.checkoutUrl;
+        const checkoutUrl = /^https?:\/\//i.test(init.checkoutUrl)
+          ? init.checkoutUrl
+          : `https://${String(init.checkoutUrl).replace(/^\/+/, "")}`;
+
+        window.location.assign(checkoutUrl);
         return "redirected";
       }
 
@@ -400,16 +416,30 @@ export function CourseList() {
       return [];
     }
 
-    return sortedSelectedFieldCourses.map((course, index, orderedCourses) => {
+    const phaseNumbersPresent = new Set<number>();
+    const phaseAccessByNumber = new Map<number, boolean>();
+
+    sortedSelectedFieldCourses.forEach((course, index) => {
+      const phaseNumber = getPhaseNumber(course, index);
+      const hasAccess = hasStudentCourseAccess(course);
+
+      phaseNumbersPresent.add(phaseNumber);
+      phaseAccessByNumber.set(phaseNumber, Boolean(phaseAccessByNumber.get(phaseNumber)) || hasAccess);
+    });
+
+    return sortedSelectedFieldCourses.map((course, index) => {
       const phaseNumber = getPhaseNumber(course, index);
       const cleanTitle = stripPhasePrefix(String(course.title || ""));
       const heading = cleanTitle ? `Phase ${phaseNumber}: ${cleanTitle}` : `Phase ${phaseNumber}`;
       const summary = String(course.description || "").trim() || "Open this phase to access lessons, projects, quizzes, and resources.";
 
       const isPaidCourse = Number(course.price || 0) > 0;
+      const requiresPayment = Boolean(course.requiresPayment ?? isPaidCourse);
+      const blockedByInstructor = role === "student" && Boolean(course.isLockedForStudent);
       const isEnrolled = hasStudentCourseAccess(course);
-      const previousCourse = index > 0 ? orderedCourses[index - 1] : null;
-      const previousEnrolled = previousCourse ? hasStudentCourseAccess(previousCourse) : true;
+      const previousPhaseNumber = phaseNumber - 1;
+      const previousPhaseExists = previousPhaseNumber > 0 && phaseNumbersPresent.has(previousPhaseNumber);
+      const previousPhaseUnlocked = !previousPhaseExists || Boolean(phaseAccessByNumber.get(previousPhaseNumber));
 
       const orderLocked = role === "student" && index > 0 && !previousEnrolled;
       const paymentLocked = role === "student" && isPaidCourse && !isEnrolled;
@@ -421,7 +451,9 @@ export function CourseList() {
         heading,
         summary,
         isPaidCourse,
+        requiresPayment,
         isEnrolled,
+        blockedByInstructor,
         orderLocked,
         paymentLocked,
       };
@@ -438,8 +470,15 @@ export function CourseList() {
       return;
     }
 
+    if (phase.blockedByInstructor) {
+      return;
+    }
+
     if (phase.paymentLocked) {
-      await handleEnroll(phase.course);
+      const result = await handleEnroll(phase.course);
+      if (result === "enrolled") {
+        navigate(phase.courseHref);
+      }
       return;
     }
 
@@ -581,6 +620,8 @@ export function CourseList() {
 
           <div className="grid grid-cols-1 gap-5">
             {overviewFields.map((entry, index) => {
+              // Force Web Development field to always show as open
+              const isWebDev = entry.field === "Web Development";
               const hasCourses = entry.courses.length > 0;
               const paidPhases = entry.courses.filter((course) => Number(course.price || 0) > 0).length;
               const previewCourses = sortCoursesByPhaseOrder(entry.courses).slice(0, 4);
@@ -593,8 +634,8 @@ export function CourseList() {
                   transition={{ delay: index * 0.06 }}
                 >
                   <Card className={isAppCatalogRoute
-                    ? `h-full overflow-hidden rounded-xl border shadow-sm ${hasCourses ? "border-indigo-200 bg-white" : "border-slate-200 bg-slate-50"}`
-                    : `h-full overflow-hidden rounded-3xl border ${hasCourses ? "border-cyan-500/35 bg-gradient-to-b from-sky-500/8 via-indigo-500/6 to-transparent" : "border-slate-700/70 bg-slate-900/40"}`
+                    ? `h-full overflow-hidden rounded-xl border shadow-sm ${hasCourses || isWebDev ? "border-indigo-200 bg-white" : "border-slate-200 bg-slate-50"}`
+                    : `h-full overflow-hidden rounded-3xl border ${hasCourses || isWebDev ? "border-cyan-500/35 bg-gradient-to-b from-sky-500/8 via-indigo-500/6 to-transparent" : "border-slate-700/70 bg-slate-900/40"}`
                   }>
                     <CardContent className={`flex h-full flex-col ${isAppCatalogRoute ? "p-4 sm:p-5" : "p-5 sm:p-6"}`}>
                       <div className="mb-4 flex items-start justify-between gap-4">
@@ -605,14 +646,14 @@ export function CourseList() {
                           </p>
                         </div>
                         <Badge className={isAppCatalogRoute
-                          ? `${hasCourses ? "bg-emerald-600 text-white" : "bg-slate-500 text-white"} border-0 font-semibold`
-                          : `${hasCourses ? "bg-cyan-500 text-white" : "bg-slate-700 text-slate-200"} border-0 font-semibold`
+                          ? `${hasCourses || isWebDev ? "bg-emerald-600 text-white" : "bg-slate-500 text-white"} border-0 font-semibold`
+                          : `${hasCourses || isWebDev ? "bg-cyan-500 text-white" : "bg-slate-700 text-slate-200"} border-0 font-semibold`
                         }>
-                          {hasCourses ? "Active" : "Coming Soon"}
+                          {(hasCourses || isWebDev) ? "Active" : "Coming Soon"}
                         </Badge>
                       </div>
 
-                      {hasCourses ? (
+                      {(hasCourses || isWebDev) ? (
                         <>
                           <div className={`mb-4 grid grid-cols-2 gap-3 ${isAppCatalogRoute ? "" : ""}`}>
                             <div className={isAppCatalogRoute ? "rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5" : "rounded-xl border border-white/10 bg-white/5 px-3 py-2.5"}>
@@ -626,7 +667,7 @@ export function CourseList() {
                           </div>
 
                           <div className="space-y-2">
-                            {previewCourses.map((course, previewIndex) => {
+                            {previewCourses.length > 0 ? previewCourses.map((course, previewIndex) => {
                               const phaseNumber = getPhaseNumber(course, previewIndex);
                               const cleanTitle = stripPhasePrefix(String(course.title || ""));
                               const phaseHeading = cleanTitle ? `Phase ${phaseNumber}: ${cleanTitle}` : `Phase ${phaseNumber}`;
@@ -640,12 +681,14 @@ export function CourseList() {
                                   <CheckCircle2 className={isAppCatalogRoute ? "h-4 w-4 shrink-0 text-indigo-500" : "h-4 w-4 shrink-0 text-cyan-400"} />
                                   <p className={isAppCatalogRoute ? "truncate text-sm text-slate-800" : "truncate text-sm text-slate-100"}>{phaseHeading}</p>
                                 </div>
-                                <Badge className={`shrink-0 border-0 text-[10px] font-bold ${Number(course.price || 0) > 0 ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
+                                <Badge className={`shrink-0 border-0 px-2.5 py-1 text-[11px] font-extrabold tracking-wide ${Number(course.price || 0) > 0 ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
                                   {Number(course.price || 0) > 0 ? `${Number(course.price || 0).toFixed(2)} ETB` : "FREE"}
                                 </Badge>
                               </div>
                               );
-                            })}
+                            }) : (
+                              <div className="text-slate-500 text-sm">No phases published yet.</div>
+                            )}
                           </div>
                         </>
                       ) : (
@@ -661,21 +704,15 @@ export function CourseList() {
                       )}
 
                       <div className="mt-auto pt-4">
-                        {hasCourses ? (
-                          <Button className={isAppCatalogRoute
-                            ? "w-full h-10 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
-                            : "w-full h-11 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 text-white hover:from-indigo-700 hover:to-cyan-600"
-                          } asChild>
-                            <Link to={`${catalogBasePath}?field=${encodeURIComponent(entry.field)}`}>
-                              Open {entry.field}
-                              <ChevronRight className="ml-1.5 h-4 w-4" />
-                            </Link>
-                          </Button>
-                        ) : (
-                          <Button className="w-full h-11 rounded-xl" variant="outline" disabled>
-                            Coming Soon
-                          </Button>
-                        )}
+                        <Button className={isAppCatalogRoute
+                          ? "w-full h-10 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
+                          : "w-full h-11 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 text-white hover:from-indigo-700 hover:to-cyan-600"
+                        } asChild>
+                          <Link to={`${catalogBasePath}?field=${encodeURIComponent(entry.field)}`}>
+                            Open {entry.field}
+                            <ChevronRight className="ml-1.5 h-4 w-4" />
+                          </Link>
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -731,7 +768,9 @@ export function CourseList() {
                 const course = phase.course;
                 const isBusy = enrollingId === course._id;
                 const previousPhaseNumber = phase.phaseNumber > 1 ? phase.phaseNumber - 1 : null;
-                const lockMessage = phase.orderLocked
+                const lockMessage = phase.blockedByInstructor
+                  ? "This phase is locked by your instructor for your account."
+                  : phase.orderLocked
                   ? `Unlock Phase ${previousPhaseNumber} first to continue in order.`
                   : phase.paymentLocked
                     ? `Pay ${Number(course.price || 0).toFixed(2)} ETB with Chapa to unlock this phase.`
@@ -741,7 +780,9 @@ export function CourseList() {
 
                 const actionLabel = !user
                   ? "Login to Open"
-                  : phase.orderLocked
+                  : phase.blockedByInstructor
+                    ? "Locked by Instructor"
+                    : phase.orderLocked
                     ? "Locked by Order"
                     : phase.paymentLocked
                       ? (isBusy ? "Opening checkout..." : "Pay with Chapa")
@@ -749,7 +790,27 @@ export function CourseList() {
                         ? (isBusy ? "Enrolling..." : "Start Phase")
                         : "Open Phase";
 
-                const actionDisabled = phase.orderLocked || (Boolean(user) && isBusy);
+                const paidStatusLabel = phase.blockedByInstructor
+                  ? "Locked"
+                  : phase.isEnrolled
+                  ? "Unlocked"
+                  : phase.orderLocked
+                    ? "Order Locked"
+                    : phase.paymentLocked
+                      ? "Payment Locked"
+                      : "Open";
+
+                const paidStatusClass = phase.blockedByInstructor
+                  ? "bg-slate-600 text-white"
+                  : phase.isEnrolled
+                  ? "bg-emerald-600 text-white"
+                  : phase.orderLocked
+                    ? "bg-amber-500 text-white"
+                    : phase.paymentLocked
+                      ? "bg-rose-600 text-white"
+                      : "bg-indigo-600 text-white";
+
+                const actionDisabled = phase.orderLocked || phase.blockedByInstructor || (Boolean(user) && isBusy);
 
                 return (
                   <Card key={course._id} className={isAppCatalogRoute ? "overflow-hidden rounded-2xl border-slate-200 bg-white shadow-sm" : "overflow-hidden rounded-2xl border-slate-200/70 bg-white/70 dark:border-slate-800/70 dark:bg-slate-900/60"}>
@@ -767,9 +828,17 @@ export function CourseList() {
 
                         <div className="min-w-0 flex-1">
                           <div className="mb-2 flex flex-wrap items-center gap-2">
-                            <Badge className={`border-0 ${phase.isPaidCourse ? "bg-rose-600 text-white" : "bg-emerald-600 text-white"}`}>
-                              {phase.isPaidCourse ? `${Number(course.price || 0).toFixed(2)} ETB` : "Free"}
-                            </Badge>
+                            {!phase.isPaidCourse ? (
+                              <Badge className="border-0 px-3 py-1 text-[13px] font-black tracking-wide shadow-sm bg-emerald-600 text-white">
+                                Free
+                              </Badge>
+                            ) : null}
+                            {phase.blockedByInstructor ? (
+                              <Badge className="border-0 bg-slate-600 text-white">
+                                <Lock className="mr-1 h-3 w-3" />
+                                Instructor Locked
+                              </Badge>
+                            ) : null}
                             {phase.orderLocked ? (
                               <Badge className="border-0 bg-amber-500 text-white">
                                 <Lock className="mr-1 h-3 w-3" />
@@ -782,7 +851,7 @@ export function CourseList() {
                                 Payment Locked
                               </Badge>
                             ) : null}
-                            {phase.isEnrolled ? (
+                            {!phase.isPaidCourse && phase.isEnrolled ? (
                               <Badge className="border-0 bg-emerald-600 text-white">Unlocked</Badge>
                             ) : null}
                           </div>
@@ -793,8 +862,10 @@ export function CourseList() {
                           <p className="mt-1.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
                             {phase.summary}
                           </p>
-                          <div className={`mt-3 rounded-lg border px-3 py-2 text-xs ${phase.orderLocked
-                            ? "border-amber-300 bg-amber-50 text-amber-700"
+                          <div className={`mt-3 rounded-lg border px-3 py-2 text-xs ${phase.blockedByInstructor
+                            ? "border-slate-300 bg-slate-50 text-slate-700"
+                            : phase.orderLocked
+                              ? "border-amber-300 bg-amber-50 text-amber-700"
                             : phase.paymentLocked
                               ? "border-rose-200 bg-rose-50 text-rose-700"
                               : "border-emerald-200 bg-emerald-50 text-emerald-700"
@@ -803,9 +874,21 @@ export function CourseList() {
                           </div>
                         </div>
 
-                        <div className="flex shrink-0 flex-col gap-2 lg:w-44">
+                        <div className="flex shrink-0 flex-col gap-2 lg:w-44 lg:items-end">
+                          {phase.isPaidCourse ? (
+                            <div className="flex flex-wrap items-center gap-1.5 lg:justify-end">
+                              <Badge className="border-0 bg-rose-600 px-2.5 py-0.5 text-[12px] font-black tracking-wide text-white">
+                                {Number(course.price || 0).toFixed(2)} ETB
+                              </Badge>
+                              <Badge className={`border-0 px-2.5 py-0.5 text-[12px] font-extrabold tracking-wide ${paidStatusClass}`}>
+                                {paidStatusLabel}
+                              </Badge>
+                            </div>
+                          ) : null}
                           <Button
-                            className={phase.paymentLocked
+                            className={phase.blockedByInstructor
+                              ? "w-full bg-slate-500 text-white hover:bg-slate-600"
+                              : phase.paymentLocked
                               ? "w-full bg-rose-600 text-white hover:bg-rose-700"
                               : "w-full bg-indigo-600 text-white hover:bg-indigo-700"
                             }
@@ -815,9 +898,9 @@ export function CourseList() {
                             disabled={actionDisabled}
                           >
                             {actionLabel}
-                            {!phase.orderLocked ? <ChevronRight className="ml-1.5 h-4 w-4" /> : null}
+                            {!phase.orderLocked && !phase.blockedByInstructor ? <ChevronRight className="ml-1.5 h-4 w-4" /> : null}
                           </Button>
-                          {role === "student" && (phase.orderLocked || phase.paymentLocked) ? (
+                          {role === "student" && (phase.orderLocked || phase.paymentLocked || phase.blockedByInstructor) ? (
                             <Button variant="outline" className="w-full" disabled>
                               Preview Locked
                             </Button>

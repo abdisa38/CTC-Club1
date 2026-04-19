@@ -23,11 +23,7 @@ export default function LoginPage() {
       const response = await api.post('/auth/login', { email, password });
       const payload = response.data?.data ?? response.data;
 
-      if (payload?.role !== 'student') {
-        await api.post('/auth/logout').catch(() => undefined);
-        setError(STUDENT_ONLY_AUTH_MESSAGE);
-        return;
-      }
+
 
       login(payload);
       navigate('/app/dashboard');

@@ -813,8 +813,12 @@ export function CourseDetail() {
   const coursePrice = Number(course?.price || 0);
   const courseCurrency = "ETB";
   const isPaidCourse = coursePrice > 0;
+  const requiresCoursePayment = Boolean(course?.requiresPayment ?? isPaidCourse);
+  const isInstructorLockedForStudent = Boolean(course?.isLockedForStudent);
+  const hasPaidAccess = Boolean(course?.hasPaidAccess);
 
-  const canAccessLessons = isEnrolled || isInstructor || !isPaidCourse;
+  const canAccessLessons = isInstructor
+    || (!isInstructorLockedForStudent && (isEnrolled || !requiresCoursePayment || hasPaidAccess));
   const selectedLessonIndex = selectedLesson ? curriculumLessons.findIndex((lesson) => lesson._id === selectedLesson._id) : -1;
   const completedCount = canAccessLessons && selectedLessonIndex >= 0 ? selectedLessonIndex + 1 : 0;
   const progress = curriculumLessons.length > 0 ? Math.round((completedCount / curriculumLessons.length) * 100) : 0;
@@ -1914,25 +1918,39 @@ export function CourseDetail() {
                 <div className="text-center">
                   <div className="bg-black/60 backdrop-blur-sm p-6 rounded-2xl border border-white/10 text-white max-w-sm">
                     <Lock className="h-8 w-8 mx-auto mb-3 opacity-80" />
-                    <h3 className="font-bold text-xl mb-2">{isPaidCourse ? "Purchase to Start Learning" : "Enroll to Start Learning"}</h3>
+                    <h3 className="font-bold text-xl mb-2">
+                      {isInstructorLockedForStudent
+                        ? "Locked by Instructor"
+                        : requiresCoursePayment
+                          ? "Purchase to Start Learning"
+                          : "Enroll to Start Learning"}
+                    </h3>
                     <p className="text-sm opacity-80 mb-4">
-                      {isPaidCourse
-                        ? `This paid course unlocks after checkout (${coursePrice.toFixed(2)} ${courseCurrency}).`
-                        : "This lesson video is available after free enrollment."}
+                      {isInstructorLockedForStudent
+                        ? "Your instructor locked this phase for your account."
+                        : requiresCoursePayment
+                          ? `This paid course unlocks after checkout (${coursePrice.toFixed(2)} ${courseCurrency}).`
+                          : "This lesson video is available after free enrollment."}
                     </p>
                     <Button
                       className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold"
                       size="lg"
-                      onClick={() => void handleEnroll()}
-                      disabled={isEnrolling || isStartingCoursePayment || isVerifyingCoursePayment}
+                      onClick={() => {
+                        if (!isInstructorLockedForStudent) {
+                          void handleEnroll();
+                        }
+                      }}
+                      disabled={isInstructorLockedForStudent || isEnrolling || isStartingCoursePayment || isVerifyingCoursePayment}
                     >
-                      {isVerifyingCoursePayment
+                      {isInstructorLockedForStudent
+                        ? "Locked by Instructor"
+                        : isVerifyingCoursePayment
                         ? "Verifying Payment..."
                         : isStartingCoursePayment
                           ? "Opening Checkout..."
                           : isEnrolling
                             ? "Enrolling..."
-                            : isPaidCourse
+                            : requiresCoursePayment
                               ? `Pay ${coursePrice.toFixed(2)} ${courseCurrency}`
                               : "Enroll Free"}
                     </Button>
@@ -2093,14 +2111,20 @@ export function CourseDetail() {
                   {role === "student" && !canAccessLessons ? (
                     <Button
                       size="sm"
-                      onClick={() => void handleEnroll()}
-                      disabled={isEnrolling || isStartingCoursePayment || isVerifyingCoursePayment}
+                      onClick={() => {
+                        if (!isInstructorLockedForStudent) {
+                          void handleEnroll();
+                        }
+                      }}
+                      disabled={isInstructorLockedForStudent || isEnrolling || isStartingCoursePayment || isVerifyingCoursePayment}
                     >
-                      {isStartingCoursePayment
+                      {isInstructorLockedForStudent
+                        ? "Locked by Instructor"
+                        : isStartingCoursePayment
                         ? "Opening Checkout..."
                         : isEnrolling
                           ? "Enrolling..."
-                          : isPaidCourse
+                          : requiresCoursePayment
                             ? `Pay ${coursePrice.toFixed(2)} ${courseCurrency}`
                             : "Enroll Free"}
                     </Button>

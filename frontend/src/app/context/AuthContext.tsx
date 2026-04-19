@@ -36,17 +36,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(currentUser);
         setRole(currentUser.role);
         localStorage.setItem("userInfo", JSON.stringify(currentUser));
-      } catch {
-        const userInfo = localStorage.getItem("userInfo");
-        if (userInfo) {
-          try {
-            const parsedUser = JSON.parse(userInfo);
-            setUser(parsedUser);
-            setRole(parsedUser.role || "student");
-          } catch (error) {
-            console.error("Failed to parse userInfo", error);
-            localStorage.removeItem("userInfo");
+      } catch (error: any) {
+        const statusCode = Number(error?.response?.status || 0);
+        const shouldUseLocalFallback = statusCode === 0;
+
+        if (shouldUseLocalFallback) {
+          const userInfo = localStorage.getItem("userInfo");
+          if (userInfo) {
+            try {
+              const parsedUser = JSON.parse(userInfo);
+              setUser(parsedUser);
+              setRole(parsedUser.role || "student");
+            } catch (parseError) {
+              console.error("Failed to parse userInfo", parseError);
+              localStorage.removeItem("userInfo");
+            }
           }
+        } else {
+          setUser(null);
+          setRole(null);
+          localStorage.removeItem("userInfo");
         }
       } finally {
         setIsLoading(false);

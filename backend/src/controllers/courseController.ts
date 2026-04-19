@@ -5,6 +5,7 @@ import Course from '../models/courseModel';
 import CourseReview from '../models/courseReviewModel';
 import PaymentTransaction from '../models/paymentTransactionModel';
 import User from '../models/userModel';
+import { evaluateStudentCourseAccess } from '../utils/courseAccess';
 import { sendSuccess } from '../utils/apiResponse';
 
 const hasSuccessfulCoursePayment = async (userId: string, courseId: string) => {
@@ -18,6 +19,28 @@ const hasSuccessfulCoursePayment = async (userId: string, courseId: string) => {
     .lean();
 
   return Boolean(transaction);
+};
+
+const DEFAULT_PAID_PHASE_PRICE = (() => {
+  const value = Number(process.env.PREMIUM_PRICE_ETB || 200);
+  if (!Number.isFinite(value) || value <= 0) {
+    return 200;
+  }
+
+  return Number(value.toFixed(2));
+})();
+
+const ensureCourseManagePermission = (course: any, user: AuthRequest['user']) => {
+  if (!user) {
+    throw new Error('Not authorized');
+  }
+
+  const isOwner = String(course.instructor) === String(user._id);
+  const isAdmin = user.role === 'admin';
+
+  if (!isOwner && !isAdmin) {
+    throw new Error('You are not authorized to manage this course');
+  }
 };
 
 // @desc    Create a course
@@ -80,7 +103,7 @@ export const getCourses = asyncHandler(async (req: AuthRequest, res: Response) =
     .skip(pageSize * (page - 1));
 
   if (!req.user) {
-    courseQuery.select('-students');
+    courseQuery.select('-students -lockedStudentIds -unlockedStudentIds');
   }
 
   const courses = await courseQuery;
@@ -88,9 +111,25 @@ export const getCourses = asyncHandler(async (req: AuthRequest, res: Response) =
   let responseCourses: any[] = courses as any[];
 
   if (req.user?.role === 'student') {
+    const studentId = String(req.user._id);
+
     const paidCourseIds = courses
-      .filter((course: any) => Number(course.price || 0) > 0)
-      .map((course: any) => String(course._id));
+      .map((course: any) => {
+        const plain = typeof course.toObject === 'function' ? course.toObject() : course;
+        const accessState = evaluateStudentCourseAccess({
+          course: plain,
+          studentId,
+          isPrivilegedUser: false,
+          hasSuccessfulPayment: false,
+        });
+
+        return {
+          id: String(plain._id),
+          requiresPayment: accessState.requiresPayment,
+        };
+      })
+      .filter((course) => course.requiresPayment)
+      .map((course) => course.id);
 
     const paidAccessTransactions = paidCourseIds.length > 0
       ? await PaymentTransaction.find({
@@ -111,11 +150,23 @@ export const getCourses = asyncHandler(async (req: AuthRequest, res: Response) =
 
     responseCourses = courses.map((course: any) => {
       const plain = typeof course.toObject === 'function' ? course.toObject() : course;
-      const isPaidCourse = Number(plain.price || 0) > 0;
+      const hasSuccessfulPayment = paidAccessSet.has(String(plain._id));
+      const accessState = evaluateStudentCourseAccess({
+        course: plain,
+        studentId,
+        isPrivilegedUser: false,
+        hasSuccessfulPayment,
+      });
+
+      const { lockedStudentIds, unlockedStudentIds, ...safePlain } = plain;
 
       return {
-        ...plain,
-        hasPaidAccess: !isPaidCourse || paidAccessSet.has(String(plain._id)),
+        ...safePlain,
+        hasPaidAccess: accessState.hasAccess,
+        accessMode: accessState.accessMode,
+        studentAccessOverride: accessState.studentAccessOverride,
+        isLockedForStudent: accessState.blockedByInstructor,
+        requiresPayment: accessState.requiresPayment,
       };
     });
   }
@@ -139,13 +190,35 @@ export const getCourseById = asyncHandler(async (req: AuthRequest, res: Response
 
   if (course) {
     if (req.user?.role === 'student') {
-      const isPaidCourse = Number(course.price || 0) > 0;
-      const hasPaidAccess = !isPaidCourse
-        || await hasSuccessfulCoursePayment(String(req.user._id), String(course._id));
+      const studentId = String(req.user._id);
+      const plainCourse = course.toObject();
+      const accessWithoutPayment = evaluateStudentCourseAccess({
+        course: plainCourse,
+        studentId,
+        isPrivilegedUser: false,
+        hasSuccessfulPayment: false,
+      });
+
+      const hasSuccessfulPayment = accessWithoutPayment.requiresPayment
+        ? await hasSuccessfulCoursePayment(studentId, String(course._id))
+        : false;
+
+      const accessState = evaluateStudentCourseAccess({
+        course: plainCourse,
+        studentId,
+        isPrivilegedUser: false,
+        hasSuccessfulPayment,
+      });
+
+      const { lockedStudentIds, unlockedStudentIds, ...safePlain } = plainCourse;
 
       const payload = {
-        ...course.toObject(),
-        hasPaidAccess,
+        ...safePlain,
+        hasPaidAccess: accessState.hasAccess,
+        accessMode: accessState.accessMode,
+        studentAccessOverride: accessState.studentAccessOverride,
+        isLockedForStudent: accessState.blockedByInstructor,
+        requiresPayment: accessState.requiresPayment,
       };
 
       sendSuccess(res, payload);
@@ -199,6 +272,151 @@ export const updateCourse = asyncHandler(async (req: AuthRequest, res: Response)
   sendSuccess(res, updatedCourse, { message: 'Course updated successfully' });
 });
 
+// @desc    Update course access mode (open/paid/locked)
+// @route   PUT /api/courses/:id/access-mode
+// @access  Private/Instructor/Admin
+export const updateCourseAccessMode = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const mode = String(req.body?.mode || '').trim();
+  if (mode !== 'open' && mode !== 'paid' && mode !== 'locked') {
+    res.status(400);
+    throw new Error('Access mode must be open, paid, or locked');
+  }
+
+  const course = await Course.findById(req.params.id).select(
+    '_id instructor price currency accessMode lockedStudentIds unlockedStudentIds'
+  );
+
+  if (!course) {
+    res.status(404);
+    throw new Error('Course not found');
+  }
+
+  try {
+    ensureCourseManagePermission(course, req.user);
+  } catch (permissionError: any) {
+    res.status(403);
+    throw new Error(permissionError?.message || 'You are not authorized to manage this course');
+  }
+
+  course.accessMode = mode;
+
+  if (mode === 'paid') {
+    const paidPriceCandidate = Number(req.body?.paidPrice);
+    const currentPrice = Number(course.price || 0);
+
+    if (Number.isFinite(paidPriceCandidate) && paidPriceCandidate > 0) {
+      course.price = Number(paidPriceCandidate.toFixed(2));
+    } else if (!Number.isFinite(currentPrice) || currentPrice <= 0) {
+      course.price = DEFAULT_PAID_PHASE_PRICE;
+    }
+
+    course.currency = 'ETB';
+  }
+
+  const updatedCourse = await course.save();
+
+  sendSuccess(res, updatedCourse, { message: 'Course access mode updated successfully.' });
+});
+
+// @desc    Update per-student course access override (lock/unlock/reset)
+// @route   PUT /api/courses/:id/student-access
+// @access  Private/Instructor/Admin
+export const updateCourseStudentAccess = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const studentId = String(req.body?.studentId || '').trim();
+  const action = String(req.body?.action || '').trim();
+
+  if (!studentId) {
+    res.status(400);
+    throw new Error('Student ID is required');
+  }
+
+  if (action !== 'lock' && action !== 'unlock' && action !== 'reset') {
+    res.status(400);
+    throw new Error('Action must be lock, unlock, or reset');
+  }
+
+  const course = await Course.findById(req.params.id).select(
+    '_id instructor students lockedStudentIds unlockedStudentIds accessMode price'
+  );
+
+  if (!course) {
+    res.status(404);
+    throw new Error('Course not found');
+  }
+
+  try {
+    ensureCourseManagePermission(course, req.user);
+  } catch (permissionError: any) {
+    res.status(403);
+    throw new Error(permissionError?.message || 'You are not authorized to manage this course');
+  }
+
+  const student = await User.findById(studentId).select('_id name email role');
+  if (!student || student.role !== 'student') {
+    res.status(404);
+    throw new Error('Student account not found');
+  }
+
+  const lockedSet = new Set(
+    (Array.isArray(course.lockedStudentIds) ? course.lockedStudentIds : [])
+      .map((id: any) => String(id))
+      .filter(Boolean)
+  );
+
+  const unlockedSet = new Set(
+    (Array.isArray(course.unlockedStudentIds) ? course.unlockedStudentIds : [])
+      .map((id: any) => String(id))
+      .filter(Boolean)
+  );
+
+  if (action === 'lock') {
+    lockedSet.add(studentId);
+    unlockedSet.delete(studentId);
+  }
+
+  if (action === 'unlock') {
+    unlockedSet.add(studentId);
+    lockedSet.delete(studentId);
+
+    await Course.findByIdAndUpdate(course._id, {
+      $addToSet: { students: student._id },
+    });
+
+    await User.findByIdAndUpdate(student._id, {
+      $addToSet: { enrolledCourses: course._id },
+    });
+  }
+
+  if (action === 'reset') {
+    lockedSet.delete(studentId);
+    unlockedSet.delete(studentId);
+  }
+
+  course.set('lockedStudentIds', Array.from(lockedSet));
+  course.set('unlockedStudentIds', Array.from(unlockedSet));
+
+  await course.save();
+
+  const studentAccess = lockedSet.has(studentId)
+    ? 'locked'
+    : unlockedSet.has(studentId)
+      ? 'unlocked'
+      : 'none';
+
+  sendSuccess(res, {
+    courseId: String(course._id),
+    action,
+    student: {
+      _id: String(student._id),
+      name: student.name,
+      email: student.email,
+    },
+    studentAccess,
+    lockedStudentIds: Array.from(lockedSet),
+    unlockedStudentIds: Array.from(unlockedSet),
+  }, { message: 'Student access override updated successfully.' });
+});
+
 // @desc    Delete a course
 // @route   DELETE /api/courses/:id
 // @access  Private/Instructor/Admin
@@ -223,16 +441,43 @@ export const deleteCourse = asyncHandler(async (req: AuthRequest, res: Response)
 // @route   POST /api/courses/:id/enroll
 // @access  Private (student role etc)
 export const enrollCourse = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const existingCourse = await Course.findById(req.params.id).select('price');
+  const existingCourse = await Course.findById(req.params.id).select(
+    'price instructor students accessMode lockedStudentIds unlockedStudentIds'
+  );
   if (!existingCourse) {
     res.status(404);
     throw new Error('Course not found');
   }
 
-  const isPaidCourse = Number(existingCourse.price || 0) > 0;
-  if (isPaidCourse && req.user.role === 'student') {
-    res.status(402);
-    throw new Error('This is a paid course. Start checkout first to access it.');
+  if (req.user.role === 'student') {
+    const studentId = String(req.user._id);
+    const accessWithoutPayment = evaluateStudentCourseAccess({
+      course: existingCourse,
+      studentId,
+      isPrivilegedUser: false,
+      hasSuccessfulPayment: false,
+    });
+
+    const hasSuccessfulPayment = accessWithoutPayment.requiresPayment
+      ? await hasSuccessfulCoursePayment(studentId, String(existingCourse._id))
+      : false;
+
+    const accessState = evaluateStudentCourseAccess({
+      course: existingCourse,
+      studentId,
+      isPrivilegedUser: false,
+      hasSuccessfulPayment,
+    });
+
+    if (accessState.blockedByInstructor) {
+      res.status(403);
+      throw new Error('This phase is currently locked by your instructor for your account.');
+    }
+
+    if (accessState.requiresPayment && !accessState.hasAccess) {
+      res.status(402);
+      throw new Error('This is a paid course. Start checkout first to access it.');
+    }
   }
 
   // Use $addToSet to avoid race conditions. This guarantees a user is only added once natively by MongoDB
@@ -304,19 +549,41 @@ export const rateCourse = asyncHandler(async (req: AuthRequest, res: Response) =
     throw new Error('Rating must be a number between 1 and 5');
   }
 
-  const course = await Course.findById(courseId).select('_id students status price');
+  const course = await Course.findById(courseId).select(
+    '_id students status price accessMode lockedStudentIds unlockedStudentIds'
+  );
   if (!course) {
     res.status(404);
     throw new Error('Course not found');
   }
 
-  const isPaidCourse = Number(course.price || 0) > 0;
-  if (isPaidCourse) {
-    const hasPaidAccess = await hasSuccessfulCoursePayment(String(req.user._id), String(course._id));
-    if (!hasPaidAccess) {
-      res.status(403);
-      throw new Error('Complete payment before rating this phase');
-    }
+  const studentId = String(req.user._id);
+  const accessWithoutPayment = evaluateStudentCourseAccess({
+    course,
+    studentId,
+    isPrivilegedUser: false,
+    hasSuccessfulPayment: false,
+  });
+
+  const hasSuccessfulPayment = accessWithoutPayment.requiresPayment
+    ? await hasSuccessfulCoursePayment(studentId, String(course._id))
+    : false;
+
+  const accessState = evaluateStudentCourseAccess({
+    course,
+    studentId,
+    isPrivilegedUser: false,
+    hasSuccessfulPayment,
+  });
+
+  if (accessState.blockedByInstructor) {
+    res.status(403);
+    throw new Error('This phase is currently locked by your instructor for your account.');
+  }
+
+  if (accessState.requiresPayment && !accessState.hasAccess) {
+    res.status(403);
+    throw new Error('Complete payment before rating this phase');
   }
 
   const isEnrolled = Array.isArray(course.students)

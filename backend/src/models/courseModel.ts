@@ -16,6 +16,9 @@ export interface ICourse extends Document {
   // Pricing & Status
   price: number;
   currency: string;
+  accessMode: 'open' | 'paid' | 'locked';
+  lockedStudentIds: mongoose.Types.ObjectId[];
+  unlockedStudentIds: mongoose.Types.ObjectId[];
   isPublished: boolean;
   status: 'draft' | 'published' | 'archived';
   
@@ -96,6 +99,24 @@ const courseSchema = new Schema<ICourse>(
       type: String,
       default: 'ETB',
     },
+    accessMode: {
+      type: String,
+      enum: ['open', 'paid', 'locked'],
+      default: 'open',
+      index: true,
+    },
+    lockedStudentIds: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
+    unlockedStudentIds: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
     isPublished: {
       type: Boolean,
       default: false,
