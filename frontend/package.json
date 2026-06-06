@@ -1,12 +1,33 @@
 {
-  "name": "@figma/my-make-file",
+  "name": "ctc-club-frontend",
   "private": true,
-  "version": "0.0.1",
+  "version": "1.0.0",
+  "description": "Frontend application for CTC Club Learning Management System",
   "type": "module",
   "scripts": {
+    "dev": "vite",
     "build": "vite build",
-    "dev": "vite"
+    "preview": "vite preview",
+    "test": "echo \"Tests coming soon\" && exit 0",
+    "test:watch": "echo \"Tests coming soon\" && exit 0",
+    "test:coverage": "echo \"Tests coming soon\" && exit 0",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\"",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "validate": "npm run lint && npm run typecheck && npm run build"
   },
+  "keywords": [
+    "lms",
+    "education",
+    "react",
+    "typescript",
+    "vite"
+  ],
+  "author": "CTC Club Team",
+  "license": "MIT",
   "dependencies": {
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",

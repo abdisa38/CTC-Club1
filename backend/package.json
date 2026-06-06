@@ -1,18 +1,34 @@
 {
-  "name": "backend",
+  "name": "ctc-club-backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Backend API for CTC Club Learning Management System",
+  "main": "dist/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "seed": "tsx src/seeder.ts"
+    "seed": "tsx src/seeder.ts",
+    "test": "echo \"Tests coming soon\" && exit 0",
+    "test:watch": "echo \"Tests coming soon\" && exit 0",
+    "test:coverage": "echo \"Tests coming soon\" && exit 0",
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\"",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "validate": "npm run lint && npm run typecheck && npm run build"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "lms",
+    "education",
+    "api",
+    "express",
+    "typescript",
+    "mongodb"
+  ],
+  "author": "CTC Club Team",
+  "license": "MIT",
   "type": "commonjs",
   "dependencies": {
     "@types/nodemailer": "^8.0.0",
