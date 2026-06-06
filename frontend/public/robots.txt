@@ -1,0 +1,23 @@
+# robots.txt for CTC Club
+
+# Allow all crawlers
+User-agent: *
+Allow: /
+
+# Crawl delay (optional, adjust based on server capacity)
+Crawl-delay: 1
+
+# Specific paths
+Allow: /courses
+Allow: /about
+Allow: /features
+Allow: /pricing
+Allow: /events
+
+# Disallow private areas
+Disallow: /app/
+Disallow: /api/
+Disallow: /admin/
+
+# Sitemap location
+Sitemap: https://ctcclub.com/sitemap.xml
