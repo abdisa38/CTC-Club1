@@ -1,22 +1,66 @@
 {
-  "name": "ctc-club1-workspace",
-  "private": true,
+  "name": "ctc-club",
   "version": "1.0.0",
+  "description": "Modern Learning Management System built with React, Node.js, and MongoDB",
+  "private": true,
+  "keywords": [
+    "lms",
+    "learning-management-system",
+    "education",
+    "online-courses",
+    "elearning",
+    "typescript",
+    "react",
+    "nodejs",
+    "mongodb",
+    "express"
+  ],
+  "author": "CTC Club Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/CTC-Club1.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/CTC-Club1/issues"
+  },
+  "homepage": "https://github.com/yourusername/CTC-Club1#readme",
   "workspaces": [
     "frontend",
     "backend"
   ],
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
   "scripts": {
     "install:all": "npm --prefix frontend install && npm --prefix backend install",
     "dev:frontend": "npm --prefix frontend run dev",
     "dev:backend": "npm --prefix backend run dev",
     "build:frontend": "npm --prefix frontend run build",
     "build:backend": "npm --prefix backend run build",
-    "build": "npm run build:frontend && npm run build:backend",
-    "audit": "npm --prefix backend audit --omit=dev && npm --prefix frontend audit --omit=dev",
-    "predeploy": "npm run build && npm run audit",
+    "build": "npm run build:backend && npm run build:frontend",
     "start:backend": "npm --prefix backend run start",
+    "start:frontend": "npm --prefix frontend run preview",
+    "test": "npm --prefix backend test && npm --prefix frontend test",
+    "test:backend": "npm --prefix backend test",
+    "test:frontend": "npm --prefix frontend test",
+    "test:coverage": "npm --prefix backend run test:coverage && npm --prefix frontend run test:coverage",
+    "lint": "npm --prefix backend run lint && npm --prefix frontend run lint",
+    "lint:fix": "npm --prefix backend run lint:fix && npm --prefix frontend run lint:fix",
+    "format": "npm --prefix backend run format && npm --prefix frontend run format",
+    "format:check": "npm --prefix backend run format:check && npm --prefix frontend run format:check",
+    "audit": "npm --prefix backend audit --omit=dev && npm --prefix frontend audit --omit=dev",
+    "audit:fix": "npm --prefix backend audit fix && npm --prefix frontend audit fix",
     "seed": "npm --prefix backend run seed",
-    "check": "npm run build"
+    "clean": "npm --prefix backend run clean && npm --prefix frontend run clean",
+    "clean:all": "npm run clean && rm -rf node_modules frontend/node_modules backend/node_modules",
+    "typecheck": "npm --prefix backend run typecheck && npm --prefix frontend run typecheck",
+    "predeploy": "npm run lint && npm run typecheck && npm run build && npm run audit",
+    "check": "npm run lint && npm run typecheck && npm run build",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "docker:build": "docker-compose build"
   }
 }
