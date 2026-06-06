@@ -160,6 +160,61 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-    console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+const server = app.listen(PORT, () => {
+    console.log(`
+╔═══════════════════════════════════════════════════════════╗
+║                                                           ║
+║   🚀 CTC Club API Server Started Successfully            ║
+║                                                           ║
+║   Environment: ${(process.env.NODE_ENV || 'development').toUpperCase().padEnd(11)}                             ║
+║   Port:        ${String(PORT).padEnd(11)}                             ║
+║   API URL:     http://localhost:${PORT}/api              ║
+║   Health:      http://localhost:${PORT}/api/health       ║
+║                                                           ║
+╚═══════════════════════════════════════════════════════════╝
+    `);
 });
+
+// Graceful shutdown
+const gracefulShutdown = (signal: string) => {
+    console.log(`\n${signal} received. Starting graceful shutdown...`);
+    
+    server.close(() => {
+        console.log('✅ HTTP server closed');
+        
+        // Close database connections
+        import('mongoose').then(mongoose => {
+            mongoose.default.connection.close(false).then(() => {
+                console.log('✅ MongoDB connection closed');
+                process.exit(0);
+            });
+        });
+    });
+    
+    // Force shutdown after 30 seconds
+    setTimeout(() => {
+        console.error('⚠️  Forced shutdown after timeout');
+        process.exit(1);
+    }, 30000);
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
+    console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+    // Don't exit in production, just log
+    if (process.env.NODE_ENV !== 'production') {
+        process.exit(1);
+    }
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error: Error) => {
+    console.error('❌ Uncaught Exception:', error);
+    // Exit immediately for uncaught exceptions
+    process.exit(1);
+});
+
+export default app;
